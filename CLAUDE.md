@@ -1,0 +1,1 @@
+Read "./Assistant/CLAUDE.md"

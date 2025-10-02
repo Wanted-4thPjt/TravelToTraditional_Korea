@@ -37,7 +37,8 @@ void UMainMenu::CreateHost()
 	
 	UE_LOG(LogTemp, Display, TEXT("Host URL : %s"), *url);
 	// Get Level Name from GameInstance or GameMode later.
-	UGameplayStatics::OpenLevel(this, FName(""), true, "listen");
+	//FWorldContext context;
+	UGameplayStatics::OpenLevel(this, FName("Demo"), true, "listen");
 	
 }
 
