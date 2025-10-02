@@ -19,7 +19,10 @@ public class UE_TTTK : ModuleRules
 			"GameplayStateTreeModule",
 			"UMG",
 			"Slate", "SlateCore",
-			"Networking", "Sockets"
+			"Networking", "Sockets",
+			"OnlineSubsystem"/*251002*/,
+			"OnlineSubsystemSteam"/*251002*/,
+			"OnlineSubsystemUtils"/*251002*/
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
