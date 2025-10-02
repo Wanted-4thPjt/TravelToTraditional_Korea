@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "InputMappingContext.h"
-#include "MainPlayer.h"
 #include "Subsystems/LocalPlayerSubsystem.h"
 #include "PlayerSubSystem.generated.h"
 
 /**
  * 
  */
+class AMainPlayer;
 UENUM(BlueprintType)
 enum class EMappingMode : uint8
 {
@@ -36,6 +36,8 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	UInputMappingContext* Content3Context;
 	
-	//bool ChangeInputMapping(AMainPlayer* requester,EMappingMode mode);
+	bool ChangeInputMapping(AMainPlayer* requester,EMappingMode mode);
+	void SetUpMappingContext(AMainPlayer* requester,EMappingMode mode);
+	
 	
 };

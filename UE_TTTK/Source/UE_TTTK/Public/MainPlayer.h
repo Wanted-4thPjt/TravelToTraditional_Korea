@@ -6,6 +6,8 @@
 #include "UE_TTTKCharacter.h"
 #include "MainPlayer.generated.h"
 
+enum class EMappingMode : uint8;
+
 /**
  * 
  */
@@ -18,6 +20,7 @@ protected:
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	//void RequestChangeInputMapping(EMappingMode mode);
+	void RequestChangeInputMapping(EMappingMode mode);
+	
 	
 };
