@@ -18,7 +18,8 @@ public class UE_TTTK : ModuleRules
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
-			"Slate"
+			"Slate", "SlateCore",
+			"Networking", "Sockets"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
