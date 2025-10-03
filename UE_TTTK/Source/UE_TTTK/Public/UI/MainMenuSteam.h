@@ -6,8 +6,11 @@
 #include "Blueprint/UserWidget.h"
 #include "MainMenuSteam.generated.h"
 
+class USessionsList;
+class UCreatingSession;
+class UListView;
+class UOverlay;
 class FOnlineSessionSearch;
-class UEditableTextBox;
 class UVerticalBox;
 class UButton;
 class UCanvasPanel;
@@ -33,12 +36,7 @@ private:
 	UFUNCTION()
 	void OnFindSessionComplete(bool bWasSuccess);
 	
-	UFUNCTION()
-	void ClickJoinButton();
-	UFUNCTION()
-	void InputUrl(const FText& changedText);
-	UFUNCTION()
-	void JoinToUrl(const FText& inText, ETextCommit::Type inCommitMethod);
+
 
 protected:
 	UPROPERTY(meta=(BindWidget))
@@ -47,28 +45,23 @@ protected:
 	UPROPERTY(meta=(BindWidget))
 	UVerticalBox* buttonContainer;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget), Category=Button)
 	UButton* hostButton;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget), Category=Button)
 	UButton* findButton;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
-	UButton* joinButton;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget), Category=Button)
 	UButton* exitButton;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
-	UEditableTextBox* urlInput;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	FString url;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	FString mapPath = "/Game/Naganeupseong/Maps/Demo";
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	int32 maxPlayerCount = 4;
+	UOverlay* creatingSessionOverlay;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
+	UCreatingSession* creatingSession;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
+	UOverlay* sessionsOverlay;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
+	USessionsList* sessionsList;
 
 private:
 	TSharedPtr<FOnlineSessionSearch> sessionSearch;

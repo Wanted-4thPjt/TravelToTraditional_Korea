@@ -6,10 +6,23 @@
 #include "OnlineSubsystem.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "OnlineSessionSettings.h"
+#include "Components/Button.h"
+#include "Online/OnlineSessionNames.h"
+#include "UI/CreatingSession.h"
+#include "UI/SessionsList.h"
 
 void UMainMenuSteam::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	if (IsValid(hostButton))
+	{
+		hostButton->OnClicked.AddDynamic(this, &UMainMenuSteam::CreateHost);
+	}
+	creatingSession = Cast<UCreatingSession>(CreateWidget(this, UCreatingSession::StaticClass()));
+	creatingSession->SetVisibility(ESlateVisibility::Hidden);
+	sessionsList = Cast<USessionsList>(CreateWidget(this, USessionsList::StaticClass()));
+	sessionsList->SetVisibility(ESlateVisibility::Hidden);
 }
 
 void UMainMenuSteam::NativeOnInitialized()
@@ -19,39 +32,12 @@ void UMainMenuSteam::NativeOnInitialized()
 
 void UMainMenuSteam::CreateHost()
 {
-	if (IOnlineSubsystem* onlineSub = IOnlineSubsystem::Get())
-	{
-		IOnlineSessionPtr sessions = onlineSub->GetSessionInterface();
-		if (sessions.IsValid())
-		{
-			sessions->OnCreateSessionCompleteDelegates.AddUObject(
-				this, &UMainMenuSteam::OnCompleteCreateSession);
-
-			FOnlineSessionSettings sessionSettings;
-			sessionSettings.NumPublicConnections = maxPlayerCount;
-			sessionSettings.bShouldAdvertise = true;  // open in Steam friend list
-			sessionSettings.bAllowJoinInProgress = true;  // allow participate in progress server
-			sessionSettings.bIsLANMatch = false;  // must be FALSE
-			sessionSettings.bUsesPresence = true;  // for finding friends
-			sessionSettings.bAllowJoinViaPresence = true;  // allow friends able to  participate directly
-			/* not important. Steam Lobby Type
-			sessionSettings.Set(
-				FName("setting map"),
-				FString("My Map Name"),
-				EOnlineDataAdvertisementType::ViaOnlineService
-			);*/
-
-			sessions->CreateSession(0, FName("TTTK_Session"), sessionSettings);
-		}
-	}
+	creatingSession->SetVisibility(ESlateVisibility::Visible);
 }
 
 void UMainMenuSteam::OnCompleteCreateSession(FName inSessionName, bool bWasSuccess)
 {
-	if (bWasSuccess)
-	{
-		GetWorld()->ServerTravel(mapPath + "?listen");
-	}
+	
 }
 
 void UMainMenuSteam::ClickFindButton()
@@ -69,7 +55,7 @@ void UMainMenuSteam::ClickFindButton()
 			sessionSearch->MaxSearchResults = 10;
 			sessionSearch->bIsLanQuery = false;
 			sessionSearch->QuerySettings.Set(
-				FName(TEXT("PRESENCE")), true,
+				SEARCH_PRESENCE, true,
 				EOnlineComparisonOp::Equals
 			);
 			sessions->FindSessions(0, sessionSearch.ToSharedRef());
@@ -81,16 +67,4 @@ void UMainMenuSteam::OnFindSessionComplete(bool bWasSuccess)
 {
 	if (!bWasSuccess) {return;}
 	//const TArray<FOnlineSession>& results = ser
-}
-
-void UMainMenuSteam::ClickJoinButton()
-{
-}
-
-void UMainMenuSteam::InputUrl(const FText& changedText)
-{
-}
-
-void UMainMenuSteam::JoinToUrl(const FText& inText, ETextCommit::Type inCommitMethod)
-{
 }
