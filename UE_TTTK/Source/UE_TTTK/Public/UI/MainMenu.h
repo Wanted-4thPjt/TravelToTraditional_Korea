@@ -31,8 +31,6 @@ private:
 	UFUNCTION()
 	void ClickJoinButton();
 	UFUNCTION()
-	void InputUrl(const FText& changedText);
-	UFUNCTION()
 	void JoinToUrl(const FText& inText, ETextCommit::Type inCommitMethod);
 
 protected:

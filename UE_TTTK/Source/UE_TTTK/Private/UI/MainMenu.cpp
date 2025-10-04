@@ -16,7 +16,6 @@ void UMainMenu::NativeConstruct()
 	Super::NativeConstruct();
 	urlInput->SetVisibility(ESlateVisibility::Hidden);
 	joinButton->OnClicked.AddDynamic(this, &UMainMenu::ClickJoinButton);
-	//urlInput->OnTextChanged.AddDynamic(this, &UMainMenu::InputUrl);
 	urlInput->OnTextCommitted.AddDynamic(this, &UMainMenu::JoinToUrl);
 	hostButton->OnClicked.AddDynamic(this, &UMainMenu::CreateHost);
 }
@@ -55,8 +54,4 @@ void UMainMenu::JoinToUrl(const FText& inText, ETextCommit::Type inCommitMethod)
 	}
 	//inText 에 해당하는 url 검증 과정 필요
 	UGameplayStatics::OpenLevel(this, *inText.ToString(), true);
-}
-
-void UMainMenu::InputUrl(const FText& changedText)
-{
 }
