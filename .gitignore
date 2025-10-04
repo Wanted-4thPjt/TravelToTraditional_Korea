@@ -7,8 +7,9 @@
 **/.vs/
 
 # Claude Code
-**/Assistant/
-.claude
+**/.claude
+**/CLAUDE**.md
+CLAUDE.md
 
 # Compiled Object files
 *.slo
