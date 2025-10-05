@@ -16,6 +16,7 @@ public class UE_TTTK : ModuleRules
 			/*251001*/"Networking", "Sockets",
 			/*251002*/"OnlineSubsystem", "OnlineSubsystemSteam", "OnlineSubsystemUtils",
 			/*251003*/"DeveloperSettings",
+			/*251005*/"Niagara"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

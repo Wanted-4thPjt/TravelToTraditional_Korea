@@ -1,32 +1,28 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "NPC/ContentNPC.h"
 
+#include "Interaction/ContentEntryComponent.h"
 
-// Sets default values
 AContentNPC::AContentNPC()
 {
-	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
+
+	contentEntry = CreateDefaultSubobject<UContentEntryComponent>("ContentEntryComponent");
+	
+	SetReplicates(true);
+	SetReplicateMovement(false);
 }
 
-// Called when the game starts or when spawned
 void AContentNPC::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 }
 
-// Called every frame
-void AContentNPC::Tick(float DeltaTime)
+void AContentNPC::SetOutlineEnabled(bool bEnabled)
 {
-	Super::Tick(DeltaTime);
+	if (IsValid(GetMesh()))
+	{
+		GetMesh()->SetRenderCustomDepth(bEnabled);
+		GetMesh()->SetCustomDepthStencilValue(bEnabled ? contentEntry->GetOutlineDepthStencilValue() : 0);
+	}
 }
-
-// Called to bind functionality to input
-void AContentNPC::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-}
-

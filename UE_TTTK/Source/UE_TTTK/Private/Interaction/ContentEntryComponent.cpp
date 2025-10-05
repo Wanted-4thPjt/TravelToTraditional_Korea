@@ -1,17 +1,15 @@
-#include "NPC/ContentEntryComponent.h"
+#include "Interaction/ContentEntryComponent.h"
 
 #include "Net/UnrealNetwork.h"
 #include "MainPlayer.h"
 #include "Components/SphereComponent.h"
-#include "TimerManager.h"
+#include "Components/WidgetComponent.h"
 
 
 UContentEntryComponent::UContentEntryComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 	SetIsReplicatedByDefault(true);
-	
-	interactionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("InteractionArea"));
 	
 	interactionRadius = 300.0f;
 	maxWaitSeconds = 60.0f;
@@ -21,24 +19,44 @@ UContentEntryComponent::UContentEntryComponent()
 	contentManager = nullptr;
 	outlineStencilValue = 252;
 	outlineColor = FLinearColor::Green;
-}
-
-void UContentEntryComponent::BeginPlay()
-{
-	Super::BeginPlay();
-
-	// Sphere Collision 설정
-	if (IsValid(interactionSphere))
+	
+	if (interactionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("InteractionArea")))
 	{
 		interactionSphere->SetSphereRadius(interactionRadius);
 		interactionSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 		interactionSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
 		interactionSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 		interactionSphere->SetGenerateOverlapEvents(true);
+	}
 
-		// Overlap 델리게이트 바인딩
+	if (entryInfoWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("InteractWidget")))
+	{
+		entryInfoWidget->SetWidgetSpace(EWidgetSpace::Screen);
+		entryInfoWidget->SetDrawSize(FVector2D(200.f, 50.f));
+		entryInfoWidget->SetRelativeLocation(FVector(0.f, 0.f, 100.f));
+	}
+}
+
+void UContentEntryComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (!IsValid(GetOwner())) {return;}
+	
+	if (IsValid(interactionSphere))
+	{
+		interactionSphere->SetupAttachment(GetOwner()->GetRootComponent());
+		interactionSphere->RegisterComponent();
+		
 		interactionSphere->OnComponentBeginOverlap.AddDynamic(this, &UContentEntryComponent::OnInteractionSphereBeginOverlap);
 		interactionSphere->OnComponentEndOverlap.AddDynamic(this, &UContentEntryComponent::OnInteractionSphereEndOverlap);
+	}
+
+	if (IsValid(entryInfoWidget))
+	{
+		entryInfoWidget->SetupAttachment(GetOwner()->GetRootComponent());
+		entryInfoWidget->RegisterComponent();
+		entryInfoWidget->SetVisibility(false);
 	}
 }
 
@@ -443,6 +461,7 @@ void UContentEntryComponent::ReassignHost()
 
 
 #pragma region Overlap Event
+
 void UContentEntryComponent::OnInteractionSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent,
                                                              AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
                                                              const FHitResult& SweepResult)

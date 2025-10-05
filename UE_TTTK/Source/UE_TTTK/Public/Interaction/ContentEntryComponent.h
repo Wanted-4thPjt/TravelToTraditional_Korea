@@ -6,6 +6,7 @@
 #include "ContentEntryComponent.generated.h"
 
 class USphereComponent;
+class UWidgetComponent;
 class AMainPlayer;
 class ABaseContentManager;
 
@@ -63,6 +64,9 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Content Entry|Getter")
 	int32 GetCurrentPlayerCount() const { return readyPlayers.Num(); }
+
+	UFUNCTION(BlueprintPure, Category = "Content Entry|Getter")
+	int32 GetOutlineDepthStencilValue() const {return outlineStencilValue;}
 	#pragma endregion Getter
 
 
@@ -148,6 +152,8 @@ protected:
 	float maxWaitSeconds = 0.f;
 	FTimerHandle lobbyTimer;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Outline")
+	TObjectPtr<UWidgetComponent> entryInfoWidget;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Outline")
 	int32 outlineStencilValue;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Outline")
