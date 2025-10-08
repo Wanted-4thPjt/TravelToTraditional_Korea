@@ -11,13 +11,14 @@ void AMainPlayer::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	APlayerController* PC = Cast<APlayerController>(GetController());
-	if (PC-> WasInputKeyJustPressed(EKeys::SpaceBar))
+	if (PC-> WasInputKeyJustPressed(EKeys::F))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("스페이스바 방금 눌림!"));
+		UE_LOG(LogTemp, Warning, TEXT("상호작용 방금 눌림!"));
 		RequestChangeInputMapping(EMappingMode::Content2);
 	}
 	if (PC-> WasInputKeyJustPressed(EKeys::B))
 	{
+		UE_LOG(LogTemp, Warning, TEXT("다시 되돌아가기"));
 		ReturnToDefaultMode();
 	}
 	

@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(git config:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(\"C:\\Program Files\\Epic Games\\UE_5.6\\Engine\\Build\\BatchFiles\\Build.bat\" UE_TTTKEditor Win64 Development -Project=\"C:\\Users\\user\\Documents\\GitHub\\TravelToTraditional_Korea\\UE_TTTK\\UE_TTTK.uproject\" -WaitMutex -FromMsBuild)"
     ],
     "deny": [],
     "ask": []
