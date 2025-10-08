@@ -105,6 +105,15 @@ void UCarriageMovementComponent::UpateMovement()
 	FVector NewLocation = CachedPathActor->GetLocationAtDistance(CurrentDistance);
 	FRotator NewRotation = CachedPathActor->GetRotationAtDistance(CurrentDistance);
 
+	// 마차 Mesh가 Y축 방향을 Forward로 사용하므로 90도 회전 오프셋 적용
+	NewRotation.Yaw += -90.0f;
+
+	// 역주행(Speed < 0) 시 180도 반전
+	if (OwnerCarriage->Speed < 0.0f)
+	{
+		NewRotation.Yaw += 180.0f;
+	}
+
 	OwnerCarriage->SetActorLocationAndRotation(NewLocation, NewRotation);
 
 	CheckStopPoints();
@@ -141,11 +150,9 @@ void UCarriageMovementComponent::UpdateStopTimer(float DeltaTime)
 		bisStoped = false;
 		if (CurrentStopPoint)
 		{
+			UE_LOG(LogTemp, Log, TEXT("정류장 [%s] 출발!"), *CurrentStopPoint->StopName);
 			CurrentStopPoint->OnCarriageDeparted(OwnerCarriage);
 			CurrentStopPoint = nullptr;
-			UE_LOG(LogTemp, Log, TEXT("정류장 [%s] 출발!"), *CurrentStopPoint->StopName);
-
-			
 		}
 	}
 }

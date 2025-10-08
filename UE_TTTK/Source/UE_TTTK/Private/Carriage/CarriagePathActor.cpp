@@ -109,16 +109,20 @@ void ACarriagePathActor::CollectStopPoint()
 ACarriageStopPoint* ACarriagePathActor::FindNearestStopPoint(float Distance, float Tolerance)
 {
 	if (!PathSpline) return nullptr;
-	FVector CurrentLocation = GetLocationAtDistance(Distance);
+
 	for (ACarriageStopPoint* StopPoint : StopPoints)
 	{
-			if (!StopPoint || StopPoint->bVisited) continue;
-		float StopDistance = PathSpline->FindInputKeyClosestToWorldLocation(StopPoint->GetActorLocation());
+		if (!StopPoint || StopPoint->bVisited) continue;
+
+		// 정류장의 Spline 상 거리 계산 (InputKey가 아닌 실제 Distance)
+		FVector StopLocation = StopPoint->GetActorLocation();
+		float InputKey = PathSpline->FindInputKeyClosestToWorldLocation(StopLocation);
+		float StopDistance = PathSpline->GetDistanceAlongSplineAtSplineInputKey(InputKey);
+
 		if (FMath::Abs(Distance - StopDistance) <= Tolerance)
 		{
 			return StopPoint;
 		}
-		
 	}
 	return nullptr;
 }

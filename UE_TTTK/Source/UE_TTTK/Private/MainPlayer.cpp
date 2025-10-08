@@ -11,15 +11,18 @@ void AMainPlayer::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	APlayerController* PC = Cast<APlayerController>(GetController());
-	if (PC-> WasInputKeyJustPressed(EKeys::F))
+	if (PC != nullptr)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("상호작용 방금 눌림!"));
-		RequestChangeInputMapping(EMappingMode::Content2);
-	}
-	if (PC-> WasInputKeyJustPressed(EKeys::B))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("다시 되돌아가기"));
-		ReturnToDefaultMode();
+		if (PC-> WasInputKeyJustPressed(EKeys::F))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("상호작용 방금 눌림!"));
+			RequestChangeInputMapping(EMappingMode::Content2);
+		}
+		if (PC-> WasInputKeyJustPressed(EKeys::B))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("다시 되돌아가기"));
+			ReturnToDefaultMode();
+		}
 	}
 	
 }
@@ -27,7 +30,7 @@ void AMainPlayer::Tick(float DeltaSeconds)
 void AMainPlayer::BeginPlay()
 {
 	Super::BeginPlay();
-	APlayerController* PC = Cast<APlayerController>(GetController());
+	
 }
 
 void AMainPlayer::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
