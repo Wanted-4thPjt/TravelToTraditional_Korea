@@ -17,21 +17,32 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
 	class UStaticMeshComponent* CarriageMesh;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Component")
+	class UStaticMeshComponent* WheelMesh;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
 	class UCarriageMovementComponent* MovementComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
 	class UBoxComponent* BoardArea;
+
+	// Ground Trace Points
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
+	class USceneComponent* FrontTracePoint;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
+	class USceneComponent* RearTracePoint;
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Carriage")
 	class ACarriagePathActor* PathActor;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Carriage")
 	float Speed;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Carriage")
 	bool bLooping;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Carriage")
+	float WheelSpeed = 25.f;
 	
 	
 
 protected:
 	virtual void BeginPlay() override;
+	virtual  void Tick(float DeltaTime) override;
 public:
 	UFUNCTION(BlueprintCallable, Category = "Carriage")
 	void StartMovement();
@@ -39,6 +50,8 @@ public:
 	void StopMovement();
 	UFUNCTION()
 	ACarriagePathActor* GetPathActor(){return PathActor;};
+	UFUNCTION(BlueprintCallable, Category = "Carriage")
+	void RotateWheel();
 };
 
 

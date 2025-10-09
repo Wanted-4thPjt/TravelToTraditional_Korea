@@ -52,5 +52,18 @@ public:
 	void BeginStop(ACarriageStopPoint* StopPoint);
 	UFUNCTION()
 	void UpdateStopTimer(float DeltaTime);
-	
+
+	// Ground Tracking
+	UFUNCTION()
+	void TraceGround(const FVector& BaseLocation, const FRotator& BaseRotation, FVector& OutAdjustedLocation, FRotator& OutAdjustedRotation);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ground Tracking")
+	float TraceDistance = 1000.0f;  // Trace 길이
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ground Tracking")
+	float TraceStartOffset = 500.0f;  // 위쪽 시작 오프셋
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ground Tracking")
+	float GroundOffset = 50.0f;  // 지면으로부터의 높이 오프셋
+
 };

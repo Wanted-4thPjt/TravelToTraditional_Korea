@@ -21,7 +21,6 @@ UCarriageMovementComponent::UCarriageMovementComponent()
 	CurrentStopPoint= nullptr;
 	
 
-	// ...
 }
 
 
@@ -102,19 +101,24 @@ void UCarriageMovementComponent::UpateMovement()
 		CurrentDistance = 0.0f;
 		OwnerCarriage->Speed = -OwnerCarriage->Speed;
 	}
-	FVector NewLocation = CachedPathActor->GetLocationAtDistance(CurrentDistance);
-	FRotator NewRotation = CachedPathActor->GetRotationAtDistance(CurrentDistance);
+	FVector SplineLocation = CachedPathActor->GetLocationAtDistance(CurrentDistance);
+	FRotator SplineRotation = CachedPathActor->GetRotationAtDistance(CurrentDistance);
 
 	// 마차 Mesh가 Y축 방향을 Forward로 사용하므로 90도 회전 오프셋 적용
-	NewRotation.Yaw += -90.0f;
+	SplineRotation.Yaw += -90.0f;
 
 	// 역주행(Speed < 0) 시 180도 반전
 	if (OwnerCarriage->Speed < 0.0f)
 	{
-		NewRotation.Yaw += 180.0f;
+		SplineRotation.Yaw += 180.0f;
 	}
 
-	OwnerCarriage->SetActorLocationAndRotation(NewLocation, NewRotation);
+	// 지면 추적으로 위치/회전 조정
+	FVector AdjustedLocation;
+	FRotator AdjustedRotation;
+	TraceGround(SplineLocation, SplineRotation, AdjustedLocation, AdjustedRotation);
+
+	OwnerCarriage->SetActorLocationAndRotation(AdjustedLocation, AdjustedRotation);
 
 	CheckStopPoints();
 }
@@ -155,6 +159,136 @@ void UCarriageMovementComponent::UpdateStopTimer(float DeltaTime)
 			CurrentStopPoint = nullptr;
 		}
 	}
+}
+
+void UCarriageMovementComponent::TraceGround(const FVector& BaseLocation, const FRotator& BaseRotation,
+	FVector& OutAdjustedLocation, FRotator& OutAdjustedRotation)
+{
+	if (!GetWorld())
+	{
+		OutAdjustedLocation = BaseLocation;
+		OutAdjustedRotation = BaseRotation;
+		return;
+	}
+
+	// SceneComponent에서 로컬 위치 가져오기
+	if (!OwnerCarriage || !OwnerCarriage->FrontTracePoint || !OwnerCarriage->RearTracePoint)
+	{
+		OutAdjustedLocation = BaseLocation;
+		OutAdjustedRotation = BaseRotation;
+		return;
+	}
+
+	FVector ForwardVector = BaseRotation.Vector();
+	FVector RightVector = FRotator(0, BaseRotation.Yaw + 90.0f, 0).Vector();
+	FVector UpVector = FVector(0, 0, 1);
+
+	// SceneComponent의 로컬 위치를 월드 좌표로 변환
+	FVector FrontLocalOffset = OwnerCarriage->FrontTracePoint->GetRelativeLocation();
+	FVector RearLocalOffset = OwnerCarriage->RearTracePoint->GetRelativeLocation();
+
+	// 앞쪽 Trace 위치
+	FVector FrontLocalPos = (ForwardVector * FrontLocalOffset.X)
+		+ (RightVector * FrontLocalOffset.Y)
+		+ (UpVector * FrontLocalOffset.Z);
+	FVector FrontTraceStart = BaseLocation + FrontLocalPos + FVector(0, 0, TraceStartOffset);
+	FVector FrontTraceEnd = FrontTraceStart - FVector(0, 0, TraceDistance);
+
+	// 뒤쪽 Trace 위치
+	FVector RearLocalPos = (ForwardVector * RearLocalOffset.X)
+		+ (RightVector * RearLocalOffset.Y)
+		+ (UpVector * RearLocalOffset.Z);
+	FVector RearTraceStart = BaseLocation + RearLocalPos + FVector(0, 0, TraceStartOffset);
+	FVector RearTraceEnd = RearTraceStart - FVector(0, 0, TraceDistance);
+
+	// LineTrace 실행
+	FHitResult FrontHit;
+	FHitResult RearHit;
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(OwnerCarriage);
+
+	bool bFrontHit = GetWorld()->LineTraceSingleByChannel(
+		FrontHit, FrontTraceStart, FrontTraceEnd, ECC_Visibility, QueryParams
+	);
+
+	bool bRearHit = GetWorld()->LineTraceSingleByChannel(
+		RearHit, RearTraceStart, RearTraceEnd, ECC_Visibility, QueryParams
+	);
+
+	// 디버그 드로우
+	DrawDebugLine(
+		GetWorld(),
+		FrontTraceStart,
+		FrontTraceEnd,
+		bFrontHit ? FColor::Green : FColor::Red,
+		false,
+		-1.0f,
+		0,
+		2.0f
+	);
+
+	DrawDebugLine(
+		GetWorld(),
+		RearTraceStart,
+		RearTraceEnd,
+		bRearHit ? FColor::Green : FColor::Red,
+		false,
+		-1.0f,
+		0,
+		2.0f
+	);
+
+	if (bFrontHit)
+	{
+		DrawDebugSphere(
+			GetWorld(),
+			FrontHit.Location,
+			15.0f,
+			12,
+			FColor::Cyan,
+			false,
+			-1.0f
+		);
+	}
+
+	if (bRearHit)
+	{
+		DrawDebugSphere(
+			GetWorld(),
+			RearHit.Location,
+			15.0f,
+			12,
+			FColor::Cyan,
+			false,
+			-1.0f
+		);
+	}
+
+	// 지면 높이 계산
+	float FrontGroundZ = bFrontHit ? FrontHit.Location.Z : BaseLocation.Z;
+	float RearGroundZ = bRearHit ? RearHit.Location.Z : BaseLocation.Z;
+
+	// 중앙 높이 계산 (앞뒤 평균)
+	float CenterGroundZ = (FrontGroundZ + RearGroundZ) / 2.0f;
+
+	// 위치 조정 (지면 + 오프셋)
+	OutAdjustedLocation = BaseLocation;
+	OutAdjustedLocation.Z = CenterGroundZ + GroundOffset;
+
+	// Pitch 계산 (앞뒤 높이 차이)
+	float HeightDifference = FrontGroundZ - RearGroundZ;
+	float Distance = FrontLocalPos.Size2D() + RearLocalPos.Size2D();  // 앞뒤 Trace 간 거리
+	float PitchRadians = FMath::Atan2(HeightDifference, Distance);
+	float PitchDegrees = FMath::RadiansToDegrees(PitchRadians);
+
+	// 회전 조정 (기존 Yaw 유지, Pitch 추가)
+	OutAdjustedRotation = BaseRotation;
+	OutAdjustedRotation.Pitch = PitchDegrees;
+
+	// 디버그 로그 (테스트용)
+	// UE_LOG(LogTemp, Log, TEXT("Ground Trace - Front: %.1f, Rear: %.1f, Pitch: %.2f"),
+	// 	FrontGroundZ, RearGroundZ, PitchDegrees);
 }
 
 
