@@ -16,11 +16,11 @@ public:
 	// Sets default values for this component's properties
 	UCarriageMovementComponent();
 
-	UPROPERTY(BlueprintReadOnly, Category=Movement)
+	UPROPERTY(BlueprintReadOnly, Replicated, Category=Movement)
 	float CurrentDistance;
-	UPROPERTY(BlueprintReadOnly, Category=Movement)
+	UPROPERTY(BlueprintReadOnly, Replicated, Category=Movement)
 	bool bisMoving;
-	UPROPERTY(BlueprintReadOnly, Category=Movement)
+	UPROPERTY(BlueprintReadOnly, Replicated, Category=Movement)
 	bool bisStoped;
 	UPROPERTY(BlueprintReadOnly,Category=Movement)
 	float stopTimer;
@@ -31,6 +31,7 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	FTimerHandle MovementTimerHande;
 

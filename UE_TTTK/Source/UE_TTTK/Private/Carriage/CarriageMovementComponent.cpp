@@ -6,6 +6,7 @@
 #include "Carriage/CarriagePathActor.h"
 #include "Carriage/CarriageStopPoint.h"
 #include "Carriage/CarriageVehicle.h"
+#include "Net/UnrealNetwork.h"
 
 
 // Sets default values for this component's properties
@@ -19,8 +20,19 @@ UCarriageMovementComponent::UCarriageMovementComponent()
 	bisStoped = false;
 	stopTimer=0.0f;
 	CurrentStopPoint= nullptr;
-	
 
+	// 컴포넌트 복제 활성화
+	SetIsReplicatedByDefault(true);
+
+}
+
+void UCarriageMovementComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UCarriageMovementComponent, CurrentDistance);
+	DOREPLIFETIME(UCarriageMovementComponent, bisMoving);
+	DOREPLIFETIME(UCarriageMovementComponent, bisStoped);
 }
 
 
