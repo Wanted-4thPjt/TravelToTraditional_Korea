@@ -24,7 +24,7 @@ public:
 	bool bisStoped;
 	UPROPERTY(BlueprintReadOnly,Category=Movement)
 	float stopTimer;
-	UPROPERTY(BlueprintReadOnly,Category=Movement)
+	UPROPERTY(BlueprintReadOnly, Replicated, Category=Movement)
 	class ACarriageStopPoint* CurrentStopPoint;
 	
 

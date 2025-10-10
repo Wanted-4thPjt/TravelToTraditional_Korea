@@ -33,6 +33,7 @@ void UCarriageMovementComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProp
 	DOREPLIFETIME(UCarriageMovementComponent, CurrentDistance);
 	DOREPLIFETIME(UCarriageMovementComponent, bisMoving);
 	DOREPLIFETIME(UCarriageMovementComponent, bisStoped);
+	DOREPLIFETIME(UCarriageMovementComponent, CurrentStopPoint);
 }
 
 

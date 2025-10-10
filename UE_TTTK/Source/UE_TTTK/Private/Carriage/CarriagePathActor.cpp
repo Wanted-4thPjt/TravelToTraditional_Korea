@@ -27,7 +27,9 @@ ACarriagePathActor::ACarriagePathActor()
 void ACarriagePathActor::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	// 런타임에서도 정류장 수집
+	CollectStopPoint();
 }
 
 void ACarriagePathActor::OnConstruction(const FTransform& Transform)
