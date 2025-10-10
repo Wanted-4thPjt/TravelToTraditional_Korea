@@ -100,6 +100,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Boarding")
 	USceneComponent* GetSeatComponent(int32 SeatIndex) const;
+
+private:
+	// Delayed Attach (타이밍 이슈 해결)
+	void DelayedAttachPlayer(AMainPlayer* Player, int32 SeatIndex);
 };
 
 

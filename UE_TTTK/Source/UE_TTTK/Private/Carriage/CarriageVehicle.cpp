@@ -9,6 +9,8 @@
 #include "MainPlayer.h"
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 
 ACarriageVehicle::ACarriageVehicle()
 {
@@ -33,16 +35,12 @@ ACarriageVehicle::ACarriageVehicle()
 	RearTracePoint->SetupAttachment(RootComponent);
 	RearTracePoint->SetRelativeLocation(FVector(-200.0f, 100.0f, 0.0f));
 
-	// Seat System
+	// Seat System (위치는 에디터에서 설정)
 	Seat1 = CreateDefaultSubobject<USceneComponent>(TEXT("Seat1"));
 	Seat1->SetupAttachment(RootComponent);
-	Seat1->SetRelativeLocation(FVector(40.0f, 240.0f, 70.0f));  // 좌측 좌석
-	Seat1->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));  // 마차 전방(Y축)을 향하도록
 
 	Seat2 = CreateDefaultSubobject<USceneComponent>(TEXT("Seat2"));
-	Seat2->SetupAttachment(RootComponent);
-	Seat2->SetRelativeLocation(FVector(-20.f, 240.0f, 70.0f));  // 우측 좌석
-	Seat2->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));  // 마차 전방(Y축)을 향하도록
+	Seat2->SetupAttachment(RootComponent);  
 
 	MovementComponent = CreateDefaultSubobject<UCarriageMovementComponent>(TEXT("MovementComponent"));
 
@@ -114,9 +112,6 @@ void ACarriageVehicle::RotateWheel()
 	}
 }
 
-// ========================================
-// Boarding System Implementation
-// ========================================
 
 void ACarriageVehicle::OnBoardAreaBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -184,26 +179,74 @@ void ACarriageVehicle::Multicast_OnPlayerBoarded_Implementation(AMainPlayer* Pla
 		return;
 	}
 
-	// 플레이어를 좌석에 Attach
-	Player->AttachToComponent(SeatComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	// 1단계: 모든 Collision과 Movement를 먼저 끄기
+	if (ACharacter* Character = Cast<ACharacter>(Player))
+	{
+		// SpringArm Collision Test 끄기 (카메라 충돌로 인한 밀림 방지)
+		if (USpringArmComponent* SpringArm = Player->GetCameraBoom())
+		{
+			SpringArm->bDoCollisionTest = false;
+			UE_LOG(LogTemp, Log, TEXT("[Multicast] SpringArm Collision Test 비활성화"));
+		}
+
+		// Capsule Collision 끄기
+		if (UCapsuleComponent* Capsule = Character->GetCapsuleComponent())
+		{
+			Capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			UE_LOG(LogTemp, Log, TEXT("[Multicast] Capsule Collision 비활성화"));
+		}
+
+		// SkeletalMesh Collision 끄기
+		if (USkeletalMeshComponent* SkelMesh = Character->GetMesh())
+		{
+			SkelMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			UE_LOG(LogTemp, Log, TEXT("[Multicast] SkeletalMesh Collision 비활성화"));
+		}
+
+		// Movement Component 비활성화
+		if (UCharacterMovementComponent* MovementComp = Character->GetCharacterMovement())
+		{
+			MovementComp->DisableMovement();
+			UE_LOG(LogTemp, Log, TEXT("[Multicast] Movement Component 비활성화"));
+		}
+	}
+
+	// 2단계: 0.05초 후 Attach (Collision이 완전히 꺼진 후)
+	FTimerHandle TimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this, Player, SeatIndex]()
+	{
+		DelayedAttachPlayer(Player, SeatIndex);
+	}, 0.05f, false);
+
+	UE_LOG(LogTemp, Log, TEXT("[Multicast] Collision 비활성화 완료, 0.05초 후 Attach 실행"));
+}
+
+void ACarriageVehicle::DelayedAttachPlayer(AMainPlayer* Player, int32 SeatIndex)
+{
+	if (!Player)
+	{
+		return;
+	}
+
+	USceneComponent* SeatComponent = GetSeatComponent(SeatIndex);
+	if (!SeatComponent)
+	{
+		UE_LOG(LogTemp, Error, TEXT("DelayedAttachPlayer: 좌석 컴포넌트가 nullptr입니다!"));
+		return;
+	}
+
+	// Attach (Collision이 꺼진 상태에서 충돌 없이 깔끔하게 이동)
+	Player->AttachToComponent(SeatComponent, FAttachmentTransformRules::KeepRelativeTransform);
+
+	// Seat의 로컬 좌표 (0,0,0)으로 정확히 이동
 	Player->SetActorRelativeLocation(FVector::ZeroVector);
 	Player->SetActorRelativeRotation(FRotator::ZeroRotator);
 
-	// 컨트롤러 회전도 마차 방향으로 리셋 (카메라 방향)
+	// 컨트롤러 회전 리셋 (카메라 방향)
 	if (APlayerController* PC = Cast<APlayerController>(Player->GetController()))
 	{
 		FRotator CarriageRotation = GetActorRotation();
 		PC->SetControlRotation(CarriageRotation);
-	}
-
-	// 플레이어 콜리전 완전히 끄기
-	if (ACharacter* Character = Cast<ACharacter>(Player))
-	{
-		if (UCapsuleComponent* Capsule = Character->GetCapsuleComponent())
-		{
-			Capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-			UE_LOG(LogTemp, Log, TEXT("[Multicast] 플레이어 콜리전 비활성화"));
-		}
 	}
 
 	// 탑승 상태 설정 (모든 클라이언트에서)
@@ -214,10 +257,10 @@ void ACarriageVehicle::Multicast_OnPlayerBoarded_Implementation(AMainPlayer* Pla
 	if (Player->IsLocallyControlled())
 	{
 		Player->SwitchToFirstPersonCamera();
-		UE_LOG(LogTemp, Log, TEXT("[Multicast] 로컬 플레이어 카메라 1인칭 전환"));
+		UE_LOG(LogTemp, Log, TEXT("[DelayedAttach] 로컬 플레이어 카메라 1인칭 전환"));
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("[Multicast] 플레이어 [%s]가 좌석 %d에 탑승"), *Player->GetName(), SeatIndex);
+	UE_LOG(LogTemp, Log, TEXT("[DelayedAttach] 플레이어 [%s]가 좌석 %d에 탑승 완료"), *Player->GetName(), SeatIndex);
 }
 
 void ACarriageVehicle::Server_RequestExit_Implementation(AMainPlayer* Player)
@@ -254,13 +297,35 @@ void ACarriageVehicle::Multicast_OnPlayerExited_Implementation(AMainPlayer* Play
 	// 플레이어 Detach
 	Player->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 
-	// 플레이어 콜리전 복구
+	// 모든 Collision 및 Movement Component 복구
 	if (ACharacter* Character = Cast<ACharacter>(Player))
 	{
+		// SpringArm Collision Test 복구
+		if (USpringArmComponent* SpringArm = Player->GetCameraBoom())
+		{
+			SpringArm->bDoCollisionTest = true;
+			UE_LOG(LogTemp, Log, TEXT("[Multicast] SpringArm Collision Test 복구"));
+		}
+
+		// Capsule Collision 복구
 		if (UCapsuleComponent* Capsule = Character->GetCapsuleComponent())
 		{
 			Capsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-			UE_LOG(LogTemp, Log, TEXT("[Multicast] 플레이어 콜리전 복구"));
+			UE_LOG(LogTemp, Log, TEXT("[Multicast] Capsule Collision 복구"));
+		}
+
+		// SkeletalMesh Collision 복구
+		if (USkeletalMeshComponent* SkelMesh = Character->GetMesh())
+		{
+			SkelMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+			UE_LOG(LogTemp, Log, TEXT("[Multicast] SkeletalMesh Collision 복구"));
+		}
+
+		// Movement Component 복구 (Walking Mode로 전환)
+		if (UCharacterMovementComponent* MovementComp = Character->GetCharacterMovement())
+		{
+			MovementComp->SetMovementMode(MOVE_Walking);
+			UE_LOG(LogTemp, Log, TEXT("[Multicast] Movement Component 복구 (Walking Mode)"));
 		}
 	}
 
