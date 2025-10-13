@@ -22,6 +22,7 @@ void AContentNPC::BeginPlay()
 	interactableComponent->onChangeState.AddDynamic(this, &AContentNPC::OnInteractablePlayerStateChanged);
 }
 
+
 void AContentNPC::OnInteractablePlayerStateChanged(APlayerController* playerController, const EInteractableState& state)
 {
 	switch (state)
