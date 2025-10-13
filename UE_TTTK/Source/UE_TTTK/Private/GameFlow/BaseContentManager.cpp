@@ -33,7 +33,7 @@ void ABaseContentManager::InitializeConfig_Implementation()
 {
 	if (!HasAuthority()) {return;}
 	
-	if (contentConfig/*.spawnPoints.IsEmpty()*/)
+	if (contentConfig.playerSpawnPoints.IsEmpty())
 	{
 		TArray<AActor*> spawnPointsByActor;
 		//UGameplayStatics::GetAllActorsWithTag(GetWorld(), contentConfig.contentName, spawnPointsByActor);
@@ -98,11 +98,11 @@ void ABaseContentManager::EndContent_Implementation()
 		if (IsValid(result.playerController))
 		{
 			// replace logs into UI on client hud
-			if (result.bHasScore)
+			if (contentConfig.bRecordingScore)
 			{
-				UE_LOG(LogTemp, Log, TEXT("  Score: %d"), result.score);
+				UE_LOG(LogTemp, Log, TEXT("  Score: %d"), result.recordedScore);
 			}
-			if (result.bHasTimeRecorder)
+			if (contentConfig.bRecordingTime)
 			{
 				UE_LOG(LogTemp, Log, TEXT("  Time: %.2f"), result.recordedTime);
 			}
