@@ -9,17 +9,14 @@ public class UE_TTTK : ModuleRules
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
 		PublicDependencyModuleNames.AddRange(new string[] {
-			"Core",
-			"CoreUObject",
-			"Engine",
-			"InputCore",
-			"EnhancedInput",
-			"AIModule",
-			"StateTreeModule",
-			"GameplayStateTreeModule",
-			"UMG",
-			"Slate", "SlateCore",
-			"Networking", "Sockets"
+			"Core", "CoreUObject", "Engine",
+			"InputCore", "EnhancedInput",
+			"AIModule", "StateTreeModule", "GameplayStateTreeModule",
+			"UMG", "Slate", "SlateCore",
+			/*251001*/"Networking", "Sockets",
+			/*251002*/"OnlineSubsystem", "OnlineSubsystemSteam", "OnlineSubsystemUtils",
+			/*251003*/"DeveloperSettings",
+			/*251005*/"Niagara"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

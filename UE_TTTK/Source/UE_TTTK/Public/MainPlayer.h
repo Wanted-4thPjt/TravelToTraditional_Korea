@@ -9,6 +9,7 @@
 
 enum class EMappingMode : uint8;
 
+class UViewComponent;
 /**
  * 
  */
@@ -27,6 +28,9 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Boarding")
 	class ACarriageVehicle* CurrentCarriage = nullptr;
 
+public:
+	AMainPlayer();
+	
 protected:
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
@@ -63,4 +67,14 @@ public:
 	// Camera Functions (called from CarriageVehicle Multicast)
 	void SwitchToFirstPersonCamera();
 	void SwitchToThirdPersonCamera();
+	//void RequestChangeInputMapping(EMappingMode mode);
+	
+	UFUNCTION(BlueprintNativeEvent)
+	void OnViewInteractableActor(const FHitResult& hitResult);
+
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(AllowPrivateAccess=true))
+	UViewComponent* viewComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
+	AActor* focusedActor = nullptr;
 };
