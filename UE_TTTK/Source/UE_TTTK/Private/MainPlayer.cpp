@@ -109,7 +109,7 @@ void AMainPlayer::HandleFKeyPress()
 	{
 		// 기존 F키 기능 (Input Mapping 변경)
 		UE_LOG(LogTemp, Warning, TEXT("[DEBUG] 마차 못 찾음 - 상호작용 모드"));
-		RequestChangeInputMapping(EMappingMode::Content2);
+		//RequestChangeInputMapping(EMappingMode::Content2);
 	}
 }
 
@@ -119,7 +119,7 @@ ACarriageVehicle* AMainPlayer::FindNearbyCarriage()
 	TArray<AActor*> FoundCarriages;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACarriageVehicle::StaticClass(), FoundCarriages);
 
-	float SearchRadius = 500.0f;  // 5m 반경
+	float SearchRadius = 500.0f;  
 	FVector PlayerLocation = GetActorLocation();
 
 	for (AActor* Actor : FoundCarriages)

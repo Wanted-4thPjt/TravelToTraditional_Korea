@@ -24,6 +24,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
 	class UBoxComponent* BoardArea;
 
+	// Horse System
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
+	class USkeletalMeshComponent* HorseMesh;
+
 	// Ground Trace Points
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
 	class USceneComponent* FrontTracePoint;
@@ -43,6 +47,7 @@ public:
 	bool bLooping;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Carriage")
 	float WheelSpeed = 25.f;
+
 	
 	
 
@@ -78,6 +83,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Carriage")
 	void RotateWheel();
 
+	
 	// Boarding System
 	UFUNCTION(Server, Reliable, Category = "Boarding")
 	void Server_RequestBoard(AMainPlayer* Player);
