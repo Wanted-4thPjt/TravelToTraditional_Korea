@@ -40,8 +40,8 @@ void AMainPlayer::BeginPlay()
 
 	if (HasAuthority())
 	{
-		viewComponent->OnViewSthByLineTrace.AddDynamic(this, &AMainPlayer::OnViewInteractableActor);
-		viewComponent->EnableTrace(true);
+		//iewComponent->OnViewSthByLineTrace.AddDynamic(this, &AMainPlayer::OnViewInteractableActor);
+		//viewComponent->EnableTrace(true);
 	}
 }
 
@@ -223,17 +223,14 @@ void AMainPlayer::SwitchToThirdPersonCamera()
 }
 void AMainPlayer::OnViewInteractableActor_Implementation(const FHitResult& hitResult)
 {
-	if (hitResult.GetActor() != focusedActor)
+	if (hitResult.GetActor() != focusedActor && focusedActor->FindComponentByClass<UInteractableComponent>())
 	{
 		focusedActor->FindComponentByClass<UInteractableComponent>()->TryDeactivateInteractable(GetController<APlayerController>());
 	}
 	UInteractableComponent* interactable = hitResult.GetActor()->FindComponentByClass<UInteractableComponent>();
 	if (!IsValid(interactable)) {return;}
-	if (GetLocalRole() == ENetRole::ROLE_AutonomousProxy)
-	{
-		interactable->TryActivateInteractable(GetController<APlayerController>());
-		focusedActor = hitResult.GetActor();
-	}
+	interactable->TryActivateInteractable(GetController<APlayerController>());
+	focusedActor = hitResult.GetActor();
 }
 
 

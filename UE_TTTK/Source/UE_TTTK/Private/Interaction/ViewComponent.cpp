@@ -64,7 +64,7 @@ void UViewComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void UViewComponent::EnableTrace_Implementation(bool bEnable)
 {
 	if (!IsValid(pawnOwner)) {return;}
-	if (pawnOwner->GetLocalRole() != ENetRole::ROLE_AutonomousProxy) {return;}
+	//if (pawnOwner->GetLocalRole() != ENetRole::ROLE_AutonomousProxy) {return;}
 	
 	if (!bEnable)
 	{
