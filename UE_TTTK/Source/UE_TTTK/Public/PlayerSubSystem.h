@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "InputMappingContext.h"
-#include "MainPlayer.h"
 #include "Subsystems/LocalPlayerSubsystem.h"
 #include "PlayerSubSystem.generated.h"
 
 /**
  * 
  */
+class AMainPlayer;
 UENUM(BlueprintType)
 enum class EMappingMode : uint8
 {
@@ -27,15 +27,14 @@ public:
 	//사용자가 지닐 수 있는 맵핑 컨텍스트
 	UPROPERTY(EditDefaultsOnly)
 	TMap<EMappingMode,UInputMappingContext*> InputMappings;
-
-	UPROPERTY(EditDefaultsOnly)
-	UInputMappingContext* Content1Context;
-
-	UPROPERTY(EditDefaultsOnly)
-	UInputMappingContext* Content2Context;
-	UPROPERTY(EditDefaultsOnly)
-	UInputMappingContext* Content3Context;
 	
-	//bool ChangeInputMapping(AMainPlayer* requester,EMappingMode mode);
+
+
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	bool ChangeInputMapping(AMainPlayer* requester,EMappingMode mode);
+	void SetUpMappingContext(AMainPlayer* requester,EMappingMode mode);
+	UInputMappingContext* GetInputMappingContext(EMappingMode mode);
+	
+	
 	
 };
