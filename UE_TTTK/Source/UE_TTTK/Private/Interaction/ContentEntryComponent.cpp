@@ -1,9 +1,12 @@
 #include "Interaction/ContentEntryComponent.h"
 
 #include "Net/UnrealNetwork.h"
-#include "MainPlayer.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
+
+#include "MainPlayer.h"
+#include "GameFlow/BaseContentManager.h"
+#include "Interaction/InteractableComponent.h"
 
 
 UContentEntryComponent::UContentEntryComponent()
@@ -11,24 +14,12 @@ UContentEntryComponent::UContentEntryComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 	SetIsReplicatedByDefault(true);
 	
-	interactionRadius = 300.0f;
-	maxWaitSeconds = 60.0f;
+	maxWaitSeconds = 0.f;
 	bLobbyActive = false;
 	bContentRunning = false;
 	hostPlayer = nullptr;
 	contentManager = nullptr;
-	outlineStencilValue = 252;
-	outlineColor = FLinearColor::Green;
 	
-	if (interactionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("InteractionArea")))
-	{
-		interactionSphere->SetSphereRadius(interactionRadius);
-		interactionSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-		interactionSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
-		interactionSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-		interactionSphere->SetGenerateOverlapEvents(true);
-	}
-
 	if (entryInfoWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("InteractWidget")))
 	{
 		entryInfoWidget->SetWidgetSpace(EWidgetSpace::Screen);
@@ -43,28 +34,33 @@ void UContentEntryComponent::BeginPlay()
 
 	if (!IsValid(GetOwner())) {return;}
 	
-	if (IsValid(interactionSphere))
-	{
-		interactionSphere->SetupAttachment(GetOwner()->GetRootComponent());
-		interactionSphere->RegisterComponent();
-		
-		interactionSphere->OnComponentBeginOverlap.AddDynamic(this, &UContentEntryComponent::OnInteractionSphereBeginOverlap);
-		interactionSphere->OnComponentEndOverlap.AddDynamic(this, &UContentEntryComponent::OnInteractionSphereEndOverlap);
-	}
-
 	if (IsValid(entryInfoWidget))
 	{
 		entryInfoWidget->SetupAttachment(GetOwner()->GetRootComponent());
 		entryInfoWidget->RegisterComponent();
 		entryInfoWidget->SetVisibility(false);
 	}
+	
+	
+	if (settings.contentManagerClass)
+	{
+		FActorSpawnParameters spawnParams;
+		spawnParams.Owner = GetOwner();
+
+		contentManager = GetWorld()->SpawnActor<ABaseContentManager>(
+			settings.contentManagerClass,
+			GetOwner()->GetActorLocation(),
+			FRotator::ZeroRotator,
+			spawnParams
+		);
+	}
+	
 }
 
 void UContentEntryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(UContentEntryComponent, playersInRange);
 	DOREPLIFETIME(UContentEntryComponent, readyPlayers);
 	DOREPLIFETIME(UContentEntryComponent, hostPlayer);
 	DOREPLIFETIME(UContentEntryComponent, bLobbyActive);
@@ -235,12 +231,6 @@ bool UContentEntryComponent::ValidateJoinRequest(AMainPlayer* player)
 		return false;
 	}
 
-	if (!playersInRange.Contains(player))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("ValidateJoinRequest: Player not in range"));
-		return false;
-	}
-
 	if (bContentRunning)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ValidateJoinRequest: Content already running"));
@@ -298,6 +288,7 @@ bool UContentEntryComponent::ValidateStartRequest(AMainPlayer* requestingPlayer)
 void UContentEntryComponent::AddPlayerToLobby(AMainPlayer* player)
 {
 	if (!IsValid(player)) return;
+	if (!IsServer()) return;
 
 	readyPlayers.Add(player);
 
@@ -310,8 +301,7 @@ void UContentEntryComponent::AddPlayerToLobby(AMainPlayer* player)
 		// 타이머 시작 (maxWaitSeconds > 0일 경우)
 		if (maxWaitSeconds > 0.0f)
 		{
-			UWorld* world = GetWorld();
-			if (world)
+			if (UWorld* world = GetWorld())
 			{
 				world->GetTimerManager().SetTimer(
 					lobbyTimer,
@@ -339,6 +329,7 @@ void UContentEntryComponent::AddPlayerToLobby(AMainPlayer* player)
 void UContentEntryComponent::RemovePlayerFromLobby(AMainPlayer* player)
 {
 	if (!IsValid(player)) return;
+	if (!IsServer()) return;
 
 	readyPlayers.Remove(player);
 
@@ -373,26 +364,7 @@ void UContentEntryComponent::StartContentInternal()
 	bContentRunning = true;
 	bLobbyActive = false;
 
-	// TODO: ContentManager 생성
-	/*
-	if (settings.contentManagerClass)
-	{
-		FActorSpawnParameters spawnParams;
-		spawnParams.Owner = GetOwner();
-
-		contentManager = world->SpawnActor<ABaseContentManager>(
-			settings.contentManagerClass,
-			GetOwner()->GetActorLocation(),
-			FRotator::ZeroRotator,
-			spawnParams
-		);
-
-		if (contentManager)
-		{
-			contentManager->StartContent(readyPlayers);
-		}
-	}
-	*/
+	
 
 	// TODO: 플레이어 이동
 	/*
@@ -457,37 +429,7 @@ void UContentEntryComponent::ReassignHost()
 		UE_LOG(LogTemp, Log, TEXT("No players left - lobby closed"));
 	}
 }
+
 #pragma endregion Internal
 
 
-#pragma region Overlap Event
-
-void UContentEntryComponent::OnInteractionSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent,
-                                                             AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
-                                                             const FHitResult& SweepResult)
-{
-	if (!IsServer()) return;
-	if (AMainPlayer* player = Cast<AMainPlayer>(OtherActor))
-	{
-		if (playersInRange.Contains(player)) {return;}
-		playersInRange.Add(player);
-	}
-}
-
-void UContentEntryComponent::OnInteractionSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-                                                           UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-	if (!IsServer()) return;
-	if (AMainPlayer* player = Cast<AMainPlayer>(OtherActor))
-	{
-		playersInRange.Remove(player);
-		
-		if (readyPlayers.Contains(player))
-		{
-			RemovePlayerFromLobby(player);
-			Multicast_UpdateLobbyState();
-		}
-
-	}
-}
-#pragma endregion Overlap Event

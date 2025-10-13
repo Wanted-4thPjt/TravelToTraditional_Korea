@@ -9,6 +9,7 @@ class USphereComponent;
 class UWidgetComponent;
 class AMainPlayer;
 class ABaseContentManager;
+enum class EInteractableState : uint8;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnLobbyStateChanged, int32, currentPlayers, int32, maxPlayersLimit);
 
@@ -69,7 +70,10 @@ public:
 	int32 GetOutlineDepthStencilValue() const {return outlineStencilValue;}
 	#pragma endregion Getter
 
-
+protected:
+	UFUNCTION(BlueprintPure, Category = "Helper")
+	bool IsServer() const {AActor* owner = GetOwner();
+		return IsValid(owner) && owner->HasAuthority();}
 private:
 	// === Server RPC ===
 	#pragma region Server RPC
@@ -111,35 +115,18 @@ private:
 	void ReassignHost();
 	#pragma endregion Internal
 
-	#pragma region Overlap Event
-	UFUNCTION()
-	void OnInteractionSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
-	UFUNCTION()
-	void OnInteractionSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-	#pragma endregion Overlap Event
-
-	UFUNCTION(BlueprintCallable, Category = "Helper")
-	bool IsServer() const {AActor* owner = GetOwner();
-		return IsValid(owner) && owner->HasAuthority();}
-
 public:
 	UPROPERTY(BlueprintAssignable, Category = "Event")
 	FOnLobbyStateChanged OnLobbyStateChanged;
 	
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Players")
-	TArray<AMainPlayer*> playersInRange;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Players")
 	TArray<AMainPlayer*> readyPlayers;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Players|Host")
 	AMainPlayer* hostPlayer;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Players|Host")
 	bool bLobbyActive;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Range")
-	TObjectPtr<USphereComponent> interactionSphere;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Range")
-	float interactionRadius;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Content")
 	TObjectPtr<ABaseContentManager> contentManager;

@@ -4,6 +4,7 @@
 #include "ContentEntrySettings.generated.h"
 
 
+class ABaseContentManager;
 enum class EMappingMode : uint8;
 
 UENUM(BlueprintType)
@@ -46,10 +47,9 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float timeLimitSeconds = 0.0f; // 0 = no time limit
-
-    // 컨텐츠 Manager 클래스
-    //UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    //TSubclassOf<AContentManagerBase> ContentManagerClass;
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TSubclassOf<ABaseContentManager> contentManagerClass;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TArray<FTransform> playerSpawnTransforms;

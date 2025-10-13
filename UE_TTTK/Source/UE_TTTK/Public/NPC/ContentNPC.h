@@ -4,6 +4,9 @@
 #include "GameFramework/Character.h"
 #include "ContentNPC.generated.h"
 
+enum class EInteractableState : uint8;
+class AMainPlayer;
+class UInteractableComponent;
 class UContentEntryComponent;
 class UWidgetComponent;
 
@@ -22,10 +25,17 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE UContentEntryComponent* GetContentEntryComponent() const {return contentEntry;}
 	UFUNCTION(BlueprintCallable)
-	void SetOutlineEnabled(bool bEnabled);
+	FORCEINLINE UInteractableComponent* GetInteractableComponent() const {return interactableComponent;}
 
+private:
+	UFUNCTION()
+	void OnInteractablePlayerStateChanged(APlayerController* playerController, const EInteractableState& state);
+	
+	
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(AllowPrivateAccess=true))
 	TObjectPtr<UContentEntryComponent> contentEntry;
-	
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(AllowPrivateAccess=true))
+	TObjectPtr<UInteractableComponent> interactableComponent;
 };

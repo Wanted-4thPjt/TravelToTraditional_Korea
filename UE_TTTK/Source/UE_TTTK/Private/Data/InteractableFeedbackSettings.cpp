@@ -13,7 +13,7 @@ void FInteractableFeedbackSettings::EnableOutline(const bool& bEnabled, UPrimiti
 }
 
 
-void FInteractableFeedbackSettings::EnableWidget(const bool& bEnabled, TSubclassOf<UUserWidget> inInteractionGuideWidgetClass, FVector inWidgetOffset)
+void FInteractableFeedbackSettings::EnableWidget(const bool& bEnabled, const TSubclassOf<UUserWidget>& inInteractionGuideWidgetClass, FVector inWidgetOffset)
 {
 	if (!bEnabled)
 	{

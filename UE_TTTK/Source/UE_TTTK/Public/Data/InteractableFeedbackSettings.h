@@ -72,7 +72,7 @@ public:
     bool IsParticleOn() const {return IsEnableEffect(effectType, EEffectType::Particle);}
 
     void EnableOutline(const bool& bEnabled, UPrimitiveComponent* inOutlineComponent, FLinearColor inOutlineColor = FLinearColor::Green);
-    void EnableWidget(const bool& bEnabled, TSubclassOf<UUserWidget> inInteractionGuideWidgetClass, FVector inWidgetOffset = FVector(0.f, 0.f, 100.f));
+    void EnableWidget(const bool& bEnabled, const TSubclassOf<UUserWidget>& inInteractionGuideWidgetClass, FVector inWidgetOffset = FVector(0.f, 0.f, 100.f));
     void EnableSound(const bool& bEnabled, USoundBase* inInteractedSound, USoundBase* inActivatedSound = nullptr);
     void EnableNiagara(const bool& bEnabled, UNiagaraSystem* inInteractedNiagaraVFX);
     void EnableParticle(const bool& bEnabled, UParticleSystem* inInteractedParticleVFX);

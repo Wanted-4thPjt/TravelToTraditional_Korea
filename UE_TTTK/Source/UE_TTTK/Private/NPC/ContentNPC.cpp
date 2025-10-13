@@ -1,12 +1,15 @@
 #include "NPC/ContentNPC.h"
 
 #include "Interaction/ContentEntryComponent.h"
+#include "Interaction/InteractableComponent.h"
+#include "MainPlayer.h"
 
 AContentNPC::AContentNPC()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
 	contentEntry = CreateDefaultSubobject<UContentEntryComponent>("ContentEntryComponent");
+	interactableComponent = CreateDefaultSubobject<UInteractableComponent>("InteractableComponent");
 	
 	SetReplicates(true);
 	SetReplicateMovement(false);
@@ -16,13 +19,24 @@ void AContentNPC::BeginPlay()
 {
 	Super::BeginPlay();
 
+	interactableComponent->onChangeState.AddDynamic(this, &AContentNPC::OnInteractablePlayerStateChanged);
 }
 
-void AContentNPC::SetOutlineEnabled(bool bEnabled)
+void AContentNPC::OnInteractablePlayerStateChanged(APlayerController* playerController, const EInteractableState& state)
 {
-	if (IsValid(GetMesh()))
+	switch (state)
 	{
-		GetMesh()->SetRenderCustomDepth(bEnabled);
-		GetMesh()->SetCustomDepthStencilValue(bEnabled ? contentEntry->GetOutlineDepthStencilValue() : 0);
+	case EInteractableState::Default:
+	case EInteractableState::OutOfBound:
+		{
+			contentEntry->RequestLeaveLobby(playerController->GetPawn<AMainPlayer>());
+		}
+		break;
+	case EInteractableState::InRange:
+		break;
+	case EInteractableState::Focused:
+		break;
+	case EInteractableState::Interacting:
+		break;
 	}
 }

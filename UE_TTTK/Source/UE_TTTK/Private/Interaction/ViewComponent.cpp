@@ -1,33 +1,58 @@
 #include "Interaction/ViewComponent.h"
 
+#include "Net/UnrealNetwork.h"
 #include "Camera/CameraComponent.h"
+#include "Chaos/Utilities.h"
 #include "Interaction/InteractableComponent.h"
 
 UViewComponent::UViewComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 
+	ownerEye = CreateDefaultSubobject<USceneComponent>(FName("Eye"));
 }
 
+void UViewComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UViewComponent, focusingActor);
+}
 
 void UViewComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
 	pawnOwner = Cast<APawn>(GetOwner());
+	params.AddIgnoredActor(pawnOwner);
+
 	if (IsValid(pawnOwner))
 	{
-		ownerEye = pawnOwner->FindComponentByClass<UCameraComponent>();
-		if (!ownerEye)
+		if (UCameraComponent* camera = pawnOwner->FindComponentByClass<UCameraComponent>())
 		{
-			ownerEye = pawnOwner->FindComponentByClass<USkeletalMeshComponent>();
-			if (!ownerEye)
+			ownerEye->AttachToComponent(camera, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Eye");
+		}
+		else
+		{
+			if (USkeletalMeshComponent* skm = pawnOwner->FindComponentByClass<USkeletalMeshComponent>();
+				IsValid(skm) && skm->DoesSocketExist("Eye"))
 			{
-				ownerEye = pawnOwner->FindComponentByClass<UStaticMeshComponent>();
+				ownerEye->AttachToComponent(skm, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Eye");
+			}
+			else if (UStaticMeshComponent* sm = pawnOwner->FindComponentByClass<UStaticMeshComponent>();
+				IsValid(sm) && sm->DoesSocketExist("Eye"))
+			{
+				ownerEye->AttachToComponent(sm, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Eye");
+			}
+			else
+			{
+				ownerEye->AttachToComponent(GetOwner()->GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+				ownerEye->SetRelativeLocationAndRotation(pawnOwner->GetPawnViewLocation(), pawnOwner->GetControlRotation());
 			}
 		}
+		
+		ownerEye->RegisterComponent();
 	}
-	EnableTrace(true);
 }
 
 void UViewComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -36,15 +61,17 @@ void UViewComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
-void UViewComponent::EnableTrace(const bool& bEnable)
+void UViewComponent::EnableTrace_Implementation(bool bEnable)
 {
-	if (!IsValid(pawnOwner) || !pawnOwner->IsLocallyControlled()) {return;}
+	if (!IsValid(pawnOwner)) {return;}
+	if (pawnOwner->GetLocalRole() != ENetRole::ROLE_AutonomousProxy) {return;}
 	
 	if (!bEnable)
 	{
 		GetWorld()->GetTimerManager().ClearTimer(traceTimer);
 		return;
 	}
+	
 	if (!traceTimer.IsValid())
 	{
 		GetWorld()->GetTimerManager().SetTimer(traceTimer,
@@ -62,44 +89,21 @@ void UViewComponent::ShootLineTrace()
 	FVector endPos = startPos + ownerEye->GetForwardVector() * traceDistance;
 
 	FHitResult hitResult;
-	FCollisionQueryParams params;
-	params.AddIgnoredActor(pawnOwner);
-
 	if (GetWorld()->LineTraceSingleByChannel(
 		hitResult, startPos, endPos,
 		ECC_Visibility, params)
 	) {
-		AActor* newTarget = hitResult.GetActor()->GetComponentByClass<UInteractableComponent>() ? hitResult.GetActor() : nullptr;
-		if (interactableTarget != newTarget)
-		{
-			interactableTarget = newTarget;
-			UpdateOutline(newTarget);
-			onInteractableTargetChanged.Broadcast(newTarget);
-		}
-		return;
+		OnViewSthByLineTrace.Broadcast(hitResult);
 	}
 
-	if (interactableTarget != nullptr)
-	{
-		interactableTarget = nullptr;
-		UpdateOutline(nullptr);
-		onInteractableTargetChanged.Broadcast(nullptr);
-	}
 }
 
-bool UViewComponent::IsInViewAngle(AActor* inTarget, float& outDotProduct)
+bool UViewComponent::IsInViewAngle(const AActor* inTarget) const
 {
-	return false;
-}
+	if (!IsValid(ownerEye)) {return false;}
+	FVector directionVector = (inTarget->GetActorLocation() - GetOwner()->GetActorLocation()).GetSafeNormal();
+	float dotProduct = ownerEye->GetForwardVector().Dot(directionVector);
 
-void UViewComponent::UpdateOutline(AActor* newTarget)
-{
-	if (IsValid(outlinedTarget))
-	{
-		//if ()
-		//{
-		//	//if (UInteractableVisualComponent* visual = interactable)
-		//}
-	}
+	return dotProduct > FMath::Cos(halfViewAngle);
 }
 
