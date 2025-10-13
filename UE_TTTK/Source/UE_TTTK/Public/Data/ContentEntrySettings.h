@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "PlayerSubSystem.h"
 #include "ContentEntrySettings.generated.h"
 
 
@@ -22,7 +23,7 @@ struct UE_TTTK_API FContentEntrySettings
     
 public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    EMappingMode mappingMode;
+    EMappingMode mappingMode = EMappingMode::Content1;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FText contentName;
@@ -37,7 +38,7 @@ public:
     int32 maxPlayers = 4;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    EStartCondition startCondition;
+    EStartCondition startCondition = EStartCondition::Manual;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     bool bAllowMidGameQuit = true;
@@ -58,7 +59,7 @@ public:
     TMap<FName, FString> customSettings;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    UTexture2D* thumbnailImage;
+    UTexture2D* thumbnailImage = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FLinearColor uiAccentColor = FLinearColor::White;

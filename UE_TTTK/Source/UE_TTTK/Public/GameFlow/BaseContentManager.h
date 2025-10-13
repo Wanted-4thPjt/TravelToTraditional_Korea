@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Interaction/ContentEntryComponent.h"
+#include "Data/ContentConfig.h"
 #include "BaseContentManager.generated.h"
 
 class UContentEntryComponent;
@@ -27,17 +28,13 @@ struct UE_TTTK_API FContentParticipatingPlayerData
 	UPROPERTY(BlueprintReadWrite)
 	APlayerController* playerController = nullptr;
 
-	UPROPERTY(BlueprintReadWrite, Category="Flag")
-	bool bHasScore = false;
 	UPROPERTY(BlueprintReadWrite, meta=(EditCondition=bHasScore))
-	int32 score = 0;
-	UPROPERTY(BlueprintReadWrite, Category="Flag")
-	bool bHasTimeRecorder = false;
+	int32 recordedScore = 0;
 	UPROPERTY(BlueprintReadWrite, meta=(EditCondition=bHasTimeRecorder))
 	float recordedTime = 0.f;
 	
-	//UPROPERTY(BlueprintReadWrite)
-	//TMap<FName, FString> customData; 
+	/*UPROPERTY(BlueprintReadWrite)
+	TMap<FName, FString> recordedCustomData; */
 };
 
 UCLASS()
@@ -82,7 +79,10 @@ private:
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Data")
-	TObjectPtr<UPrimaryDataAsset> contentConfig;
+	FContentConfig contentConfig;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Data")
+	FName contentRowName;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UContentEntryComponent> ownerEntryComponent;

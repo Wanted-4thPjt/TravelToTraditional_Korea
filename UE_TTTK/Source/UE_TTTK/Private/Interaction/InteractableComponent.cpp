@@ -26,6 +26,7 @@ UInteractableComponent::UInteractableComponent()
 		interactionSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
 		interactionSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 		interactionSphere->SetGenerateOverlapEvents(true);
+		interactionGuideComponent->SetupAttachment(interactionSphere);
 	}
 	
 	ComponentTags.Add(TEXT("Interactable"));
@@ -67,7 +68,7 @@ void UInteractableComponent::BeginPlay()
 
 	if (IsValid(interactionSphere))
 	{
-		interactionSphere->SetupAttachment(GetOwner()->GetRootComponent());
+		interactionSphere->AttachToComponent(GetOwner()->GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 		interactionSphere->RegisterComponent();
 		
 		interactionSphere->OnComponentBeginOverlap.AddDynamic(this, &UInteractableComponent::OnInteractionSphereBeginOverlap);
