@@ -25,6 +25,7 @@ private :
 	class ACrowd* OwenrCrowd;
 	class AAIController* AIController;
 	class UPathFollowingComponent* PathFollowingComponent;
+	FVector Destination;
 
 	
 };

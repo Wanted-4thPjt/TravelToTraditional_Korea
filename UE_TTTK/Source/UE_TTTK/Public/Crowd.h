@@ -22,6 +22,8 @@ public:
 	class UCrowdData* CrowdData;
 	UPROPERTY()
 	TMap<FString,class ACrowdTargetPoint*> TargetPoints;
+	UPROPERTY()
+	FVector realTarget;
 private:
 	bool bIsMoving;
 protected:

@@ -8,6 +8,8 @@
 #include "CrowdTargetPoint.h"
 #include "StateTreeExecutionContext.h"
 #include "GameFramework/Character.h"
+#include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "Navigation/PathFollowingComponent.h"
 
 EStateTreeRunStatus UCrowdMoveTask::EnterState(FStateTreeExecutionContext& Context,
@@ -34,8 +36,25 @@ EStateTreeRunStatus UCrowdMoveTask::EnterState(FStateTreeExecutionContext& Conte
 		UE_LOG(LogTemp, Error, TEXT("Target이 nullptr! CrowdData나 TargetPoint 확인!"));
 		return EStateTreeRunStatus::Failed;
 	}
+	
 
-	UE_LOG(LogTemp, Warning, TEXT("Target OK: %s"), *target->GetActorLocation().ToString());
+	// SubTarget이 가득 찼는지 확인
+	if (target->IsSubTargetFull())
+	{
+		UE_LOG(LogTemp, Error, TEXT("SubTarget이 모두 찼습니다! 대기 상태로 전환 필요"));
+		return EStateTreeRunStatus::Failed;
+	}
+	Destination = target->GetActorLocation();
+	// 비어있는 SubTarget 찾기
+	FVector targetLocation = target->FindEmptySubTarget();
+
+	if (targetLocation == FVector::ZeroVector)
+	{
+		UE_LOG(LogTemp, Error, TEXT("FindEmptySubTarget이 ZeroVector 반환!"));
+		return EStateTreeRunStatus::Failed;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Target OK: %s, SubTarget: %s"), *target->GetActorLocation().ToString(), *targetLocation.ToString());
 
 	AIController = Cast<AAIController>(OwenrCrowd->GetController());
 
@@ -48,7 +67,8 @@ EStateTreeRunStatus UCrowdMoveTask::EnterState(FStateTreeExecutionContext& Conte
 	UE_LOG(LogTemp, Warning, TEXT("AI Controller OK, 이동 시작!"));
 
 	OwenrCrowd->SetIsMoving(true);
-	AIController->MoveToLocation(target->GetActorLocation());
+	target->ProcessSubTargetIn(OwenrCrowd,targetLocation);
+	AIController->MoveToLocation(targetLocation);
 	PathFollowingComponent = AIController->GetPathFollowingComponent();
 
 	return EStateTreeRunStatus::Running;
@@ -58,7 +78,10 @@ void UCrowdMoveTask::ExitState(FStateTreeExecutionContext& Context, const FState
 {
 	Super::ExitState(Context, Transition);
 	OwenrCrowd->SetIsMoving(false);
+	FRotator lookat = UKismetMathLibrary::FindLookAtRotation(OwenrCrowd->GetActorLocation(),Destination);
+	OwenrCrowd->SetActorRotation(lookat);
 	UE_LOG(LogTemp,Warning,TEXT("===============================도착 후 ExitState==========================="));
+	return;
 }
 
 void UCrowdMoveTask::StateCompleted(FStateTreeExecutionContext& Context, const EStateTreeRunStatus CompletionStatus,
