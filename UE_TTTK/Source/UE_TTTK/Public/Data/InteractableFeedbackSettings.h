@@ -31,15 +31,15 @@ struct UE_TTTK_API FInteractableFeedbackSettings
     GENERATED_BODY()
 
 protected:
-    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (Bitmask, BitmaskEnum = "/Script/UE_TTTK.EEffectType"))
-    uint8 effectType = 0;
-    
     static bool IsEnableEffect(const uint8& bitmask, const EEffectType& bitflag)
     {return (bitmask & static_cast<uint8>(bitflag)) > 0;}
 
 public:
-    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Outline", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Outline", EditConditionHides))
-    TObjectPtr<UPrimitiveComponent> outlineComponent;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (Bitmask, BitmaskEnum = "/Script/UE_TTTK.EEffectType"))
+    uint8 effectType = 0;
+    
+    UPROPERTY(/*VisibleAnywhere, BlueprintReadOnly, Category = "Outline", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Outline", EditConditionHides)*/)
+    TWeakObjectPtr<UMeshComponent> outlinedMeshComponent;
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Outline", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Outline", EditConditionHides))
     int32 outlineStencilValue = 252;
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Outline", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Outline", EditConditionHides))
@@ -71,9 +71,11 @@ public:
     bool IsNiagaraOn() const {return IsEnableEffect(effectType, EEffectType::Niagara);}
     bool IsParticleOn() const {return IsEnableEffect(effectType, EEffectType::Particle);}
 
-    void EnableOutline(const bool& bEnabled, UPrimitiveComponent* inOutlineComponent, FLinearColor inOutlineColor = FLinearColor::Green);
+    void EnableOutline(const bool& bEnabled, UMeshComponent* inOutlineComponent, FLinearColor inOutlineColor = FLinearColor::Green);
     void EnableWidget(const bool& bEnabled, const TSubclassOf<UUserWidget>& inInteractionGuideWidgetClass, FVector inWidgetOffset = FVector(0.f, 0.f, 100.f));
     void EnableSound(const bool& bEnabled, USoundBase* inInteractedSound, USoundBase* inActivatedSound = nullptr);
     void EnableNiagara(const bool& bEnabled, UNiagaraSystem* inInteractedNiagaraVFX);
     void EnableParticle(const bool& bEnabled, UParticleSystem* inInteractedParticleVFX);
+
+    
 };

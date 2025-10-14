@@ -27,9 +27,12 @@ void AMainPlayer::Tick(float DeltaSeconds)
 	{
 		if (PC->WasInputKeyJustPressed(EKeys::F))
 		{
-			HandleFKeyPress();
+			//HandleFKeyPress();
+			if (focusedActor)
+			{
+				focusedActor->GetComponentByClass<UInteractableComponent>()->TryInteract(PC);
+			}
 		}
-	
 	}
 }
 
@@ -37,12 +40,8 @@ void AMainPlayer::BeginPlay()
 {
 	Super::BeginPlay();
 	
-
-	if (HasAuthority())
-	{
-		viewComponent->OnViewSthByLineTrace.AddDynamic(this, &AMainPlayer::OnViewInteractableActor);
-		viewComponent->EnableTrace(true);
-	}
+	viewComponent->OnViewSthByLineTrace.AddDynamic(this, &AMainPlayer::OnViewInteractableActor);
+	viewComponent->EnableTrace(true);
 }
 
 void AMainPlayer::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
@@ -89,7 +88,7 @@ void AMainPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 void AMainPlayer::HandleFKeyPress()
 {
 	UE_LOG(LogTemp, Warning, TEXT("[DEBUG] F키 눌림 - bIsRidingCarriage: %s"), bIsRidingCarriage ? TEXT("true") : TEXT("false"));
-
+	
 	// 탑승 중이면 하차 시도
 	if (bIsRidingCarriage)
 	{
@@ -109,7 +108,7 @@ void AMainPlayer::HandleFKeyPress()
 	{
 		// 기존 F키 기능 (Input Mapping 변경)
 		UE_LOG(LogTemp, Warning, TEXT("[DEBUG] 마차 못 찾음 - 상호작용 모드"));
-		RequestChangeInputMapping(EMappingMode::Content2);
+		//RequestChangeInputMapping(EMappingMode::Content2);
 	}
 }
 
@@ -221,19 +220,25 @@ void AMainPlayer::SwitchToThirdPersonCamera()
 		UE_LOG(LogTemp, Log, TEXT("3인칭 카메라로 복귀"));
 	}
 }
-void AMainPlayer::OnViewInteractableActor_Implementation(const FHitResult& hitResult)
+void AMainPlayer::OnViewInteractableActor(const FHitResult& hitResult)
 {
-	if (hitResult.GetActor() != focusedActor)
+	if (focusedActor)
 	{
+		if (hitResult.GetActor() == focusedActor) {return;}
+		
 		focusedActor->FindComponentByClass<UInteractableComponent>()->TryDeactivateInteractable(GetController<APlayerController>());
+		focusedActor = nullptr;
 	}
+	
+	if (!IsValid(hitResult.GetActor())) {return;}
+	UE_LOG(LogTemp, Warning, TEXT("Actor Name : %s"), *hitResult.GetActor()->GetActorNameOrLabel());
+	
 	UInteractableComponent* interactable = hitResult.GetActor()->FindComponentByClass<UInteractableComponent>();
 	if (!IsValid(interactable)) {return;}
-	if (GetLocalRole() == ENetRole::ROLE_AutonomousProxy)
-	{
-		interactable->TryActivateInteractable(GetController<APlayerController>());
-		focusedActor = hitResult.GetActor();
-	}
+	
+	UE_LOG(LogTemp, Warning, TEXT("Interactable"));
+	interactable->TryActivateInteractable(GetController<APlayerController>());
+	focusedActor = hitResult.GetActor();
 }
 
 

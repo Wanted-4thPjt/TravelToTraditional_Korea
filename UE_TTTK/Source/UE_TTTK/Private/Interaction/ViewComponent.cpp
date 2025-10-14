@@ -10,6 +10,7 @@ UViewComponent::UViewComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 
 	ownerEye = CreateDefaultSubobject<USceneComponent>(FName("Eye"));
+	responseParams = FCollisionResponseParams(ECR_Block);
 }
 
 void UViewComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -24,13 +25,13 @@ void UViewComponent::BeginPlay()
 	Super::BeginPlay();
 
 	pawnOwner = Cast<APawn>(GetOwner());
-	params.AddIgnoredActor(pawnOwner);
+	queryParams.AddIgnoredActor(pawnOwner);
 
 	if (IsValid(pawnOwner))
 	{
 		if (UCameraComponent* camera = pawnOwner->FindComponentByClass<UCameraComponent>())
 		{
-			ownerEye->AttachToComponent(camera, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "Eye");
+			ownerEye->AttachToComponent(camera, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 		}
 		else
 		{
@@ -64,7 +65,6 @@ void UViewComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void UViewComponent::EnableTrace_Implementation(bool bEnable)
 {
 	if (!IsValid(pawnOwner)) {return;}
-	if (pawnOwner->GetLocalRole() != ENetRole::ROLE_AutonomousProxy) {return;}
 	
 	if (!bEnable)
 	{
@@ -76,7 +76,7 @@ void UViewComponent::EnableTrace_Implementation(bool bEnable)
 	{
 		GetWorld()->GetTimerManager().SetTimer(traceTimer,
 		   this, &UViewComponent::ShootLineTrace,
-		   traceInterval, true
+		   traceInterval, true, 2.f
 	   );
 	}
 }
@@ -85,17 +85,16 @@ void UViewComponent::ShootLineTrace()
 {
 	if (!IsValid(ownerEye)) {return;}
 
-	FVector startPos = ownerEye->GetComponentLocation();
+	FVector startPos = ownerEye->GetComponentLocation() + ownerEye->GetForwardVector() * 10.f;
 	FVector endPos = startPos + ownerEye->GetForwardVector() * traceDistance;
 
 	FHitResult hitResult;
-	if (GetWorld()->LineTraceSingleByChannel(
-		hitResult, startPos, endPos,
-		ECC_Visibility, params)
-	) {
-		OnViewSthByLineTrace.Broadcast(hitResult);
+	//DrawDebugLine(GetWorld(), startPos, endPos, FColor::Magenta, false, 1, 0, 1);
+	if (GetWorld()->LineTraceSingleByChannel(hitResult, startPos, endPos, ECC_Visibility, queryParams, responseParams))
+	{
+		DrawDebugSphere(GetWorld(), hitResult.ImpactPoint, 10.f, 12, FColor::Red, false, 1.0f);
 	}
-
+	OnViewSthByLineTrace.Broadcast(hitResult);
 }
 
 bool UViewComponent::IsInViewAngle(const AActor* inTarget) const

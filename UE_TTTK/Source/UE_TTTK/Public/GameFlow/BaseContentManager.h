@@ -96,9 +96,6 @@ protected:
 	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category="Server")
 	TArray<FContentParticipatingPlayerData> contentPlayersData;
 
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Timer")
-	float contentTimeLimit = -1.f;  // if time limit is NONE, set this value to NEGATIVE.
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category="Timer")
 	float remainingTime = 0.f;
 	
