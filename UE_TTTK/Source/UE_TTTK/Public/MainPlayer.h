@@ -10,6 +10,7 @@
 enum class EMappingMode : uint8;
 
 class UViewComponent;
+class UInteractionComponent;
 /**
  * 
  */
@@ -76,7 +77,9 @@ public:
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(AllowPrivateAccess=true))
-	UViewComponent* viewComponent;
+	TObjectPtr<UViewComponent> viewComponent;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(AllowPrivateAccess=true))
+	TObjectPtr<UInteractionComponent> interactionComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
 	AActor* focusedActor = nullptr;
 };

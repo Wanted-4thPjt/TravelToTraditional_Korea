@@ -12,11 +12,13 @@
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
 #include "Interaction/InteractableComponent.h"
+#include "Interaction/InteractionComponent.h"
 #include "Interaction/ViewComponent.h"
 
 AMainPlayer::AMainPlayer()
 {
 	viewComponent = CreateDefaultSubobject<UViewComponent>(TEXT("View"));
+	interactionComponent = CreateDefaultSubobject<UInteractionComponent>(TEXT("Interaction"));
 }
 
 void AMainPlayer::Tick(float DeltaSeconds)
@@ -61,7 +63,6 @@ void AMainPlayer::RequestChangeInputMapping(EMappingMode mode)
 		{
 			if (UPlayerSubSystem* playerManager = localPlayer->GetSubsystem<UPlayerSubSystem>())
 			{
-				
 				playerManager->ChangeInputMapping(this, mode);
 			}
 		}

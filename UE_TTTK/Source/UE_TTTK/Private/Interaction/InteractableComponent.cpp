@@ -173,12 +173,10 @@ void UInteractableComponent::TryInteract(APlayerController* playerController)
 	if (feedbackSettings.IsNiagaraOn()) {PlayEffect(feedbackSettings.interactedNiagaraVFX);}
 	if (feedbackSettings.IsParticleOn()) {PlayEffect(feedbackSettings.interactedParticleVFX);}
 
-	Server_TryInteract(playerController->GetPawn());
-}
-
-void UInteractableComponent::Server_TryInteract_Implementation(APawn* player)
-{
-	Multicast_TryInteract(player);
+	if (bPossessedByInteraction && !possessingPlayer)
+	{
+		//Server_TryInteract(playerController->GetPawn());
+	}
 }
 
 void UInteractableComponent::Multicast_TryInteract_Implementation(APawn* player)

@@ -52,10 +52,9 @@ public:
 	void TryDeactivateInteractable(APlayerController* playerController);
 	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
 	void TryActivateInteractable(APlayerController* playerController);
+	// @Param : bPossess : 상호작용 결과가 동기화되어야 한다. 
 	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
 	void TryInteract(APlayerController* playerController);
-	UFUNCTION(Server, Reliable, Category="Interactable|Server")
-	void Server_TryInteract(APawn* player);
 	UFUNCTION(NetMulticast, Reliable, Category="Interactable|Multicast")
 	void Multicast_TryInteract(APawn* player);
 	UFUNCTION(Server, Reliable, Category="Interactable|Server")
@@ -97,24 +96,28 @@ public:
 	FOnChangeState onChangeState;
 	UPROPERTY(BlueprintAssignable, Category="Interactable|Event")
 	FOnRequestInteraction onRequestInteraction;
-	
+
 protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+	TObjectPtr<UWidgetComponent> interactionGuideComponent;
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Range")
 	TObjectPtr<USphereComponent> interactionSphere;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Range")
 	float interactionRadius;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Server")
+	bool bPossessedByInteraction = false;
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Server")
 	TObjectPtr<AMainPlayer> possessingPlayer = nullptr;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractableFeedback")
 	EInteractableState clientState = EInteractableState::Default;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractableFeedback")
 	FInteractableFeedbackSettings feedbackSettings;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UWidgetComponent> interactionGuideComponent;
 
 private:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player", meta=(AllowPrivateAccess=true))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Client", meta=(AllowPrivateAccess=true))
 	AMainPlayer* playerInRange;
 	
 };
