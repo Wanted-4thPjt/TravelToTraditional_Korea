@@ -12,11 +12,13 @@
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
 #include "Interaction/InteractableComponent.h"
+#include "Interaction/InteractionComponent.h"
 #include "Interaction/ViewComponent.h"
 
 AMainPlayer::AMainPlayer()
 {
 	viewComponent = CreateDefaultSubobject<UViewComponent>(TEXT("View"));
+	interactionComponent = CreateDefaultSubobject<UInteractionComponent>(TEXT("Interaction"));
 }
 
 void AMainPlayer::Tick(float DeltaSeconds)
@@ -27,9 +29,12 @@ void AMainPlayer::Tick(float DeltaSeconds)
 	{
 		if (PC->WasInputKeyJustPressed(EKeys::F))
 		{
-			HandleFKeyPress();
+			//HandleFKeyPress();
+			if (focusedActor)
+			{
+				focusedActor->GetComponentByClass<UInteractableComponent>()->TryInteract(PC);
+			}
 		}
-	
 	}
 }
 
@@ -37,12 +42,8 @@ void AMainPlayer::BeginPlay()
 {
 	Super::BeginPlay();
 	
-
-	if (HasAuthority())
-	{
-		//iewComponent->OnViewSthByLineTrace.AddDynamic(this, &AMainPlayer::OnViewInteractableActor);
-		//viewComponent->EnableTrace(true);
-	}
+	viewComponent->OnViewSthByLineTrace.AddDynamic(this, &AMainPlayer::OnViewInteractableActor);
+	viewComponent->EnableTrace(true);
 }
 
 void AMainPlayer::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
@@ -62,7 +63,6 @@ void AMainPlayer::RequestChangeInputMapping(EMappingMode mode)
 		{
 			if (UPlayerSubSystem* playerManager = localPlayer->GetSubsystem<UPlayerSubSystem>())
 			{
-				
 				playerManager->ChangeInputMapping(this, mode);
 			}
 		}
@@ -89,7 +89,7 @@ void AMainPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 void AMainPlayer::HandleFKeyPress()
 {
 	UE_LOG(LogTemp, Warning, TEXT("[DEBUG] F키 눌림 - bIsRidingCarriage: %s"), bIsRidingCarriage ? TEXT("true") : TEXT("false"));
-
+	
 	// 탑승 중이면 하차 시도
 	if (bIsRidingCarriage)
 	{
@@ -221,12 +221,19 @@ void AMainPlayer::SwitchToThirdPersonCamera()
 		UE_LOG(LogTemp, Log, TEXT("3인칭 카메라로 복귀"));
 	}
 }
-void AMainPlayer::OnViewInteractableActor_Implementation(const FHitResult& hitResult)
+void AMainPlayer::OnViewInteractableActor(const FHitResult& hitResult)
 {
-	if (hitResult.GetActor() != focusedActor && focusedActor->FindComponentByClass<UInteractableComponent>())
+	if (focusedActor)
 	{
+		if (hitResult.GetActor() == focusedActor) {return;}
+		
 		focusedActor->FindComponentByClass<UInteractableComponent>()->TryDeactivateInteractable(GetController<APlayerController>());
+		focusedActor = nullptr;
 	}
+	
+	if (!IsValid(hitResult.GetActor())) {return;}
+	UE_LOG(LogTemp, Warning, TEXT("Actor Name : %s"), *hitResult.GetActor()->GetActorNameOrLabel());
+	
 	UInteractableComponent* interactable = hitResult.GetActor()->FindComponentByClass<UInteractableComponent>();
 	if (!IsValid(interactable)) {return;}
 	interactable->TryActivateInteractable(GetController<APlayerController>());

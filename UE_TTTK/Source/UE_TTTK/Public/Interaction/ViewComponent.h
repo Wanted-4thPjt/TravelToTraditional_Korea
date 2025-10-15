@@ -54,5 +54,6 @@ protected:
 	FTimerHandle traceTimer;
 
 private:
-	FCollisionQueryParams params;
+	FCollisionQueryParams queryParams;
+	FCollisionResponseParams responseParams;
 };

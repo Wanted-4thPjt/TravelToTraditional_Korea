@@ -60,16 +60,18 @@ void ABaseContentManager::InitializeContent_Implementation(const TArray<APlayerC
 
 void ABaseContentManager::StartContent_Implementation()
 {
+	if (!HasAuthority()) {return;}
+	if (contentTimer.IsValid()) {return;}
 	contentState = EContentState::Playing;
 
 	//TeleportPlayersIntoContent(contentConfig/*.spawnPoints*/);
 	
-	if (contentTimeLimit > 0.f)
+	if (contentConfig.timeLimit > 0.f)
 	{
-		remainingTime = contentTimeLimit;
+		remainingTime = contentConfig.timeLimit;
 		GetWorld()->GetTimerManager().SetTimer(
 			contentTimer, this, &ABaseContentManager::OnContentTimerExpired,
-			contentTimeLimit, false
+			contentConfig.timeLimit, false
 		);
 	}
 }

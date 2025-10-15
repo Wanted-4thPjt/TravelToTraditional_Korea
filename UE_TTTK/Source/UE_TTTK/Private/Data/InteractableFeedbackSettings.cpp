@@ -1,6 +1,6 @@
 #include "Data/InteractableFeedbackSettings.h"
 
-void FInteractableFeedbackSettings::EnableOutline(const bool& bEnabled, UPrimitiveComponent* inOutlineComponent, FLinearColor inOutlineColor)
+void FInteractableFeedbackSettings::EnableOutline(const bool& bEnabled, UMeshComponent* inOutlineComponent, FLinearColor inOutlineColor)
 {
 	if (!bEnabled)
 	{
@@ -8,7 +8,7 @@ void FInteractableFeedbackSettings::EnableOutline(const bool& bEnabled, UPrimiti
 		return;
 	}
 	effectType |= static_cast<uint8>(EEffectType::Outline);
-	outlineComponent = inOutlineComponent;
+	outlinedMeshComponent = inOutlineComponent;
 	outlineColor = inOutlineColor;
 }
 

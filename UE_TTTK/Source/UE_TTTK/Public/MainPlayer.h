@@ -10,6 +10,7 @@
 enum class EMappingMode : uint8;
 
 class UViewComponent;
+class UInteractionComponent;
 /**
  * 
  */
@@ -69,12 +70,16 @@ public:
 	void SwitchToThirdPersonCamera();
 	//void RequestChangeInputMapping(EMappingMode mode);
 	
-	UFUNCTION(BlueprintNativeEvent)
+	UFUNCTION()
 	void OnViewInteractableActor(const FHitResult& hitResult);
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE AActor* GetFocusedActor() {return focusedActor;}
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(AllowPrivateAccess=true))
-	UViewComponent* viewComponent;
+	TObjectPtr<UViewComponent> viewComponent;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(AllowPrivateAccess=true))
+	TObjectPtr<UInteractionComponent> interactionComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
 	AActor* focusedActor = nullptr;
 };

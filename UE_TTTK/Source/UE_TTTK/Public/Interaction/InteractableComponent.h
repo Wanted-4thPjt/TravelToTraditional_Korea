@@ -22,7 +22,7 @@ ENUM_CLASS_FLAGS(EInteractableState)
 class AMainPlayer;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnChangeState, APlayerController*, playerController, const EInteractableState&, newInteractableState);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInteractRequest, APlayerController*, playerController);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRequestInteraction, APawn*, player);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class UE_TTTK_API UInteractableComponent : public UActorComponent
@@ -37,7 +37,10 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
+
 public:
+	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	
 	UFUNCTION(BlueprintPure, Category="Interactable|Each Client")
 	FORCEINLINE EInteractableState GetState() const {return clientState;}
 	UFUNCTION(BlueprintPure, Category="Interactable|Each Client")
@@ -49,17 +52,20 @@ public:
 	void TryDeactivateInteractable(APlayerController* playerController);
 	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
 	void TryActivateInteractable(APlayerController* playerController);
+	// @Param : bPossess : 상호작용 결과가 동기화되어야 한다. 
 	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
 	void TryInteract(APlayerController* playerController);
-	UFUNCTION(NetMulticast, Reliable, BlueprintCallable, Category="Interactable|Server")
-	void OnRep_PossessedByPlayer(APlayerController* requestingController);
+	UFUNCTION(NetMulticast, Reliable, Category="Interactable|Multicast")
+	void Multicast_TryInteract(APawn* player);
+	UFUNCTION(Server, Reliable, Category="Interactable|Server")
+	void PossessedByPlayer(AMainPlayer* player);
 	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
 	void FinishInteracting(APlayerController* Player, const EInteractableState& newState);
 
 	UFUNCTION(BlueprintCallable, Category="Interactable|Visual")
 	void Client_UpdateVisuals(APlayerController* playerController);
 
-protected:
+protected:	
 	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
 	void OutOfInteractableRange(APlayerController* Player);
 	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
@@ -73,6 +79,7 @@ protected:
 	#pragma endregion Overlap Event
 
 	#pragma region Effects
+	bool UpdateAvailablePrimitiveComponents();
 	void UpdateOutline();
 	void UpdateWidget();
 	void PlaySound(USoundBase* sound);
@@ -86,27 +93,31 @@ protected:
 	
 public:
 	UPROPERTY(BlueprintAssignable, Category="Interactable|Event")
-	FOnInteractRequest onInteract;//서버 Replicate용 
+	FOnChangeState onChangeState;
 	UPROPERTY(BlueprintAssignable, Category="Interactable|Event")
-	FOnChangeState onChangeState;//클라이언트 전용
-	
+	FOnRequestInteraction onRequestInteraction;
+
 protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+	TObjectPtr<UWidgetComponent> interactionGuideComponent;
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Range")
 	TObjectPtr<USphereComponent> interactionSphere;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Range")
 	float interactionRadius;
 
-	UPROPERTY(ReplicatedUsing = OnRep_PossessedByPlayer, VisibleAnywhere, BlueprintReadOnly, Category = "Server")
-	TObjectPtr<APlayerController> possessingPlayerController = nullptr;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Server")
+	bool bPossessedByInteraction = false;
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Server")
+	TObjectPtr<AMainPlayer> possessingPlayer = nullptr;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractableFeedback")
 	EInteractableState clientState = EInteractableState::Default;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractableFeedback")
 	FInteractableFeedbackSettings feedbackSettings;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UWidgetComponent> interactionGuideComponent;
 
 private:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player", meta=(AllowPrivateAccess=true))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Client", meta=(AllowPrivateAccess=true))
 	AMainPlayer* playerInRange;
 	
 };
