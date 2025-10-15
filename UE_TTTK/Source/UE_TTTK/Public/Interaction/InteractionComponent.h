@@ -17,12 +17,27 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void OnRegister() override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 public:
+	UFUNCTION(BlueprintCallable)
+	void Interaction();
+
+protected:
 	UFUNCTION(Server, Reliable)
 	void Server_Interact(UInteractableComponent* interactable);
+
+	UFUNCTION()
+	void FocusInteractableActor(const FHitResult& hitResult);
 	
 protected:
 	UPROPERTY()
-	TObjectPtr<AMainPlayer> ownerPlayer;
+	TObjectPtr<AMainPlayer> ownerPlayer = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<APlayerController> ownerController = nullptr;
+	
+	UPROPERTY(Replicated)
+	AActor* focusingActor;
 };

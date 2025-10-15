@@ -29,11 +29,7 @@ void AMainPlayer::Tick(float DeltaSeconds)
 	{
 		if (PC->WasInputKeyJustPressed(EKeys::F))
 		{
-			//HandleFKeyPress();
-			if (focusedActor)
-			{
-				focusedActor->GetComponentByClass<UInteractableComponent>()->TryInteract(PC);
-			}
+			interactionComponent->Interaction();
 		}
 	}
 }
@@ -223,23 +219,7 @@ void AMainPlayer::SwitchToThirdPersonCamera()
 }
 void AMainPlayer::OnViewInteractableActor(const FHitResult& hitResult)
 {
-	if (focusedActor)
-	{
-		if (hitResult.GetActor() == focusedActor) {return;}
-		
-		focusedActor->FindComponentByClass<UInteractableComponent>()->TryDeactivateInteractable(GetController<APlayerController>());
-		focusedActor = nullptr;
-	}
-	
-	if (!IsValid(hitResult.GetActor())) {return;}
-	UE_LOG(LogTemp, Warning, TEXT("Actor Name : %s"), *hitResult.GetActor()->GetActorNameOrLabel());
-	
-	UInteractableComponent* interactable = hitResult.GetActor()->FindComponentByClass<UInteractableComponent>();
-	if (!IsValid(interactable)) {return;}
-	
-	UE_LOG(LogTemp, Warning, TEXT("Interactable"));
-	interactable->TryActivateInteractable(GetController<APlayerController>());
-	focusedActor = hitResult.GetActor();
+	interactionComponent->FocusInteractableActor(hitResult);
 }
 
 

@@ -69,17 +69,14 @@ public:
 	void SwitchToFirstPersonCamera();
 	void SwitchToThirdPersonCamera();
 	//void RequestChangeInputMapping(EMappingMode mode);
-	
+
+protected:
 	UFUNCTION()
 	void OnViewInteractableActor(const FHitResult& hitResult);
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE AActor* GetFocusedActor() {return focusedActor;}
-
+	
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(AllowPrivateAccess=true))
 	TObjectPtr<UViewComponent> viewComponent;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(AllowPrivateAccess=true))
 	TObjectPtr<UInteractionComponent> interactionComponent;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
-	AActor* focusedActor = nullptr;
 };
