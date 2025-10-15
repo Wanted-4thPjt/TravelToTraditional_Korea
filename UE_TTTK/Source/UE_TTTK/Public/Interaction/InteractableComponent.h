@@ -12,11 +12,11 @@ UENUM(BlueprintType, meta=(BitFlags))
 enum class EInteractableState : uint8
 {
 	Default UMETA(Hidden),
-	OutOfBound = 1 << 1,
-	InRange = 1 << 2,
-	UnFocused = 1 << 3,
-	Focused = 1 << 4,
-	Interacting = 1 << 5
+	OutOfBound = 1 << 1, // 범위에서 벗어났을때
+	InRange = 1 << 2, // 범위에 들어왔을때
+	UnFocused = 1 << 3, // 바라본 상태에서 --> 안바라보게됨.  4~6번 => inRange가 선행이어야함. 
+	Focused = 1 << 4, // 범위에 있으면서 바라보는 상태
+	Interacting = 1 << 5 // 내가 FOCUS 하면서 상호작용 키를 누른경우
 };
 ENUM_CLASS_FLAGS(EInteractableState)
 class AMainPlayer;

@@ -115,7 +115,7 @@ ACarriageVehicle* AMainPlayer::FindNearbyCarriage()
 	TArray<AActor*> FoundCarriages;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACarriageVehicle::StaticClass(), FoundCarriages);
 
-	float SearchRadius = 500.0f;  // 5m 반경
+	float SearchRadius = 500.0f;  
 	FVector PlayerLocation = GetActorLocation();
 
 	for (AActor* Actor : FoundCarriages)

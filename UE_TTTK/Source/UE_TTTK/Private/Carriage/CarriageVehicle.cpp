@@ -21,6 +21,10 @@ ACarriageVehicle::ACarriageVehicle()
 	WheelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WheelMesh"));
 	WheelMesh->SetupAttachment(RootComponent);
 
+	
+	HorseMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("HorseMesh"));
+	HorseMesh->SetupAttachment(RootComponent);
+	HorseMesh->SetRelativeLocation(FVector(200.0f, 0.0f, 0.0f));  // 마차 앞쪽에 배치
 
 	BoardArea = CreateDefaultSubobject<UBoxComponent>(TEXT("BoardingArea"));
 	BoardArea->SetupAttachment(RootComponent);
@@ -48,6 +52,8 @@ ACarriageVehicle::ACarriageVehicle()
 	bLooping=true;
 	PathActor = nullptr;
 
+	
+
 	bReplicates = true;
 	SetReplicateMovement(true);
 }
@@ -61,6 +67,13 @@ void ACarriageVehicle::BeginPlay()
 	{
 		BoardArea->OnComponentBeginOverlap.AddDynamic(this, &ACarriageVehicle::OnBoardAreaBeginOverlap);
 		BoardArea->OnComponentEndOverlap.AddDynamic(this, &ACarriageVehicle::OnBoardAreaEndOverlap);
+	}
+
+	// Horse Mesh 네트워크 복제 설정
+	if (HorseMesh)
+	{
+		HorseMesh->SetIsReplicated(true);
+		UE_LOG(LogTemp, Log, TEXT("HorseMesh 네트워크 복제 활성화"));
 	}
 
 	if (HasAuthority())
@@ -80,6 +93,7 @@ void ACarriageVehicle::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	RotateWheel();
+	//UpdateHorseAnimation();
 }
 
 void ACarriageVehicle::StartMovement()
@@ -111,6 +125,8 @@ void ACarriageVehicle::RotateWheel()
 		WheelMesh->SetRelativeRotation(newWheelRotation);
 	}
 }
+
+
 
 
 void ACarriageVehicle::OnBoardAreaBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
