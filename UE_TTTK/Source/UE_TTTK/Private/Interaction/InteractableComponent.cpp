@@ -2,7 +2,6 @@
 
 #include "Net/UnrealNetwork.h"
 #include "MainPlayer.h"
-#include "MovieSceneTracksComponentTypes.h"
 #include "Components/WidgetComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
@@ -11,7 +10,6 @@
 #include "NiagaraFunctionLibrary.h"
 #include "Components/SphereComponent.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "Net/Core/PushModel/PushModel.h"
 #include "Particles/ParticleSystem.h"
 
 
@@ -19,17 +17,7 @@ UInteractableComponent::UInteractableComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	
-	interactionGuideComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("InteractionGuide"));
-
-	interactionRadius = 300.0f;
-	if (interactionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("InteractionArea")))
-	{
-		interactionSphere->SetSphereRadius(interactionRadius);
-		interactionSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-		interactionSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
-		interactionSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-		interactionSphere->SetGenerateOverlapEvents(true);
-	}
+	
 	
 	ComponentTags.Add(TEXT("Interactable"));
 }
@@ -38,7 +26,6 @@ void UInteractableComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(UInteractableComponent, possessingPlayer)
 }
 
 void UInteractableComponent::BeginPlay()
@@ -47,6 +34,24 @@ void UInteractableComponent::BeginPlay()
 
 	clientState = EInteractableState::OutOfBound;
 
+	interactionSphere = NewObject<USphereComponent>();
+	GetOwner()->AddInstanceComponent(interactionSphere);
+	if (IsValid(interactionSphere))
+	{
+		interactionSphere->SetSphereRadius(interactionRadius);
+		interactionSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		interactionSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
+		interactionSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+		interactionSphere->SetGenerateOverlapEvents(true);
+		
+		interactionSphere->AttachToComponent(GetOwner()->GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+		if (!interactionSphere->IsRegistered()) {interactionSphere->RegisterComponent();;}
+		interactionSphere->OnComponentBeginOverlap.AddDynamic(this, &UInteractableComponent::OnInteractionSphereBeginOverlap);
+		interactionSphere->OnComponentEndOverlap.AddDynamic(this, &UInteractableComponent::OnInteractionSphereEndOverlap);
+	}
+
+	interactionGuideComponent = NewObject<UWidgetComponent>();
+	GetOwner()->AddInstanceComponent(interactionGuideComponent);
 	if (feedbackSettings.IsWidgetOn() && feedbackSettings.interactionGuideWidgetClass && IsValid(interactionGuideComponent))
 	{
 		UUserWidget* widget = CreateWidget(GetWorld(), feedbackSettings.interactionGuideWidgetClass, FName("WidgetForGuide"));
@@ -69,7 +74,7 @@ void UInteractableComponent::BeginPlay()
 			interactionGuideComponent->SetVisibility(false);
 		}
 	}
-	
+
 	if (feedbackSettings.IsOutlineOn())
 	{
 		if (UpdateAvailablePrimitiveComponents())
@@ -80,13 +85,9 @@ void UInteractableComponent::BeginPlay()
 		}
 	}
 
-	if (IsValid(interactionSphere))
+	if (feedbackSettings.IsNetworkOn())
 	{
-		interactionSphere->AttachToComponent(GetOwner()->GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-		interactionSphere->RegisterComponent();
-		
-		interactionSphere->OnComponentBeginOverlap.AddDynamic(this, &UInteractableComponent::OnInteractionSphereBeginOverlap);
-		interactionSphere->OnComponentEndOverlap.AddDynamic(this, &UInteractableComponent::OnInteractionSphereEndOverlap);
+		possessingPlayers.Reserve(feedbackSettings.availableInteractionCount);
 	}
 }
 
@@ -172,22 +173,13 @@ void UInteractableComponent::TryInteract(APlayerController* playerController)
 	if (feedbackSettings.IsSoundOn()) {PlaySound(feedbackSettings.interactedSound);}
 	if (feedbackSettings.IsNiagaraOn()) {PlayEffect(feedbackSettings.interactedNiagaraVFX);}
 	if (feedbackSettings.IsParticleOn()) {PlayEffect(feedbackSettings.interactedParticleVFX);}
-
-	if (bPossessedByInteraction && !possessingPlayer)
-	{
-		//Server_TryInteract(playerController->GetPawn());
-	}
 }
 
-void UInteractableComponent::Multicast_TryInteract_Implementation(APawn* player)
+void UInteractableComponent::Multicast_TryInteract_Implementation(AMainPlayer* player)
 {
+	if (!IsValid(player) || !CanPossess()) {return;}
+	possessingPlayers.Add(player);
 	onRequestInteraction.Broadcast(player);
-}
-
-void UInteractableComponent::PossessedByPlayer_Implementation(AMainPlayer* player)
-{
-	if (!IsValid(player)) {return;}
-	possessingPlayer = player;
 }
 
 void UInteractableComponent::FinishInteracting(APlayerController* playerController, const EInteractableState& newState)
@@ -209,7 +201,13 @@ void UInteractableComponent::FinishInteracting(APlayerController* playerControll
 		Client_UpdateVisuals(playerController);
 		return;
 	}
-	
+}
+
+void UInteractableComponent::Multicast_FinishInteracting_Implementation(AMainPlayer* player)
+{
+	if (!IsValid(player) || !CanPossess()) {return;}
+	if (!possessingPlayers.Contains(player)) {return;}
+	possessingPlayers.RemoveSingleSwap(player, EAllowShrinking::No);
 }
 
 void UInteractableComponent::OnInteractionSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent,

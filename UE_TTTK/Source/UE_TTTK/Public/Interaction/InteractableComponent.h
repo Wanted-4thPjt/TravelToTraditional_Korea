@@ -47,6 +47,8 @@ public:
 	bool IsInteractable() const {return clientState == EInteractableState::Focused;}
 	UFUNCTION(BlueprintPure, Category="Interactable|Each Client")
 	bool IsInteracting() const {return clientState == EInteractableState::Interacting;}
+	UFUNCTION(BlueprintPure, Category="Interactable|All Client")
+	bool CanPossess() const {return feedbackSettings.IsNetworkOn() && possessingPlayers.Num() < feedbackSettings.availableInteractionCount;}
 
 	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
 	void TryDeactivateInteractable(APlayerController* playerController);
@@ -56,11 +58,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
 	void TryInteract(APlayerController* playerController);
 	UFUNCTION(NetMulticast, Reliable, Category="Interactable|Multicast")
-	void Multicast_TryInteract(APawn* player);
-	UFUNCTION(Server, Reliable, Category="Interactable|Server")
-	void PossessedByPlayer(AMainPlayer* player);
+	void Multicast_TryInteract(AMainPlayer* player);
 	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
 	void FinishInteracting(APlayerController* Player, const EInteractableState& newState);
+	UFUNCTION(NetMulticast, Reliable, Category="Interactable|Multicast")
+	void Multicast_FinishInteracting(AMainPlayer* player);
 
 	UFUNCTION(BlueprintCallable, Category="Interactable|Visual")
 	void Client_UpdateVisuals(APlayerController* playerController);
@@ -104,12 +106,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Range")
 	TObjectPtr<USphereComponent> interactionSphere;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Range")
-	float interactionRadius;
+	float interactionRadius = 300.f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Server")
-	bool bPossessedByInteraction = false;
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Server")
-	TObjectPtr<AMainPlayer> possessingPlayer = nullptr;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Server")
+	TArray<AMainPlayer*> possessingPlayers;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractableFeedback")
 	EInteractableState clientState = EInteractableState::Default;

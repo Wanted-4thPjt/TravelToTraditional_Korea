@@ -16,28 +16,26 @@ public:
 	UInteractionComponent();
 
 protected:
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void InitializeComponent() override;
 	virtual void BeginPlay() override;
-	virtual void OnRegister() override;
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 public:
 	UFUNCTION(BlueprintCallable)
+	FORCEINLINE AActor* GetFocusedActor() {return focusingActor;}
+	UFUNCTION(BlueprintCallable)
 	void Interaction();
+	UFUNCTION()
+	void FocusInteractableActor(const FHitResult& hitResult);
 
 protected:
 	UFUNCTION(Server, Reliable)
 	void Server_Interact(UInteractableComponent* interactable);
 
-	UFUNCTION()
-	void FocusInteractableActor(const FHitResult& hitResult);
-	
-protected:
-	UPROPERTY()
-	TObjectPtr<AMainPlayer> ownerPlayer = nullptr;
+	UFUNCTION(Server, Reliable)
+	void Server_Focus(AActor* focusedActor);
 
-	UPROPERTY()
-	TObjectPtr<APlayerController> ownerController = nullptr;
-	
+protected:
 	UPROPERTY(Replicated)
-	AActor* focusingActor;
+	TObjectPtr<AActor> focusingActor;
 };

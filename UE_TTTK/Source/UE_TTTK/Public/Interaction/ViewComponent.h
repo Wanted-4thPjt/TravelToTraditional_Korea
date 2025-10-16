@@ -22,11 +22,8 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;;
 
 public:
-	UFUNCTION(Client, Reliable, BlueprintCallable)
-	void EnableTrace(bool bEnable);
-	
 	UFUNCTION(BlueprintCallable)
-	FORCEINLINE AActor* GetFocusingActor() const {return focusingActor;}
+	void EnableTrace(bool bEnable);
 
 private:
 	void ShootLineTrace();
@@ -41,8 +38,6 @@ protected:
 	TObjectPtr<APawn> pawnOwner;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<USceneComponent> ownerEye = nullptr;
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category="Replication", meta=(AllowPrivateAccess="true"))
-	TObjectPtr<AActor> focusingActor = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Line Trace")
 	float traceDistance = 1000.f;

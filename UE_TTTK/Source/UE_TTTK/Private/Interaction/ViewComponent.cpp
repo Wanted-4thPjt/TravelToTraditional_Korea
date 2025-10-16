@@ -9,6 +9,8 @@ UViewComponent::UViewComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 
+	SetIsReplicatedByDefault(true);
+
 	ownerEye = CreateDefaultSubobject<USceneComponent>(FName("Eye"));
 	responseParams = FCollisionResponseParams(ECR_Block);
 }
@@ -16,14 +18,11 @@ UViewComponent::UViewComponent()
 void UViewComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(UViewComponent, focusingActor);
 }
 
 void UViewComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
 	pawnOwner = Cast<APawn>(GetOwner());
 	queryParams.AddIgnoredActor(pawnOwner);
 
@@ -62,7 +61,7 @@ void UViewComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
-void UViewComponent::EnableTrace_Implementation(bool bEnable)
+void UViewComponent::EnableTrace(bool bEnable)
 {
 	if (!IsValid(pawnOwner)) {return;}
 	

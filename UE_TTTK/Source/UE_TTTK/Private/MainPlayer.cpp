@@ -11,12 +11,13 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
-#include "Interaction/InteractableComponent.h"
 #include "Interaction/InteractionComponent.h"
 #include "Interaction/ViewComponent.h"
 
 AMainPlayer::AMainPlayer()
 {
+	bReplicates = true;
+	
 	viewComponent = CreateDefaultSubobject<UViewComponent>(TEXT("View"));
 	interactionComponent = CreateDefaultSubobject<UInteractionComponent>(TEXT("Interaction"));
 }
@@ -25,7 +26,7 @@ void AMainPlayer::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	APlayerController* PC = Cast<APlayerController>(GetController());
-	if (PC != nullptr)
+	if (IsLocallyControlled())
 	{
 		if (PC->WasInputKeyJustPressed(EKeys::F))
 		{
@@ -37,9 +38,12 @@ void AMainPlayer::Tick(float DeltaSeconds)
 void AMainPlayer::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	viewComponent->OnViewSthByLineTrace.AddDynamic(this, &AMainPlayer::OnViewInteractableActor);
-	viewComponent->EnableTrace(true);
+
+	if (IsLocallyControlled())
+	{
+		viewComponent->OnViewSthByLineTrace.AddDynamic(this, &AMainPlayer::OnViewInteractableActor);
+		viewComponent->EnableTrace(true);
+	}
 }
 
 void AMainPlayer::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
@@ -217,6 +221,13 @@ void AMainPlayer::SwitchToThirdPersonCamera()
 		UE_LOG(LogTemp, Log, TEXT("3인칭 카메라로 복귀"));
 	}
 }
+
+AActor* AMainPlayer::GetFocusedActor() const
+{
+	if (!IsValid(interactionComponent)) {return nullptr;}
+	return interactionComponent->GetFocusedActor();
+}
+
 void AMainPlayer::OnViewInteractableActor(const FHitResult& hitResult)
 {
 	interactionComponent->FocusInteractableActor(hitResult);
