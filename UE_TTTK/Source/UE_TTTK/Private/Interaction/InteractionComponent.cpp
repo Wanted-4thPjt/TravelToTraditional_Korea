@@ -17,6 +17,7 @@ void UInteractionComponent::GetLifetimeReplicatedProps(TArray<class FLifetimePro
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
 	DOREPLIFETIME(UInteractionComponent, focusingActor);
+	DOREPLIFETIME(UInteractionComponent, possessingInteractable);
 }
 
 
@@ -32,19 +33,25 @@ void UInteractionComponent::BeginPlay()
 	
 }
 
-void UInteractionComponent::Interaction()
+void UInteractionComponent::InteractKeyInput()
 {
-	if (!IsValid(focusingActor)) {return;}
-
-	if (UInteractableComponent* interactable = focusingActor->FindComponentByClass<UInteractableComponent>())
+	if (IsValid(possessingInteractable))
 	{
-		if (interactable->CanPossess())
+		possessingInteractable->FinishInteracting(GetOwner<AMainPlayer>()->GetController<APlayerController>(), EInteractableState::OutOfBound);
+		Server_FinishInteraction();
+		return;
+	}
+	
+	if (IsValid(focusingActor))
+	{
+		if (UInteractableComponent* interactable = focusingActor->FindComponentByClass<UInteractableComponent>())
 		{
-			Server_Interact(interactable);
-			return;
+			if (interactable->CanPossess())
+			{
+				Server_Interact(interactable);
+			}
+			interactable->TryInteract(GetOwner<AMainPlayer>()->GetController<APlayerController>());
 		}
-		
-		interactable->TryInteract(GetOwner<AMainPlayer>()->GetController<APlayerController>());
 	}
 }
 
@@ -53,6 +60,7 @@ void UInteractionComponent::FocusInteractableActor(const FHitResult& hitResult)
 	AActor* hitActor = hitResult.GetActor();
 	if (hitActor == focusingActor) {return;}
 	
+	UE_LOG(LogTemp, Display, TEXT("===========Update Interactable actor==========="));
 	if (focusingActor)
 	{
 		if (UInteractableComponent* interactable = focusingActor->FindComponentByClass<UInteractableComponent>())
@@ -60,6 +68,8 @@ void UInteractionComponent::FocusInteractableActor(const FHitResult& hitResult)
 			interactable->TryDeactivateInteractable(GetOwner<AMainPlayer>()->GetController<APlayerController>());
 		}
 	}
+	
+	//UE_LOG(LogTemp, Display, TEXT("    Client : %s - %s"), *GetOwner()->GetActorNameOrLabel(), *(hitActor ? hitActor->GetActorNameOrLabel() : "NULL"));
 	Server_Focus(hitActor);
 	
 	if (hitActor)
@@ -72,14 +82,24 @@ void UInteractionComponent::FocusInteractableActor(const FHitResult& hitResult)
 	}
 }
 
+void UInteractionComponent::Server_FinishInteraction_Implementation()
+{
+	if (!IsValid(possessingInteractable) || !IsValid(GetOwner<AMainPlayer>())) {return;}
+	possessingInteractable->Multicast_FinishInteracting(GetOwner<AMainPlayer>());
+	possessingInteractable = nullptr;
+}
+
 void UInteractionComponent::Server_Focus_Implementation(AActor* focusedActor)
 {
+	//UE_LOG(LogTemp, Display, TEXT("    Server - %s"), *(focusedActor ? focusedActor->GetActorNameOrLabel() : "NULL"));
 	focusingActor = focusedActor;
 }
 
 void UInteractionComponent::Server_Interact_Implementation(UInteractableComponent* interactable)
 {
+	if (!IsValid(interactable) || !IsValid(GetOwner<AMainPlayer>())) {return;}
 	interactable->Multicast_TryInteract(GetOwner<AMainPlayer>());
+	possessingInteractable = interactable;
 }
 
 

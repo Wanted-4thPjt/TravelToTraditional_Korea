@@ -1,10 +1,11 @@
-# TTTK 251006
+# TTTK 251008
+## BaseContentManager 설계
 
 # Start Log
 - 20251006 00:00
 - 작업자 : VaVamVa
 
-### To Do
+### To Do Predict
 
 1. **InteractableComponent 시스템 완성**
    1. ViewComponent GetControlRotation() 방식 적용 완료
@@ -30,9 +31,52 @@
    3. Lobby 시스템 구조 설계
    4. 멀티플레이 환경에서 동작 테스트
 
-5. ENetRole
+### Today To Do
+
+1. **BaseContentManager 설계 및 구현**
+   1. AActor 기반 Base Class 생성
+   2. Virtual 함수 정의 (StartContent, EndContent, OnPlayerQuit 등)
+   3. 콘텐츠 상태 관리 (EContentState)
+   4. Participants 관리 및 결과 계산 로직
+
+4. **ContentEntryComponent 기능 완성**
+   1. RequestJoinLobby() 네트워킹 구현 검증
+   2. BaseContentManager와 연동
+   3. Lobby 시스템 구조 설계
+   4. 멀티플레이 환경에서 동작 테스트
+
+
+## 참고
+
+### 추천 아키텍처
+Layered Responsibility Pattern
+```
+  ┌─────────────────────────────────────────┐
+  │ MainPlayer (PlayerController)           │ ← 입력 받기
+  │  - Input Binding (E키, 점프 등)          │
+  │  - Server RPC 호출                      |
+  └────────────┬────────────────────────────┘
+               │ Server_PerformAction(ActionType)
+               ▼
+  ┌─────────────────────────────────────────┐
+  │ BaseContentManager (Server Authority)   │  ← 게임 로직 처리
+  │  - ValidateAction()                     │
+  │  - ProcessAction()                      │
+  │  - UpdateScore/State                    │
+  └────────────┬────────────────────────────┘
+               │ Multicast_BroadcastResult()
+               ▼
+  ┌─────────────────────────────────────────┐
+  │ All Clients                             │  ← UI 업데이트, VFX
+  │  - RepNotify → UI 갱신                  │
+  │  - OnRep_Score() → 스코어보드 업데이트     │
+  └─────────────────────────────────────────┘
+```
+
+### ENetRole
 
 열거형 값:               DisplayName<br>
+
 1. ROLE_None:               None
    - 네트워크 역할을 가지지 않은 액터입니다. 일반적으로 복제가 비활성화된 액터(예: 로컬 전용 UI 액터, 일부 편집기 전용 액터)가 이 값을 가집니다.
 2. ROLE_SimulatedProxy:	   Simulated Proxy

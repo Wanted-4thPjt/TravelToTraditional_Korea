@@ -22,7 +22,8 @@ ENUM_CLASS_FLAGS(EInteractableState)
 class AMainPlayer;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnChangeState, APlayerController*, playerController, const EInteractableState&, newInteractableState);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRequestInteraction, APawn*, player);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRequestInteraction, AMainPlayer*, player);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRequestFinishInteraction, AMainPlayer*, player);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class UE_TTTK_API UInteractableComponent : public UActorComponent
@@ -34,9 +35,12 @@ public:
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void InitializeComponent() override;
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-
+#if WITH_EDITOR
+	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif //WITH_EDITOR
 
 public:
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -44,11 +48,11 @@ public:
 	UFUNCTION(BlueprintPure, Category="Interactable|Each Client")
 	FORCEINLINE EInteractableState GetState() const {return clientState;}
 	UFUNCTION(BlueprintPure, Category="Interactable|Each Client")
-	bool IsInteractable() const {return clientState == EInteractableState::Focused;}
+	FORCEINLINE bool IsInteractable() const {return clientState == EInteractableState::Focused;}
 	UFUNCTION(BlueprintPure, Category="Interactable|Each Client")
-	bool IsInteracting() const {return clientState == EInteractableState::Interacting;}
+	FORCEINLINE bool IsInteracting() const {return clientState == EInteractableState::Interacting;}
 	UFUNCTION(BlueprintPure, Category="Interactable|All Client")
-	bool CanPossess() const {return feedbackSettings.IsNetworkOn() && possessingPlayers.Num() < feedbackSettings.availableInteractionCount;}
+	FORCEINLINE bool CanPossess() const {return feedbackSettings.IsNetworkOn() && possessingPlayers.Num() < feedbackSettings.availableInteractionCount;}
 
 	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
 	void TryDeactivateInteractable(APlayerController* playerController);
@@ -98,6 +102,8 @@ public:
 	FOnChangeState onChangeState;
 	UPROPERTY(BlueprintAssignable, Category="Interactable|Event")
 	FOnRequestInteraction onRequestInteraction;
+	UPROPERTY(BlueprintAssignable, Category="Interactable|Event")
+	FOnRequestFinishInteraction onRequestFinishInteraction;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")

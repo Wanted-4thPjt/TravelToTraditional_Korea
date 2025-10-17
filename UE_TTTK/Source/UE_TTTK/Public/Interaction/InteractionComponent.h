@@ -24,13 +24,15 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE AActor* GetFocusedActor() {return focusingActor;}
 	UFUNCTION(BlueprintCallable)
-	void Interaction();
+	void InteractKeyInput();
 	UFUNCTION()
 	void FocusInteractableActor(const FHitResult& hitResult);
 
 protected:
 	UFUNCTION(Server, Reliable)
 	void Server_Interact(UInteractableComponent* interactable);
+	UFUNCTION(Server, Reliable)
+	void Server_FinishInteraction();
 
 	UFUNCTION(Server, Reliable)
 	void Server_Focus(AActor* focusedActor);
@@ -38,4 +40,6 @@ protected:
 protected:
 	UPROPERTY(Replicated)
 	TObjectPtr<AActor> focusingActor;
+	UPROPERTY(Replicated)
+	TObjectPtr<UInteractableComponent> possessingInteractable;
 };

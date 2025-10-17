@@ -1,5 +1,7 @@
 #include "Interaction/InteractableComponent.h"
 
+#include <gsl/pointers>
+
 #include "Net/UnrealNetwork.h"
 #include "MainPlayer.h"
 #include "Components/WidgetComponent.h"
@@ -16,10 +18,10 @@
 UInteractableComponent::UInteractableComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
-	
-	
-	
+		
 	ComponentTags.Add(TEXT("Interactable"));
+
+	bWantsInitializeComponent = true;
 }
 
 void UInteractableComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -28,50 +30,71 @@ void UInteractableComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty
 
 }
 
+void UInteractableComponent::InitializeComponent()
+{
+	Super::InitializeComponent();
+
+	AActor* owner = GetOwner();
+	if (!IsValid(owner)) { return; }
+
+	interactionSphere = NewObject<USphereComponent>(owner, USphereComponent::StaticClass(), TEXT("InteractionSphere"));
+	if (!IsValid(interactionSphere)) { return; }
+	
+	owner->AddInstanceComponent(interactionSphere);
+	if (IsValid(owner->GetRootComponent()))
+	{
+		interactionSphere->AttachToComponent(owner->GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+		interactionSphere->SetSphereRadius(interactionRadius);
+		interactionSphere->SetGenerateOverlapEvents(true);
+		interactionSphere->RegisterComponent();
+		interactionSphere->OnComponentBeginOverlap.AddDynamic(this, &UInteractableComponent::OnInteractionSphereBeginOverlap);
+		interactionSphere->OnComponentEndOverlap.AddDynamic(this, &UInteractableComponent::OnInteractionSphereEndOverlap);
+	}
+	
+}
+
 void UInteractableComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
+	
 	clientState = EInteractableState::OutOfBound;
 
-	interactionSphere = NewObject<USphereComponent>();
-	GetOwner()->AddInstanceComponent(interactionSphere);
 	if (IsValid(interactionSphere))
 	{
 		interactionSphere->SetSphereRadius(interactionRadius);
 		interactionSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 		interactionSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
 		interactionSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-		interactionSphere->SetGenerateOverlapEvents(true);
-		
-		interactionSphere->AttachToComponent(GetOwner()->GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-		if (!interactionSphere->IsRegistered()) {interactionSphere->RegisterComponent();;}
-		interactionSphere->OnComponentBeginOverlap.AddDynamic(this, &UInteractableComponent::OnInteractionSphereBeginOverlap);
-		interactionSphere->OnComponentEndOverlap.AddDynamic(this, &UInteractableComponent::OnInteractionSphereEndOverlap);
 	}
 
-	interactionGuideComponent = NewObject<UWidgetComponent>();
-	GetOwner()->AddInstanceComponent(interactionGuideComponent);
-	if (feedbackSettings.IsWidgetOn() && feedbackSettings.interactionGuideWidgetClass && IsValid(interactionGuideComponent))
+	if (feedbackSettings.IsWidgetOn() && feedbackSettings.interactionGuideWidgetClass)
 	{
-		UUserWidget* widget = CreateWidget(GetWorld(), feedbackSettings.interactionGuideWidgetClass, FName("WidgetForGuide"));
-		if (IsValid(widget))
+		interactionGuideComponent = NewObject<UWidgetComponent>(GetOwner(), UWidgetComponent::StaticClass(), TEXT("GuideWidgetComponent"));
+		if (IsValid(interactionGuideComponent))
 		{
-			interactionGuideComponent->SetWidget(widget);
-			interactionGuideComponent->SetWidgetSpace(EWidgetSpace::World);
-			interactionGuideComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-			FAttachmentTransformRules attachRules(
-			EAttachmentRule::SnapToTarget,  // Location
-			EAttachmentRule::SnapToTarget,  // Rotation
-			EAttachmentRule::KeepRelative,  // Scale
-			false 
-			);
-			interactionGuideComponent->AttachToComponent(GetOwner()->GetRootComponent(), attachRules);
-			interactionGuideComponent->SetRelativeLocation(feedbackSettings.widgetOffset);
-			// true: world / false: parent => rotation controlled by player location(world)
-			interactionGuideComponent->SetAbsolute(false, true, false);
-			if (!interactionGuideComponent->IsRegistered()) {interactionGuideComponent->RegisterComponent();}
-			interactionGuideComponent->SetVisibility(false);
+			GetOwner()->AddInstanceComponent(interactionGuideComponent);
+			UUserWidget* widget = CreateWidget(GetWorld(), feedbackSettings.interactionGuideWidgetClass, FName("WidgetForGuide"));
+			if (IsValid(widget))
+			{
+				interactionGuideComponent->SetWidget(widget);
+				interactionGuideComponent->SetWidgetSpace(EWidgetSpace::World);
+				interactionGuideComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+				FAttachmentTransformRules attachRules(
+				EAttachmentRule::SnapToTarget,  // Location
+				EAttachmentRule::SnapToTarget,  // Rotation
+				EAttachmentRule::SnapToTarget,  // Scale
+				false 
+				);
+				interactionGuideComponent->AttachToComponent(GetOwner()->GetRootComponent(), attachRules);
+				// true: world / false: parent => rotation controlled by player location(world)
+				interactionGuideComponent->SetAbsolute(false, true, true);
+				interactionGuideComponent->SetRelativeLocation(feedbackSettings.widgetOffset);
+				interactionGuideComponent->RegisterComponent();
+
+				interactionGuideComponent->SetVisibility(false);
+				interactionGuideComponent->SetCastShadow(false);
+				interactionGuideComponent->SetReceivesDecals(false);
+			}
 		}
 	}
 
@@ -97,8 +120,23 @@ void UInteractableComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
+#if WITH_EDITOR
+void UInteractableComponent::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	if (PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(UInteractableComponent, interactionRadius))
+	{
+		if (IsValid(interactionSphere))
+		{
+			interactionSphere->SetSphereRadius(interactionRadius);
+		}
+	}
+}
+#endif //WITH_EDITOR
+
 void UInteractableComponent::TickComponent(float DeltaTime, enum ELevelTick TickType,
-	FActorComponentTickFunction* ThisTickFunction)
+                                           FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	
@@ -124,6 +162,7 @@ void UInteractableComponent::InInteractableRange(APlayerController* playerContro
 	if (!LIKELY(IsValid(playerController))) {return;}
 	
 	playerInRange = playerController->GetPawn<AMainPlayer>();
+	if (!IsValid(playerInRange)) {return;}
 	clientState = EInteractableState::InRange;
 	onChangeState.Broadcast(playerController, EInteractableState::InRange);
 	if (playerInRange->GetFocusedActor() == GetOwner())
@@ -179,7 +218,7 @@ void UInteractableComponent::Multicast_TryInteract_Implementation(AMainPlayer* p
 {
 	if (!IsValid(player) || !CanPossess()) {return;}
 	possessingPlayers.Add(player);
-	onRequestInteraction.Broadcast(player);
+	onRequestInteraction.Broadcast(player);	
 }
 
 void UInteractableComponent::FinishInteracting(APlayerController* playerController, const EInteractableState& newState)
@@ -208,6 +247,7 @@ void UInteractableComponent::Multicast_FinishInteracting_Implementation(AMainPla
 	if (!IsValid(player) || !CanPossess()) {return;}
 	if (!possessingPlayers.Contains(player)) {return;}
 	possessingPlayers.RemoveSingleSwap(player, EAllowShrinking::No);
+	onRequestFinishInteraction.Broadcast(player);
 }
 
 void UInteractableComponent::OnInteractionSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent,
@@ -247,7 +287,7 @@ bool UInteractableComponent::UpdateAvailablePrimitiveComponents()
 	owner->GetComponents<UMeshComponent>(activeComponents);
 	if (activeComponents.Num() == 0) {return false;}
 	feedbackSettings.outlinedMeshComponent = activeComponents[0];
-	UE_LOG(LogTemp, Warning, TEXT("Init Outline : %s"), *(feedbackSettings.outlinedMeshComponent.IsValid() ? feedbackSettings.outlinedMeshComponent->GetName() : "None"));
+	//UE_LOG(LogTemp, Warning, TEXT("Init Outline : %s"), *(feedbackSettings.outlinedMeshComponent.IsValid() ? feedbackSettings.outlinedMeshComponent->GetName() : "None"));
 	return true;
 }
 
@@ -263,7 +303,7 @@ void UInteractableComponent::Client_UpdateVisuals(APlayerController* playerContr
 
 void UInteractableComponent::UpdateOutline()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Update Outline : %s"), *(feedbackSettings.outlinedMeshComponent.IsValid() ? feedbackSettings.outlinedMeshComponent->GetName() : "None"));
+	//UE_LOG(LogTemp, Warning, TEXT("Update Outline : %s"), *(feedbackSettings.outlinedMeshComponent.IsValid() ? feedbackSettings.outlinedMeshComponent->GetName() : "None"));
 	if (!feedbackSettings.IsOutlineOn()) {return;}
 	if (!feedbackSettings.outlinedMeshComponent.IsValid()) {return;}
 	feedbackSettings.outlinedMeshComponent->SetRenderCustomDepth(clientState == EInteractableState::Focused);

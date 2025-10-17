@@ -49,7 +49,7 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Widget", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Widget", EditConditionHides))
     TSubclassOf<UUserWidget> interactionGuideWidgetClass;
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Widget", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Widget", EditConditionHides))
-    FVector widgetOffset = FVector(0.f, 0.f, 100.f);
+    FVector widgetOffset = FVector(0.f, 0.f, 0.f);
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sound", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Sound", EditConditionHides))
     TObjectPtr<USoundBase> activatedSound;

@@ -30,7 +30,7 @@ void AMainPlayer::Tick(float DeltaSeconds)
 	{
 		if (PC->WasInputKeyJustPressed(EKeys::F))
 		{
-			interactionComponent->Interaction();
+			interactionComponent->InteractKeyInput();
 		}
 	}
 }
