@@ -13,7 +13,7 @@ ACrowd::ACrowd()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
-	StateTreeComp = CreateDefaultSubobject<UStateTreeComponent>(TEXT("StateTreeComponet"));
+	
 	
 }
 
@@ -22,13 +22,7 @@ void ACrowd::BeginPlay()
 {
 	Super::BeginPlay();
 	CollectingTargetPoints();
-	if (StateTreeComp != nullptr)
-	{
-
-		UE_LOG(LogTemp,Warning,TEXT("시작시작시작시작"));
-		StateTreeComp->StartLogic();
-	}
-	UE_LOG(LogTemp,Warning,TEXT("hihi"));
+	
 	
 }
 
@@ -111,5 +105,10 @@ void ACrowd::CollectingTargetPoints()
 		}
 	}
 
+}
+
+void ACrowd::PlayGreeting()
+{
+	PlayAnimMontage(GreetingMontage);
 }
 

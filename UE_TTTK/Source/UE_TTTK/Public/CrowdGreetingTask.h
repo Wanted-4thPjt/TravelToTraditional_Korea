@@ -4,31 +4,24 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/StateTreeTaskBlueprintBase.h"
-#include "CrowdMoveTask.generated.h"
+#include "CrowdGreetingTask.generated.h"
 
 /**
- *
+ * 
  */
 UCLASS()
-class UE_TTTK_API UCrowdMoveTask : public UStateTreeTaskBlueprintBase
+class UE_TTTK_API UCrowdGreetingTask : public UStateTreeTaskBlueprintBase
 {
 	GENERATED_BODY()
 
 protected:
-	
 	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context,
 		const FStateTreeTransitionResult& Transition) override;
 	virtual void ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) override;
 	virtual void StateCompleted(FStateTreeExecutionContext& Context, const EStateTreeRunStatus CompletionStatus,
 		const FStateTreeActiveStates& CompletedActiveStates) override;
 	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, const float DeltaTime) override;
-public :
-	UCrowdMoveTask(const FObjectInitializer& ObjectInitializer);
+public:
 	class ACrowd* OwnerCrowd;
 	class ACrowdAiController* AIController;
-	class UPathFollowingComponent* PathFollowingComponent;
-	class ACrowdTargetPoint* TargetPoint;
-	FVector TargetLocation;
-
-
 };

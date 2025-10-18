@@ -17,15 +17,18 @@ public:
 	// Sets default values for this character's properties
 	ACrowd();
 	UPROPERTY(EditDefaultsOnly, Category = "Crowd")
-	class UStateTreeComponent* StateTreeComp;
-	UPROPERTY(EditDefaultsOnly, Category = "Crowd")
 	class UCrowdData* CrowdData;
 	UPROPERTY()
 	TMap<FString,class ACrowdTargetPoint*> TargetPoints;
 	UPROPERTY()
 	FVector realTarget;
+	UPROPERTY(EditDefaultsOnly, Category = "Ani")
+	class UAnimMontage* GreetingMontage;
+	UPROPERTY(EditDefaultsOnly, Category = "Ani")
+	class UAnimMontage* OuchAnimMontage;
 private:
 	bool bIsMoving;
+	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -40,5 +43,6 @@ public:
 	bool GetIsMoving(){return bIsMoving;}
 	void SetIsMoving(bool MovingState){bIsMoving = MovingState;}
 	void CollectingTargetPoints();
+	void PlayGreeting();
 
 };

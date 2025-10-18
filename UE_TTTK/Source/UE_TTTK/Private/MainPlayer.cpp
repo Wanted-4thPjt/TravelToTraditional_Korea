@@ -232,7 +232,7 @@ void AMainPlayer::OnViewInteractableActor(const FHitResult& hitResult)
 	}
 	
 	if (!IsValid(hitResult.GetActor())) {return;}
-	UE_LOG(LogTemp, Warning, TEXT("Actor Name : %s"), *hitResult.GetActor()->GetActorNameOrLabel());
+	//UE_LOG(LogTemp, Warning, TEXT("Actor Name : %s"), *hitResult.GetActor()->GetActorNameOrLabel());
 	
 	UInteractableComponent* interactable = hitResult.GetActor()->FindComponentByClass<UInteractableComponent>();
 	if (!IsValid(interactable)) {return;}
