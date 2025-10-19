@@ -69,3 +69,8 @@ void ACrowdAiController::Greeting()
 {
 	OwnerCrowd->PlayGreeting();
 }
+
+void ACrowdAiController::Waiting()
+{
+	
+}

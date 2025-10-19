@@ -30,6 +30,7 @@ public:
 	void GoMarket();
 	void GoHome();
 	void Greeting();
+	void Waiting();
 	
 };
 

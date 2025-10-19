@@ -18,6 +18,11 @@ public class UE_TTTK : ModuleRules
 			/*251003*/"DeveloperSettings",
 			/*251005*/"Niagara"
 		});
+		PublicDependencyModuleNames.AddRange(new string[] 
+		{ 
+			"GameplayTags",        // ✅ 이 줄 추가
+			      // State Tree 사용 중이라면
+		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
 

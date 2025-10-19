@@ -29,6 +29,7 @@ void AMainPlayer::Tick(float DeltaSeconds)
 	{
 		if (PC->WasInputKeyJustPressed(EKeys::F))
 		{
+			HandleFKeyPress();
 			//HandleFKeyPress();
 			if (focusedActor)
 			{
