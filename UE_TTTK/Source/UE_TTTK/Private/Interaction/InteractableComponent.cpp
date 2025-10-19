@@ -11,6 +11,7 @@
 #include "NiagaraSystem.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Components/SphereComponent.h"
+#include "Interaction/InteractionComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Particles/ParticleSystem.h"
 
@@ -161,11 +162,13 @@ void UInteractableComponent::InInteractableRange(APlayerController* playerContro
 {
 	if (!LIKELY(IsValid(playerController))) {return;}
 	
-	playerInRange = playerController->GetPawn<AMainPlayer>();
+	playerInRange = playerController->GetPawn<APawn>();
 	if (!IsValid(playerInRange)) {return;}
 	clientState = EInteractableState::InRange;
 	onChangeState.Broadcast(playerController, EInteractableState::InRange);
-	if (playerInRange->GetFocusedActor() == GetOwner())
+	
+	if (UInteractionComponent* interactionComp = playerInRange->FindComponentByClass<UInteractionComponent>();
+		IsValid(interactionComp) && interactionComp->GetFocusedActor() == GetOwner())
 	{
 		TryActivateInteractable(playerController);
 		return;
@@ -214,7 +217,7 @@ void UInteractableComponent::TryInteract(APlayerController* playerController)
 	if (feedbackSettings.IsParticleOn()) {PlayEffect(feedbackSettings.interactedParticleVFX);}
 }
 
-void UInteractableComponent::Multicast_TryInteract_Implementation(AMainPlayer* player)
+void UInteractableComponent::Multicast_TryInteract_Implementation(APawn* player)
 {
 	if (!IsValid(player) || !CanPossess()) {return;}
 	possessingPlayers.Add(player);
@@ -242,7 +245,7 @@ void UInteractableComponent::FinishInteracting(APlayerController* playerControll
 	}
 }
 
-void UInteractableComponent::Multicast_FinishInteracting_Implementation(AMainPlayer* player)
+void UInteractableComponent::Multicast_FinishInteracting_Implementation(APawn* player)
 {
 	if (!IsValid(player) || !CanPossess()) {return;}
 	if (!possessingPlayers.Contains(player)) {return;}
@@ -254,7 +257,7 @@ void UInteractableComponent::OnInteractionSphereBeginOverlap(UPrimitiveComponent
                                                              AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
                                                              const FHitResult& SweepResult)
 {
-	AMainPlayer* player = Cast<AMainPlayer>(OtherActor);
+	APawn* player = Cast<APawn>(OtherActor);
 	if (!IsValid(player)) {return;}
 	
 	APlayerController* pc = player->GetController<APlayerController>();
@@ -269,7 +272,7 @@ void UInteractableComponent::OnInteractionSphereBeginOverlap(UPrimitiveComponent
 void UInteractableComponent::OnInteractionSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                                                            UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	AMainPlayer* player = Cast<AMainPlayer>(OtherActor);
+	APawn* player = Cast<APawn>(OtherActor);
 	if (!IsValid(player)) {return;}
 	
 	APlayerController* pc = player->GetController<APlayerController>();

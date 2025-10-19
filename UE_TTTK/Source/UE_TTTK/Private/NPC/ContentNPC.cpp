@@ -24,7 +24,7 @@ void AContentNPC::BeginPlay()
 
 
 void AContentNPC::OnInteractablePlayerStateChanged(APlayerController* playerController, const EInteractableState& state)
-{
+{	
 	switch (state)
 	{
 	case EInteractableState::Default:
@@ -34,6 +34,7 @@ void AContentNPC::OnInteractablePlayerStateChanged(APlayerController* playerCont
 		}
 		break;
 	case EInteractableState::InRange:
+	case EInteractableState::UnFocused:
 		break;
 	case EInteractableState::Focused:
 		break;

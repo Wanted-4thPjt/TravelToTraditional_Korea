@@ -21,6 +21,8 @@ protected:
 	virtual void BeginPlay() override;
 	
 public:
+	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE AActor* GetFocusedActor() {return focusingActor;}
 	UFUNCTION(BlueprintCallable)
@@ -42,4 +44,6 @@ protected:
 	TObjectPtr<AActor> focusingActor;
 	UPROPERTY(Replicated)
 	TObjectPtr<UInteractableComponent> possessingInteractable;
+	UPROPERTY()
+	APlayerController* tempPC = nullptr;
 };

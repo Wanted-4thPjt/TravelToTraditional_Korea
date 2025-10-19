@@ -3,11 +3,12 @@
 #include "Net/UnrealNetwork.h"
 #include "Interaction/InteractableComponent.h"
 #include "MainPlayer.h"
+#include "Jegi/Jegi.h"
 
 
 UInteractionComponent::UInteractionComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = true;
 
 	SetIsReplicatedByDefault(true);
 }
@@ -30,7 +31,25 @@ void UInteractionComponent::InitializeComponent()
 void UInteractionComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	tempPC = GetOwner<APawn>()->GetController<APlayerController>();
+}
+
+void UInteractionComponent::TickComponent(float DeltaTime, enum ELevelTick TickType,
+	FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	if (possessingInteractable && tempPC)
+	{
+		if (tempPC->WasInputKeyJustPressed(EKeys::LeftMouseButton))
+		{
+			if (AJegi* jegi = Cast<AJegi>(possessingInteractable->GetOwner()))
+			{
+				jegi->TempKick();
+			}
+		}
+		
+	}
 }
 
 void UInteractionComponent::InteractKeyInput()
@@ -60,7 +79,7 @@ void UInteractionComponent::FocusInteractableActor(const FHitResult& hitResult)
 	AActor* hitActor = hitResult.GetActor();
 	if (hitActor == focusingActor) {return;}
 	
-	UE_LOG(LogTemp, Display, TEXT("===========Update Interactable actor==========="));
+	//UE_LOG(LogTemp, Display, TEXT("===========Update Interactable actor==========="));
 	if (focusingActor)
 	{
 		if (UInteractableComponent* interactable = focusingActor->FindComponentByClass<UInteractableComponent>())

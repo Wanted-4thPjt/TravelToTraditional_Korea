@@ -25,10 +25,11 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
-
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
+	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	
 	// === Player Actions (UI/Input) ===
 	#pragma region Player Actions
 	
@@ -45,14 +46,11 @@ public:
 	void RequestCancelLobby(AMainPlayer* player);
 	#pragma endregion Player Actions
 
-	// === ContentManager Callback ===
 	#pragma region ContentManager Callback
-	
 	UFUNCTION(BlueprintCallable, Category = "Content Entry")
 	void OnContentFinished();
 	#pragma endregion ContentManager Callback
 
-	// === Getters ===
 	#pragma region Getter
 	UFUNCTION(BlueprintPure, Category = "Content Entry|Getter")
 	bool IsLobbyActive() const { return bLobbyActive; }
@@ -75,19 +73,6 @@ protected:
 	bool IsServer() const {AActor* owner = GetOwner();
 		return IsValid(owner) && owner->HasAuthority();}
 private:
-	// === Server RPC ===
-	#pragma region Server RPC
-	
-	UFUNCTION(Server, Reliable)
-	void Server_RequestJoin(AMainPlayer* player);
-	UFUNCTION(Server, Reliable)
-	void Server_RequestLeave(AMainPlayer* player);
-	UFUNCTION(Server, Reliable)
-	void Server_RequestStart(AMainPlayer* requestingPlayer);
-	UFUNCTION(Server, Reliable)
-	void Server_RequestCancel(AMainPlayer* requestingPlayer);
-	#pragma endregion Server RPC
-
 	// === Multicast RPC ===
 	#pragma region Multicast RPC
 	UFUNCTION(NetMulticast, Reliable)
@@ -120,24 +105,23 @@ public:
 	FOnLobbyStateChanged OnLobbyStateChanged;
 	
 protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Setting")
+	FContentEntrySettings settings;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Players")
+	FTimerHandle lobbyTimer;
+	
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Players")
 	TArray<AMainPlayer*> readyPlayers;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Players|Host")
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Players|Host")
 	AMainPlayer* hostPlayer;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Players|Host")
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Players|Host")
 	bool bLobbyActive;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Content")
-	TObjectPtr<ABaseContentManager> contentManager;
+	TObjectPtr<UBaseContentManager> contentManager;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Content")
 	bool bContentRunning = false;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Setting")
-	FContentEntrySettings settings;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Setting")
-	float maxWaitSeconds = 0.f;
-	FTimerHandle lobbyTimer;
+
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Outline")
 	TObjectPtr<UWidgetComponent> entryInfoWidget;

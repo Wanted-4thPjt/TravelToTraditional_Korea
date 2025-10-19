@@ -19,11 +19,10 @@ enum class EInteractableState : uint8
 	Interacting = 1 << 5 // 내가 FOCUS 하면서 상호작용 키를 누른경우
 };
 ENUM_CLASS_FLAGS(EInteractableState)
-class AMainPlayer;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnChangeState, APlayerController*, playerController, const EInteractableState&, newInteractableState);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRequestInteraction, AMainPlayer*, player);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRequestFinishInteraction, AMainPlayer*, player);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRequestInteraction, APawn*, player);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRequestFinishInteraction, APawn*, player);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class UE_TTTK_API UInteractableComponent : public UActorComponent
@@ -62,11 +61,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
 	void TryInteract(APlayerController* playerController);
 	UFUNCTION(NetMulticast, Reliable, Category="Interactable|Multicast")
-	void Multicast_TryInteract(AMainPlayer* player);
+	void Multicast_TryInteract(APawn* player);
 	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
 	void FinishInteracting(APlayerController* Player, const EInteractableState& newState);
 	UFUNCTION(NetMulticast, Reliable, Category="Interactable|Multicast")
-	void Multicast_FinishInteracting(AMainPlayer* player);
+	void Multicast_FinishInteracting(APawn* player);
 
 	UFUNCTION(BlueprintCallable, Category="Interactable|Visual")
 	void Client_UpdateVisuals(APlayerController* playerController);
@@ -115,15 +114,15 @@ protected:
 	float interactionRadius = 300.f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Server")
-	TArray<AMainPlayer*> possessingPlayers;
+	TArray<APawn*> possessingPlayers;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractableFeedback")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "InteractableFeedback")
 	EInteractableState clientState = EInteractableState::Default;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractableFeedback")
 	FInteractableFeedbackSettings feedbackSettings;
 
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Client", meta=(AllowPrivateAccess=true))
-	AMainPlayer* playerInRange;
+	APawn* playerInRange;
 	
 };

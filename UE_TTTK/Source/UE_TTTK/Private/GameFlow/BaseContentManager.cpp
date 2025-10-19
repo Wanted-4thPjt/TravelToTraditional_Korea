@@ -1,54 +1,59 @@
 #include "GameFlow/BaseContentManager.h"
 
-#include "ToolContextInterfaces.h"
 #include "Interaction/ContentEntryComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/PlayerController.h"
 
 
-ABaseContentManager::ABaseContentManager()
+UBaseContentManager::UBaseContentManager()
 {
-	PrimaryActorTick.bCanEverTick = true;
 }
 
-void ABaseContentManager::BeginPlay()
+void UBaseContentManager::PostLoad()
 {
-	Super::BeginPlay();
+	UObject::PostLoad();
 	InitializeConfig();
-	
 }
 
-void ABaseContentManager::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+
+void UBaseContentManager::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(ABaseContentManager, contentState);
-	DOREPLIFETIME(ABaseContentManager, remainingTime);
-	DOREPLIFETIME(ABaseContentManager, contentPlayersData);
-	DOREPLIFETIME(ABaseContentManager, finishedPlayersCount);
+	DOREPLIFETIME(UBaseContentManager, contentState);
+	DOREPLIFETIME(UBaseContentManager, remainingTime);
+	DOREPLIFETIME(UBaseContentManager, contentPlayersData);
+	DOREPLIFETIME(UBaseContentManager, finishedPlayersCount);
 }
 
-void ABaseContentManager::InitializeConfig_Implementation()
+void UBaseContentManager::InitializeConfig_Implementation()
 {
-	if (!HasAuthority()) {return;}
+	if (!GetWorld()->GetAuthGameMode()) {return;}
 	
 	if (contentConfig.playerSpawnPoints.IsEmpty())
 	{
-		TArray<AActor*> spawnPointsByActor;
-		//UGameplayStatics::GetAllActorsWithTag(GetWorld(), contentConfig.contentName, spawnPointsByActor);
-		/*
-		for (AActor* spawnPointByActor : spawnPointsByActor)
+		TArray<AActor*> pointsByActor;
+		UGameplayStatics::GetAllActorsWithTag(GetWorld(), contentConfig.contentName, pointsByActor);
+		
+		for (AActor* pointByActor : pointsByActor)
 		{
-			contentConfig.spawnPoints.Add(spawnPointByActor->GetActorTransform());
+			if (!pointByActor->ActorHasTag("Camera"))
+			{
+				contentConfig.playerSpawnPoints.Add(pointByActor->GetActorTransform());
+			}
+			else if (contentConfig.bChangeCameraView)
+			{
+				contentConfig.cameraTransform.Add(pointByActor->GetActorTransform());
+			}
 		}
-		 */
+		
 	}
 
-	ownerEntryComponent = GetAttachParentActor()->FindComponentByClass<UContentEntryComponent>();
+	//ownerEntryComponent = ->FindComponentByClass<UContentEntryComponent>();
 }
 
-void ABaseContentManager::InitializeContent_Implementation(const TArray<APlayerController*>& inPlayers)
+void UBaseContentManager::InitializeContent_Implementation(const TArray<APlayerController*>& inPlayers)
 {
 	for (APlayerController* playerController : inPlayers)
 	{
@@ -56,35 +61,61 @@ void ABaseContentManager::InitializeContent_Implementation(const TArray<APlayerC
 		data.playerController = playerController;
 		contentPlayersData.Add(data);
 	}
+
+	if (contentConfig.bChangeCameraView && contentConfig.cameraTransform.Num() > 0)
+	{
+		for (const FTransform& cameraTransform : contentConfig.cameraTransform)
+		{
+			AActor* tempCameraActor = GetWorld()->SpawnActor(AActor::StaticClass(), &cameraTransform);
+			contentCameras.Add(tempCameraActor);
+		}
+		for (FContentParticipatingPlayerData& data : contentPlayersData)
+		{
+			data.originalViewTarget = data.playerController->GetViewTarget();
+		}
+	}
 }
 
-void ABaseContentManager::StartContent_Implementation()
+void UBaseContentManager::StartContent_Implementation()
 {
-	if (!HasAuthority()) {return;}
+	if (!GetWorld()->GetAuthGameMode()) {return;}
 	if (contentTimer.IsValid()) {return;}
-	contentState = EContentState::Playing;
-
-	//TeleportPlayersIntoContent(contentConfig/*.spawnPoints*/);
 	
-	if (contentConfig.timeLimit > 0.f)
+	contentState = EContentState::Playing;
+	finishedPlayersCount = 0;
+	TeleportPlayersIntoContent();
+	
+	if (contentConfig.contentTimeLimit > 1.f)
 	{
-		remainingTime = contentConfig.timeLimit;
+		startTime = GetWorld()->GetTimeSeconds();
+		remainingTime = contentConfig.contentTimeLimit;
+		
 		GetWorld()->GetTimerManager().SetTimer(
-			contentTimer, this, &ABaseContentManager::OnContentTimerExpired,
-			contentConfig.timeLimit, false
+			contentTimer, this, &UBaseContentManager::OnUpdateTimer,
+			0.1f, true
 		);
 	}
+
+	
 }
 
-void ABaseContentManager::UpdateContent_Implementation(const float& deltaTime)
+void UBaseContentManager::UpdateContent_Implementation(const float& deltaTime)
 {
-	if (contentTimer.IsValid())
-	{
-		remainingTime = remainingTime > 0.f ? remainingTime - deltaTime : 0.f;
-	}
 }
 
-void ABaseContentManager::EndContent_Implementation()
+void UBaseContentManager::RoundStart_Implementation()
+{
+}
+
+void UBaseContentManager::RoundUpdate_Implementation()
+{
+}
+
+void UBaseContentManager::RoundEnd_Implementation()
+{
+}
+
+void UBaseContentManager::EndContent_Implementation()
 {
 	contentState = EContentState::Finished;
 
@@ -92,8 +123,6 @@ void ABaseContentManager::EndContent_Implementation()
 	{
 		GetWorld()->GetTimerManager().ClearTimer(contentTimer);
 	}
-
-	ReturnPlayersToLobby();
 
 	for (const FContentParticipatingPlayerData& result : contentPlayersData)
 	{
@@ -108,56 +137,72 @@ void ABaseContentManager::EndContent_Implementation()
 			{
 				UE_LOG(LogTemp, Log, TEXT("  Time: %.2f"), result.recordedTime);
 			}
+			if (result.originalViewTarget)
+			{
+				result.playerController->SetViewTargetWithBlend(result.originalViewTarget, 1.0f, VTBlend_EaseInOut);
+			}
 		}
 	}
+
+	for (AActor* contentCamera : contentCameras)
+	{
+		contentCamera->Destroy();
+	}
+	contentCameras.Empty();
+
+	// TODO: 결과창 종료 누르면 이동하게 변경
+	ReturnPlayersToLobby();
+	
 	if (ownerEntryComponent)
 	{
 		ownerEntryComponent->OnContentFinished();
 	}
 }
 
-void ABaseContentManager::ClearContent_Implementation()
+void UBaseContentManager::ClearContent_Implementation()
 {
 	contentState = EContentState::Ready;
 	contentPlayersData.Empty();
 }
 
-void ABaseContentManager::OnContentTimerExpired_Implementation()
+void UBaseContentManager::OnUpdateTimer_Implementation()
 {
-	EndContent();
-}
+	if (!GetWorld()->GetAuthGameMode()) {return;}
+	if (contentState != EContentState::Playing) {return;}
+	
+	float currentTime = GetWorld()->GetTimeSeconds();
+	float elapsedTime = currentTime - startTime;
+	remainingTime = contentConfig.contentTimeLimit - elapsedTime;
 
-void ABaseContentManager::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-	if (!HasAuthority()) {return;}
-
-	if (contentState == EContentState::Playing)
+	if (remainingTime <= 0.f)
 	{
-		UpdateContent(DeltaTime);
+		GetWorld()->GetTimerManager().ClearTimer(contentTimer);
+		// TODO: UI Update To Zero
+		EndContent();
+		return;
 	}
+	// TODO: UI Update To remaining Time
 }
 
-
-void ABaseContentManager::TeleportPlayersIntoContent()
+void UBaseContentManager::TeleportPlayersIntoContent()
 {
-	if (!HasAuthority()) {return;}
+	if (!GetWorld()->GetAuthGameMode()) {return;}
 
 	int32 spawnIndex = 0;
-	/*
-	int32 spawnPointsCount = contentConfig.spawnPoints.Num();
-	for (APlayerController* player : participatingPlayers)
+	int32 spawnPointsCount = contentConfig.playerSpawnPoints.Num();
+	for (FContentParticipatingPlayerData playerData : contentPlayersData)
 	{
-		FTransform spawnTransform = contentConfig.spawnPoints[spawnIndex++ % spawnPointsCount];
-		player->GetPawn()->SetActorLocationAndRotation(spawnTransform.GetLocation(), spawnTransform.GetRotation());
+		FTransform spawnTransform = contentConfig.playerSpawnPoints[spawnIndex++ % spawnPointsCount];
+		if (playerData.playerController && playerData.playerController->GetPawn())
+		{
+			playerData.playerController->GetPawn()->SetActorLocationAndRotation(spawnTransform.GetLocation(), spawnTransform.GetRotation());
+		}
 	}
-	*/
 }
 
-void ABaseContentManager::ReturnPlayersToLobby()
+void UBaseContentManager::ReturnPlayersToLobby()
 {
-	if (!HasAuthority()) return;
+	if (!GetWorld()->GetAuthGameMode()) {return;}
 
 	if (!ownerEntryComponent) return;
 
@@ -181,12 +226,14 @@ void ABaseContentManager::ReturnPlayersToLobby()
 
 }
 
-void ABaseContentManager::OnPlayerAction(APlayerController* actionPlayer, FName actionName, FVector inData)
+void UBaseContentManager::OnPlayerAction(APlayerController* actionPlayer, FName actionName, FVector inData)
 {
 }
 
-void ABaseContentManager::NotifyContentFinished_Implementation(FContentParticipatingPlayerData result)
+void UBaseContentManager::ContentFinished(const FContentParticipatingPlayerData& result)
 {
+	if (!GetWorld()->GetAuthGameMode() || !IsValid(result.playerController)) {return;}
+	
 	finishedPlayersCount++;
 	for (FContentParticipatingPlayerData& data  : contentPlayersData)
 	{

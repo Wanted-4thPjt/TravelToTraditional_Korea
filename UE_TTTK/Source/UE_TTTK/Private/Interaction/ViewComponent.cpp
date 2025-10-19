@@ -23,6 +23,7 @@ void UViewComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>&
 void UViewComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	
 	pawnOwner = Cast<APawn>(GetOwner());
 	queryParams.AddIgnoredActor(pawnOwner);
 
