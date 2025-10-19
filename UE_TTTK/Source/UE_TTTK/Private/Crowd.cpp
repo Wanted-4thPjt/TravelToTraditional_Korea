@@ -3,7 +3,10 @@
 
 #include "Crowd.h"
 
+#include "CrowdAiController.h"
 #include "CrowdTargetPoint.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/StateTreeAIComponent.h"
 #include "Components/StateTreeComponent.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -21,10 +24,36 @@ ACrowd::ACrowd()
 void ACrowd::BeginPlay()
 {
 	Super::BeginPlay();
+	UCapsuleComponent* Capsule = GetCapsuleComponent();
+	if (Capsule!=nullptr)
+	{
+		Capsule->OnComponentHit.AddDynamic(this,&ACrowd::OnCapsuleHit);
+	}
 	CollectingTargetPoints();
 	
 	
 }
+
+void ACrowd::OnCapsuleHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+	FVector NormalImpulse, const FHitResult& Hit)
+{
+	UE_LOG(LogTemp, Warning, TEXT("===플레이어랑 부딫혓다===="));
+	if (OtherActor->ActorHasTag("Player"))
+	{
+		ACrowdAiController* AIController = Cast<ACrowdAiController>(GetController());
+		if (AIController!=nullptr)
+		{
+			FStateTreeEvent OuchEvent;
+			OuchEvent.Tag = FGameplayTag::RequestGameplayTag("Crowd.Event.Ouch");
+			AIController->StateTreeComp->SendStateTreeEvent(OuchEvent.Tag);
+			UE_LOG(LogTemp, Warning, TEXT("===event전송===="));
+		}
+		
+		UE_LOG(LogTemp,Warning,TEXT("PlayerBeginOverlap"));
+	}
+}
+
+
 
 // Called every frame
 void ACrowd::Tick(float DeltaTime)
@@ -110,5 +139,10 @@ void ACrowd::CollectingTargetPoints()
 void ACrowd::PlayGreeting()
 {
 	PlayAnimMontage(GreetingMontage);
+}
+
+void ACrowd::PlayOuch()
+{
+	PlayAnimMontage(OuchAnimMontage);
 }
 

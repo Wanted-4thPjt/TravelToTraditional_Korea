@@ -31,6 +31,7 @@ public:
 	void GoHome();
 	void Greeting();
 	void Waiting();
+	void Ouch();
 	
 };
 

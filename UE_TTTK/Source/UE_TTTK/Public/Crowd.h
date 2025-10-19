@@ -32,6 +32,12 @@ private:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	UFUNCTION()
+	void OnCapsuleHit(UPrimitiveComponent* HitComponent, 
+					  AActor* OtherActor, 
+					  UPrimitiveComponent* OtherComp, 
+					  FVector NormalImpulse, 
+					  const FHitResult& Hit);
 
 public:	
 	// Called every frame
@@ -44,5 +50,7 @@ public:
 	void SetIsMoving(bool MovingState){bIsMoving = MovingState;}
 	void CollectingTargetPoints();
 	void PlayGreeting();
+	void PlayOuch();
+	
 
 };

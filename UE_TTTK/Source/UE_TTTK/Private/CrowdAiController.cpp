@@ -74,3 +74,8 @@ void ACrowdAiController::Waiting()
 {
 	
 }
+
+void ACrowdAiController::Ouch()
+{
+	OwnerCrowd->PlayOuch();
+}
