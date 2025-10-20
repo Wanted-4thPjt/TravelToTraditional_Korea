@@ -31,4 +31,5 @@ public:
 	class ACrowd* OwnerCrowd;
 	class ACrowdAiController* OwnerAiController;
 	EWaitingExitReason WaitingExitReason;
+	UCrowdWaitingTask(const FObjectInitializer& ObjectInitializer);
 };

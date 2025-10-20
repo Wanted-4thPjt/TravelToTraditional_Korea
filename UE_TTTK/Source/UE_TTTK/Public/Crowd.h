@@ -8,6 +8,7 @@
 #include "GameFramework/Character.h"
 #include "Crowd.generated.h"
 
+DECLARE_MULTICAST_DELEGATE_TwoParams(FCheckTimeDelegate,ACrowd*,bool);
 UCLASS()
 class UE_TTTK_API ACrowd : public ACharacter
 {
@@ -26,6 +27,14 @@ public:
 	class UAnimMontage* GreetingMontage;
 	UPROPERTY(EditDefaultsOnly, Category = "Ani")
 	class UAnimMontage* OuchAnimMontage;
+	FTimerHandle CheckTimerHandle;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Time")
+	bool bShouldGoWork = false;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Time")
+	bool bShouldGoHome = false;
+
 private:
 	bool bIsMoving;
 	
@@ -51,6 +60,18 @@ public:
 	void CollectingTargetPoints();
 	void PlayGreeting();
 	void PlayOuch();
+	bool CheckGoHomeTime();
+	bool CheckGoWorkTime();
+	UFUNCTION()
+	void CheckTime(FTimeOfDayData TimeData);
+
+	UFUNCTION(BlueprintCallable, Category = "Time")
+	void ResetTimeFlags() { bShouldGoWork = false; bShouldGoHome = false; }
+	
+	
+	
 	
 
 };
+
+

@@ -6,12 +6,14 @@
 #include "Crowd.h"
 #include "CrowdAiController.h"
 #include "StateTreeExecutionContext.h"
+#include "Components/StateTreeAIComponent.h"
 
 EStateTreeRunStatus UCrowdWaitingTask::EnterState(FStateTreeExecutionContext& Context,
                                                   const FStateTreeTransitionResult& Transition)
 {
 	OwnerAiController = Cast<ACrowdAiController>(Context.GetOwner());
-	OwnerCrowd = Cast<ACrowd>(OwnerAiController);
+	OwnerCrowd = Cast<ACrowd>(OwnerAiController->GetPawn());
+	UE_LOG(LogTemp,Warning,TEXT("기다리자"));
 	return EStateTreeRunStatus::Running;
 	
 }
@@ -29,31 +31,24 @@ void UCrowdWaitingTask::StateCompleted(FStateTreeExecutionContext& Context, cons
 
 EStateTreeRunStatus UCrowdWaitingTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime)
 {
-	
-	switch (WaitingExitReason)
+	Super::Tick(Context, DeltaTime);
+	UE_LOG(LogTemp,Warning,TEXT("Tick이다~"));
+	if (OwnerCrowd->CheckGoWorkTime())
 	{
-		case EWaitingExitReason::GoWork:
-			{
-				FGameplayTag GoWorkTag = FGameplayTag::RequestGameplayTag(TEXT("GoHome"));
-				Context.SendEvent(GoWorkTag);
-				return EStateTreeRunStatus::Succeeded;
-			}
-		case EWaitingExitReason::GoHome:
-			{
-				FGameplayTag GoHomeTag = FGameplayTag::RequestGameplayTag(TEXT("GoHome"));
-				Context.SendEvent(GoHomeTag);
-				return  EStateTreeRunStatus::Succeeded;
-			}
-			
-		case EWaitingExitReason::Talk:
-			{
-				FGameplayTag TalkTag = FGameplayTag::RequestGameplayTag(TEXT("GoHome"));
-				Context.SendEvent(TalkTag);
-				return EStateTreeRunStatus::Succeeded;
-			}
+		FStateTreeEvent GoWorkEvent;
+		GoWorkEvent.Tag = FGameplayTag::RequestGameplayTag("Crowd.Event.GoWork");
+		OwnerAiController->StateTreeComp->SendStateTreeEvent(GoWorkEvent.Tag );
+		UE_LOG(LogTemp,Warning,TEXT("기다림을 끝내겟어"));
+		FinishTask(true);
+		return EStateTreeRunStatus::Succeeded;
 	}
 	return EStateTreeRunStatus::Running;
 		
+}
+UCrowdWaitingTask::UCrowdWaitingTask(const FObjectInitializer& ObjectInitializer)  : Super(ObjectInitializer)
+{
+	bShouldCallTick = true;
+	bShouldCallTickOnlyOnEvents = false;
 }
 
 

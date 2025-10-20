@@ -5,6 +5,7 @@
 
 #include "CrowdAiController.h"
 #include "CrowdTargetPoint.h"
+#include "TTTK_GameState.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/StateTreeAIComponent.h"
 #include "Components/StateTreeComponent.h"
@@ -30,6 +31,9 @@ void ACrowd::BeginPlay()
 		Capsule->OnComponentHit.AddDynamic(this,&ACrowd::OnCapsuleHit);
 	}
 	CollectingTargetPoints();
+	ATTTK_GameState* GameState = Cast<ATTTK_GameState>(GetWorld()->GetGameState());
+	
+	
 	
 	
 }
@@ -145,4 +149,79 @@ void ACrowd::PlayOuch()
 {
 	PlayAnimMontage(OuchAnimMontage);
 }
+
+bool ACrowd::CheckGoHomeTime()
+{
+	ATTTK_GameState* TimeState = Cast<ATTTK_GameState>(GetWorld()->GetGameState());
+	if (TimeState != nullptr)
+	{
+		int32 currentHour;
+		int32 currentMinute;
+		TimeState->GetCurrentTime(currentHour,currentMinute);
+		if (currentHour == CrowdData->GetGoHomeTime().X && currentMinute == CrowdData->GetGoHomeTime().Y)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	return false;
+}
+
+bool ACrowd::CheckGoWorkTime()
+{
+	ATTTK_GameState* TimeState = Cast<ATTTK_GameState>(GetWorld()->GetGameState());
+	if (TimeState != nullptr)
+	{
+		int32 currentHour;
+		int32 currentMinute;
+		TimeState->GetCurrentTime(currentHour,currentMinute);
+		if (currentHour == CrowdData->GetGoWorkTime().X && currentMinute == CrowdData->GetGoWorkTime().Y)
+		{
+			UE_LOG(LogTemp,Warning,TEXT("%d 시 %d 분"),currentHour,currentMinute);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	return false;
+}
+void ACrowd::CheckTime(FTimeOfDayData TimeData)
+{
+	UE_LOG(LogTemp,Warning,TEXT("시간 체크 호출"));
+
+	ACrowdAiController* AiController = Cast<ACrowdAiController>(GetController());
+	if (AiController == nullptr || AiController->StateTreeComp == nullptr)
+	{
+		UE_LOG(LogTemp,Warning,TEXT("AIController 또는 StateTreeComp가 없음"));
+		return;
+	}
+
+	// StateTree가 시작되었는지 확인
+	if (!AiController->StateTreeComp->IsRunning())
+	{
+		UE_LOG(LogTemp,Warning,TEXT("StateTree가 아직 시작되지 않음"));
+		return;
+	}
+
+	if (CheckGoWorkTime())
+	{
+		UE_LOG(LogTemp,Warning,TEXT("일하러 갈 시간"));
+		FStateTreeEvent GoWorkEvent;
+		GoWorkEvent.Tag = FGameplayTag::RequestGameplayTag("Crowd.Event.GoWork");
+		AiController->StateTreeComp->SendStateTreeEvent(GoWorkEvent);
+		ATTTK_GameState* GameState = Cast<ATTTK_GameState>(GetWorld()->GetGameState());
+		UE_LOG(LogTemp,Warning,TEXT("일하러 가는 이벤트 추가"));
+		
+		return;
+	}
+
+	
+}
+
+
 

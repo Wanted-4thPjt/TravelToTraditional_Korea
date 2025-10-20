@@ -34,9 +34,17 @@ protected:
 	float TalkTime;
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
 	UAnimMontage* BumpAnimation;
+	UPROPERTY(EditDefaultsOnly)
+	FVector2D GoWorkTime;
+	UPROPERTY(EditDefaultsOnly)
+	FVector2D GoHomeTime;
 
 public:
 	UFUNCTION()
 	ECrowdType GetCrowdType(){return CrowdType;}
+	UFUNCTION()
+	FVector2D GetGoWorkTime(){return GoWorkTime;}
+	UFUNCTION()
+	FVector2D GetGoHomeTime(){return GoHomeTime;}
 	
 };
