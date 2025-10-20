@@ -20,6 +20,10 @@ EStateTreeRunStatus UCrowdOuchTask::EnterState(FStateTreeExecutionContext& Conte
 
 void UCrowdOuchTask::ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition)
 {
+	if (Transition.SourceState.IsValid())
+	{
+		Context.RequestTransition(Transition.SourceState);
+	}
 	Super::ExitState(Context, Transition);
 }
 
