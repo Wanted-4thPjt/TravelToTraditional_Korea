@@ -5,8 +5,8 @@
 #include "ContentEntrySettings.generated.h"
 
 
-class ABaseContentManager;
-enum class EMappingMode : uint8;
+class UBaseContentManager;
+
 
 UENUM(BlueprintType)
 enum class EStartCondition : uint8
@@ -22,14 +22,14 @@ struct UE_TTTK_API FContentEntrySettings
     GENERATED_BODY()
     
 public:
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    EMappingMode mappingMode = EMappingMode::Content1;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+    FName contentName = "";
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FText contentName;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FText contentDescription;
+    TSubclassOf<UBaseContentManager> contentManagerClass;
+    
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+    float maxWaitSeconds = 0.f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     int32 minPlayers = 1;
@@ -39,28 +39,7 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     EStartCondition startCondition = EStartCondition::Manual;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    bool bAllowMidGameQuit = true;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    bool bIsTeamBased = false;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float timeLimitSeconds = 0.0f; // 0 = no time limit
     
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TSubclassOf<ABaseContentManager> contentManagerClass;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TArray<FTransform> playerSpawnTransforms;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TMap<FName, FString> customSettings;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    UTexture2D* thumbnailImage = nullptr;
-
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FLinearColor uiAccentColor = FLinearColor::White;
     

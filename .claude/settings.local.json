@@ -7,7 +7,8 @@
       "Bash(git add:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\nFeat: 마차 MovementComponent 멀티플레이 복제 설정 추가\n\n- bisMoving, bisStoped, CurrentDistance 변수 복제 활성화\n- GetLifetimeReplicatedProps 함수로 네트워크 동기화 설정\n- 클라이언트에서도 바퀴 회전 상태를 확인 가능하도록 개선\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git log:*)",
-      "Bash(TZ='Asia/Seoul' date '+%Y%m%d %H:%M')"
+      "Bash(TZ='Asia/Seoul' date '+%Y%m%d %H:%M')",
+      "WebFetch(domain:dev.epicgames.com)"
     ],
     "deny": [],
     "ask": []

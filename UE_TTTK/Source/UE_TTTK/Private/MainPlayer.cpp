@@ -11,12 +11,13 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
-#include "Interaction/InteractableComponent.h"
 #include "Interaction/InteractionComponent.h"
 #include "Interaction/ViewComponent.h"
 
 AMainPlayer::AMainPlayer()
 {
+	bReplicates = true;
+	
 	viewComponent = CreateDefaultSubobject<UViewComponent>(TEXT("View"));
 	interactionComponent = CreateDefaultSubobject<UInteractionComponent>(TEXT("Interaction"));
 }
@@ -25,16 +26,11 @@ void AMainPlayer::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	APlayerController* PC = Cast<APlayerController>(GetController());
-	if (PC != nullptr)
+	if (IsLocallyControlled())
 	{
 		if (PC->WasInputKeyJustPressed(EKeys::F))
 		{
-			HandleFKeyPress();
-			//HandleFKeyPress();
-			if (focusedActor)
-			{
-				focusedActor->GetComponentByClass<UInteractableComponent>()->TryInteract(PC);
-			}
+			interactionComponent->InteractKeyInput();
 		}
 	}
 }
@@ -42,9 +38,12 @@ void AMainPlayer::Tick(float DeltaSeconds)
 void AMainPlayer::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	viewComponent->OnViewSthByLineTrace.AddDynamic(this, &AMainPlayer::OnViewInteractableActor);
-	viewComponent->EnableTrace(true);
+
+	if (IsLocallyControlled())
+	{
+		viewComponent->OnViewSthByLineTrace.AddDynamic(this, &AMainPlayer::OnViewInteractableActor);
+		viewComponent->EnableTrace(true);
+	}
 }
 
 void AMainPlayer::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
@@ -222,23 +221,16 @@ void AMainPlayer::SwitchToThirdPersonCamera()
 		UE_LOG(LogTemp, Log, TEXT("3인칭 카메라로 복귀"));
 	}
 }
+
+AActor* AMainPlayer::GetFocusedActor() const
+{
+	if (!IsValid(interactionComponent)) {return nullptr;}
+	return interactionComponent->GetFocusedActor();
+}
+
 void AMainPlayer::OnViewInteractableActor(const FHitResult& hitResult)
 {
-	if (focusedActor)
-	{
-		if (hitResult.GetActor() == focusedActor) {return;}
-		
-		focusedActor->FindComponentByClass<UInteractableComponent>()->TryDeactivateInteractable(GetController<APlayerController>());
-		focusedActor = nullptr;
-	}
-	
-	if (!IsValid(hitResult.GetActor())) {return;}
-	//UE_LOG(LogTemp, Warning, TEXT("Actor Name : %s"), *hitResult.GetActor()->GetActorNameOrLabel());
-	
-	UInteractableComponent* interactable = hitResult.GetActor()->FindComponentByClass<UInteractableComponent>();
-	if (!IsValid(interactable)) {return;}
-	interactable->TryActivateInteractable(GetController<APlayerController>());
-	focusedActor = hitResult.GetActor();
+	interactionComponent->FocusInteractableActor(hitResult);
 }
 
 

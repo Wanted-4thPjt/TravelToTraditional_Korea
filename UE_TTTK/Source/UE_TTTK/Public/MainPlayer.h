@@ -39,14 +39,14 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	void RequestChangeInputMapping(EMappingMode mode);
-	EMappingMode currentMdode = EMappingMode::Content1; // 현재 모드
+	EMappingMode currentMode = EMappingMode::Content1; // 현재 모드
 
 	// Boarding System
 	void HandleFKeyPress();
 	ACarriageVehicle* FindNearbyCarriage();
 
 public:
-	EMappingMode GetCurrentMode(){return currentMdode;}
+	EMappingMode GetCurrentMode() {return currentMode;}
 	void ReturnToDefaultMode();
 
 	// Boarding Functions
@@ -69,17 +69,20 @@ public:
 	void SwitchToFirstPersonCamera();
 	void SwitchToThirdPersonCamera();
 	//void RequestChangeInputMapping(EMappingMode mode);
+
+#pragma region VaVamVa
+public:
+	UFUNCTION(BlueprintCallable)
+	AActor* GetFocusedActor() const;
 	
+protected:
 	UFUNCTION()
 	void OnViewInteractableActor(const FHitResult& hitResult);
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE AActor* GetFocusedActor() {return focusedActor;}
-
+	
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(AllowPrivateAccess=true))
 	TObjectPtr<UViewComponent> viewComponent;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(AllowPrivateAccess=true))
 	TObjectPtr<UInteractionComponent> interactionComponent;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
-	AActor* focusedActor = nullptr;
+#pragma endregion VaVamVa
 };

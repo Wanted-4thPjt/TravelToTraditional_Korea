@@ -60,3 +60,14 @@ void FInteractableFeedbackSettings::EnableParticle(const bool& bEnabled, UPartic
 	interactedParticleVFX = inInteractedParticleVFX;
 }
 
+void FInteractableFeedbackSettings::EnableNetwork(const bool& bEnabled, const int32& count)
+{
+	if (!bEnabled)
+	{
+		effectType &= ~static_cast<uint8>(EEffectType::Network);
+		return;
+	}
+	effectType |= static_cast<uint8>(EEffectType::Network);
+	availableInteractionCount = count;
+}
+

@@ -11,10 +11,9 @@
 
 UContentEntryComponent::UContentEntryComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = true;
 	SetIsReplicatedByDefault(true);
 	
-	maxWaitSeconds = 0.f;
 	bLobbyActive = false;
 	bContentRunning = false;
 	hostPlayer = nullptr;
@@ -24,7 +23,6 @@ UContentEntryComponent::UContentEntryComponent()
 	{
 		entryInfoWidget->SetWidgetSpace(EWidgetSpace::Screen);
 		entryInfoWidget->SetDrawSize(FVector2D(200.f, 50.f));
-		entryInfoWidget->SetRelativeLocation(FVector(0.f, 0.f, 100.f));
 	}
 }
 
@@ -44,15 +42,14 @@ void UContentEntryComponent::BeginPlay()
 	
 	if (settings.contentManagerClass)
 	{
-		FActorSpawnParameters spawnParams;
-		spawnParams.Owner = GetOwner();
-
-		contentManager = GetWorld()->SpawnActor<ABaseContentManager>(
-			settings.contentManagerClass,
-			GetOwner()->GetActorLocation(),
-			FRotator::ZeroRotator,
-			spawnParams
+		contentManager = NewObject<UBaseContentManager>(GetOwner(),
+			settings.contentManagerClass, settings.contentName,
+			EObjectFlags::RF_Transient | EObjectFlags::RF_Transactional
 		);
+	}
+	else if (settings.contentName != "")
+	{
+		
 	}
 	
 }
@@ -67,31 +64,68 @@ void UContentEntryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty
 	DOREPLIFETIME(UContentEntryComponent, bContentRunning);
 }
 
+void UContentEntryComponent::TickComponent(float DeltaTime, enum ELevelTick TickType,
+	FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	
+	if (bContentRunning && IsValid(contentManager))
+	{
+		contentManager->UpdateContent(DeltaTime);
+	}
+}
+
 
 #pragma region Player Actions
 
 void UContentEntryComponent::RequestJoinLobby(AMainPlayer* player)
 {
-	if (!IsValid(player)) return;
-	Server_RequestJoin(player);
+	if (!IsServer()) return;
+	if (!ValidateJoinRequest(player))
+	{
+		// TODO: Fail to Join UI or Effects
+		return;
+	}
+
+	AddPlayerToLobby(player);
+	Multicast_UpdateLobbyState();
 }
 
 void UContentEntryComponent::RequestLeaveLobby(AMainPlayer* player)
 {
+	if (!IsServer()) return;
 	if (!IsValid(player)) return;
-	Server_RequestLeave(player);
+
+	RemovePlayerFromLobby(player);
+	Multicast_UpdateLobbyState();
 }
 
 void UContentEntryComponent::RequestStartContent(AMainPlayer* player)
 {
-	if (!IsValid(player)) return;
-	Server_RequestStart(player);
+	if (!IsServer()) return;
+	if (!ValidateStartRequest(player))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Start request validation failed"));
+		return;
+	}
+
+	StartContentInternal();
+	Multicast_OnContentStarted();
 }
 
 void UContentEntryComponent::RequestCancelLobby(AMainPlayer* player)
 {
+	if (!IsServer()) return;
 	if (!IsValid(player)) return;
-	Server_RequestCancel(player);
+
+	if (hostPlayer != player)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Only host can cancel lobby"));
+		return;
+	}
+
+	ResetLobby();
+	Multicast_OnLobbyCancelled();
 }
 #pragma endregion Player Actions
 
@@ -110,82 +144,15 @@ void UContentEntryComponent::OnContentFinished()
 		// TODO: 플레이어를 원래 위치로 이동
 	}
 
-	/* ContentManager 삭제
-	if (contentManager)
-	{
-		contentManager->Destroy();
-		contentManager = nullptr;
-	}
-	*/
-
 	ResetLobby();
 	Multicast_OnContentFinished();
 }
 #pragma endregion ContentManager Callback
 
-
-#pragma region Server RPC
-
-void UContentEntryComponent::Server_RequestJoin_Implementation(AMainPlayer* player)
-{
-	if (!IsServer()) return;
-
-	if (!ValidateJoinRequest(player))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Join request validation failed for %s"), *player->GetName());
-		return;
-	}
-
-	AddPlayerToLobby(player);
-	Multicast_UpdateLobbyState();
-}
-
-void UContentEntryComponent::Server_RequestLeave_Implementation(AMainPlayer* player)
-{
-	if (!IsServer()) return;
-	if (!IsValid(player)) return;
-
-	RemovePlayerFromLobby(player);
-	Multicast_UpdateLobbyState();
-}
-
-void UContentEntryComponent::Server_RequestStart_Implementation(AMainPlayer* requestingPlayer)
-{
-	if (!IsServer()) return;
-
-	if (!ValidateStartRequest(requestingPlayer))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Start request validation failed"));
-		return;
-	}
-
-	StartContentInternal();
-	Multicast_OnContentStarted();
-}
-
-void UContentEntryComponent::Server_RequestCancel_Implementation(AMainPlayer* requestingPlayer)
-{
-	if (!IsServer()) return;
-	if (!IsValid(requestingPlayer)) return;
-
-	// Host만 취소 가능
-	if (hostPlayer != requestingPlayer)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Only host can cancel lobby"));
-		return;
-	}
-
-	ResetLobby();
-	Multicast_OnLobbyCancelled();
-}
-#pragma endregion Server RPC
-
-
 #pragma region Multicast RPC
 
 void UContentEntryComponent::Multicast_UpdateLobbyState_Implementation()
 {
-	OnLobbyStateChanged.Broadcast(readyPlayers.Num(), settings.maxPlayers);
 	UE_LOG(LogTemp, Log, TEXT("Lobby state updated: %d/%d"), readyPlayers.Num(), settings.maxPlayers);
 }
 
@@ -287,8 +254,8 @@ bool UContentEntryComponent::ValidateStartRequest(AMainPlayer* requestingPlayer)
 
 void UContentEntryComponent::AddPlayerToLobby(AMainPlayer* player)
 {
-	if (!IsValid(player)) return;
 	if (!IsServer()) return;
+	if (!IsValid(player)) return;
 
 	readyPlayers.Add(player);
 
@@ -299,7 +266,7 @@ void UContentEntryComponent::AddPlayerToLobby(AMainPlayer* player)
 		bLobbyActive = true;
 
 		// 타이머 시작 (maxWaitSeconds > 0일 경우)
-		if (maxWaitSeconds > 0.0f)
+		if (settings.maxWaitSeconds > 0.0f)
 		{
 			if (UWorld* world = GetWorld())
 			{
@@ -307,7 +274,7 @@ void UContentEntryComponent::AddPlayerToLobby(AMainPlayer* player)
 					lobbyTimer,
 					this,
 					&UContentEntryComponent::OnLobbyTimeout,
-					maxWaitSeconds,
+					settings.maxWaitSeconds,
 					false
 				);
 			}
@@ -328,29 +295,24 @@ void UContentEntryComponent::AddPlayerToLobby(AMainPlayer* player)
 
 void UContentEntryComponent::RemovePlayerFromLobby(AMainPlayer* player)
 {
-	if (!IsValid(player)) return;
 	if (!IsServer()) return;
+	if (!IsValid(player)) return;
 
-	readyPlayers.Remove(player);
 
 	// Host였으면 재할당
 	if (hostPlayer == player)
 	{
 		ReassignHost();
 	}
+	readyPlayers.Remove(player);
 
 	UE_LOG(LogTemp, Log, TEXT("Player %s left lobby (%d/%d)"), *player->GetName(), readyPlayers.Num(), settings.maxPlayers);
-
-	// 대기실이 비었으면 초기화
-	if (readyPlayers.Num() == 0)
-	{
-		ResetLobby();
-	}
 }
 
 void UContentEntryComponent::StartContentInternal()
 {
 	if (!IsServer()) return;
+	if (!IsValid(contentManager)) {return;}
 
 	UE_LOG(LogTemp, Log, TEXT("Starting content with %d players"), readyPlayers.Num());
 
@@ -363,26 +325,12 @@ void UContentEntryComponent::StartContentInternal()
 
 	bContentRunning = true;
 	bLobbyActive = false;
-
-	
-
-	// TODO: 플레이어 이동
-	/*
-	for (int32 i = 0; i < readyPlayers.Num(); ++i)
-	{
-		AMainPlayer* player = readyPlayers[i];
-		if (!player) continue;
-
-		if (settings.playerSpawnTransforms.IsValidIndex(i))
-		{
-			player->SetActorTransform(settings.playerSpawnTransforms[i]);
-		}
-	}
-	*/
+	contentManager->StartContent();
 }
 
 void UContentEntryComponent::ResetLobby()
 {
+	if (!IsServer()) return;
 	bLobbyActive = false;
 	hostPlayer = nullptr;
 	readyPlayers.Empty();
@@ -401,33 +349,24 @@ void UContentEntryComponent::OnLobbyTimeout()
 {
 	if (!IsServer()) return;
 
-	UE_LOG(LogTemp, Warning, TEXT("Lobby timeout - cancelling"));
-
 	ResetLobby();
 	Multicast_OnLobbyCancelled();
 }
 
 void UContentEntryComponent::ReassignHost()
 {
-	if (readyPlayers.Num() > 0)
+	if (!IsServer()) return;
+	if (readyPlayers.Num() > 1)
 	{
-		hostPlayer = readyPlayers[0];
+		AMainPlayer* swapPtr = hostPlayer;
+		hostPlayer = readyPlayers[1];
+		readyPlayers[0] = hostPlayer;
 		UE_LOG(LogTemp, Log, TEXT("Host reassigned to %s"), *hostPlayer->GetName());
+		return;
 	}
-	else
-	{
-		hostPlayer = nullptr;
-		bLobbyActive = false;
-
-		// 타이머 정리
-		UWorld* world = GetWorld();
-		if (world && lobbyTimer.IsValid())
-		{
-			world->GetTimerManager().ClearTimer(lobbyTimer);
-		}
-
-		UE_LOG(LogTemp, Log, TEXT("No players left - lobby closed"));
-	}
+	
+	UE_LOG(LogTemp, Log, TEXT("No players left - lobby closed"));
+	ResetLobby();
 }
 
 #pragma endregion Internal

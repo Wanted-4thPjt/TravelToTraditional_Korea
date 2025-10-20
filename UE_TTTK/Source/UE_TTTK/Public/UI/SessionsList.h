@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "SessionsList.generated.h"
 
+class USessionNode;
 class UButton;
 class UListView;
 /**
@@ -16,6 +17,9 @@ class UE_TTTK_API USessionsList : public UUserWidget
 {
 	GENERATED_BODY()
 
+public:
+	virtual void NativeOnInitialized() override;
+
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
 	UListView* sessionsListContainer;
@@ -24,4 +28,5 @@ protected:
 	UButton* joinButton;
 	UPROPERTY(meta=(BindWidget))
 	UButton* cancelButton;
+
 };

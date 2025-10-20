@@ -19,10 +19,10 @@ enum class EInteractableState : uint8
 	Interacting = 1 << 5 // 내가 FOCUS 하면서 상호작용 키를 누른경우
 };
 ENUM_CLASS_FLAGS(EInteractableState)
-class AMainPlayer;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnChangeState, APlayerController*, playerController, const EInteractableState&, newInteractableState);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRequestInteraction, APawn*, player);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRequestFinishInteraction, APawn*, player);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class UE_TTTK_API UInteractableComponent : public UActorComponent
@@ -34,9 +34,12 @@ public:
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void InitializeComponent() override;
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-
+#if WITH_EDITOR
+	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif //WITH_EDITOR
 
 public:
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -44,9 +47,11 @@ public:
 	UFUNCTION(BlueprintPure, Category="Interactable|Each Client")
 	FORCEINLINE EInteractableState GetState() const {return clientState;}
 	UFUNCTION(BlueprintPure, Category="Interactable|Each Client")
-	bool IsInteractable() const {return clientState == EInteractableState::Focused;}
+	FORCEINLINE bool IsInteractable() const {return clientState == EInteractableState::Focused;}
 	UFUNCTION(BlueprintPure, Category="Interactable|Each Client")
-	bool IsInteracting() const {return clientState == EInteractableState::Interacting;}
+	FORCEINLINE bool IsInteracting() const {return clientState == EInteractableState::Interacting;}
+	UFUNCTION(BlueprintPure, Category="Interactable|All Client")
+	FORCEINLINE bool CanPossess() const {return feedbackSettings.IsNetworkOn() && possessingPlayers.Num() < feedbackSettings.availableInteractionCount;}
 
 	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
 	void TryDeactivateInteractable(APlayerController* playerController);
@@ -57,10 +62,10 @@ public:
 	void TryInteract(APlayerController* playerController);
 	UFUNCTION(NetMulticast, Reliable, Category="Interactable|Multicast")
 	void Multicast_TryInteract(APawn* player);
-	UFUNCTION(Server, Reliable, Category="Interactable|Server")
-	void PossessedByPlayer(AMainPlayer* player);
 	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
 	void FinishInteracting(APlayerController* Player, const EInteractableState& newState);
+	UFUNCTION(NetMulticast, Reliable, Category="Interactable|Multicast")
+	void Multicast_FinishInteracting(APawn* player);
 
 	UFUNCTION(BlueprintCallable, Category="Interactable|Visual")
 	void Client_UpdateVisuals(APlayerController* playerController);
@@ -96,6 +101,8 @@ public:
 	FOnChangeState onChangeState;
 	UPROPERTY(BlueprintAssignable, Category="Interactable|Event")
 	FOnRequestInteraction onRequestInteraction;
+	UPROPERTY(BlueprintAssignable, Category="Interactable|Event")
+	FOnRequestFinishInteraction onRequestFinishInteraction;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
@@ -104,20 +111,18 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Range")
 	TObjectPtr<USphereComponent> interactionSphere;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Range")
-	float interactionRadius;
+	float interactionRadius = 300.f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Server")
-	bool bPossessedByInteraction = false;
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Server")
-	TObjectPtr<AMainPlayer> possessingPlayer = nullptr;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Server")
+	TArray<APawn*> possessingPlayers;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractableFeedback")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "InteractableFeedback")
 	EInteractableState clientState = EInteractableState::Default;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractableFeedback")
 	FInteractableFeedbackSettings feedbackSettings;
 
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Client", meta=(AllowPrivateAccess=true))
-	AMainPlayer* playerInRange;
+	APawn* playerInRange;
 	
 };

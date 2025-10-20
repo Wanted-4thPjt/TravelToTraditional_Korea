@@ -2,3 +2,12 @@
 
 
 #include "UI/SessionsList.h"
+
+#include "Components/ListView.h"
+
+
+void USessionsList::NativeOnInitialized()
+{
+	Super::NativeOnInitialized();
+	
+}
