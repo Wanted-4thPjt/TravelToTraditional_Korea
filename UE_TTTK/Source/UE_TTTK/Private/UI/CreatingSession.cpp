@@ -44,6 +44,32 @@ void UCreatingSession::NativeConstruct()
 	}
 }
 
+void UCreatingSession::NativeOnInitialized()
+{
+	Super::NativeOnInitialized();
+	
+	if (!IsValid(mapList)) {return;}
+	
+	InitializeMapSelector();
+	
+	if (IsValid(createButton))
+	{
+		createButton->OnClicked.AddDynamic(this, &UCreatingSession::OnCreateButtonClick);
+	}
+	if (IsValid(cancelButton))
+	{
+		cancelButton->OnClicked.AddDynamic(this, &UCreatingSession::OnCancelButtonClick);
+	}
+	if (IsValid(hostNameDisplay))
+	{
+		hostNameDisplay->SetText(FText::FromString(GetSteamNickName()));
+	}
+	if (IsValid(maxPlayerSpinBox))
+	{
+		maxPlayerSpinBox->SetDelta(1.f);
+	}
+}
+
 void UCreatingSession::OnCreateButtonClick()
 {
 	if (!IsValid(mapList) || !IsValid(mapSelector)) {return;}
@@ -63,6 +89,7 @@ void UCreatingSession::OnCreateButtonClick()
 
 void UCreatingSession::OnCancelButtonClick()
 {
+	GetParent()->SetVisibility(ESlateVisibility::Hidden);
 	SetVisibility(ESlateVisibility::Hidden);
 }
 

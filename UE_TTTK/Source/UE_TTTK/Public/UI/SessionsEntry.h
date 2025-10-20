@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "OnlineSessionSettings.h"
-#include "SessionsList.generated.h"
+#include "SessionsEntry.generated.h"
 
 class USessionNode;
 class UButton;
@@ -14,7 +14,7 @@ class UListView;
  *
  */
 UCLASS()
-class UE_TTTK_API USessionsList : public UUserWidget
+class UE_TTTK_API USessionsEntry : public UUserWidget
 {
 	GENERATED_BODY()
 
@@ -28,8 +28,8 @@ private:
 	void OnJoinButtonClicked();
 	UFUNCTION()
 	void OnCancelButtonClicked();
-	UFUNCTION()
-	void OnSessionNodeClicked(UObject* Item);
+	/*UFUNCTION()
+	void OnSessionNodeClicked(UObject* Item);*/
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))

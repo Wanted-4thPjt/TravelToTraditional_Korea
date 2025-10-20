@@ -7,7 +7,7 @@
 #include "OnlineSessionSettings.h"
 #include "MainMenuSteam.generated.h"
 
-class USessionsList;
+class USessionsEntry;
 class UCreatingSession;
 class UListView;
 class UOverlay;
@@ -57,12 +57,12 @@ protected:
 	UButton* exitButton;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
-	UOverlay* creatingSessionOverlay;
+	TObjectPtr<UOverlay> creatingSessionOverlay;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
-	UCreatingSession* creatingSession;
+	TObjectPtr<UCreatingSession> creatingSession;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
-	UOverlay* sessionsOverlay;
+	TObjectPtr<UOverlay> sessionsOverlay;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
-	USessionsList* sessionsList;
+	TObjectPtr<USessionsEntry> sessionsEntry;
 
 };

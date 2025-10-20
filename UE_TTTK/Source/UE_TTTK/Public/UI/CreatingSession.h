@@ -22,6 +22,7 @@ class UE_TTTK_API UCreatingSession : public UUserWidget
 
 protected:
 	virtual void NativeConstruct() override;
+	virtual void NativeOnInitialized() override;
 
 	UFUNCTION()
 	void OnCreateButtonClick();
@@ -51,7 +52,6 @@ protected:
 	UPROPERTY(meta=(BindWidget))
 	UButton* cancelButton;
 
-private:
-	UPROPERTY()
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Map")
 	UPDA_MapList* mapList;
 };

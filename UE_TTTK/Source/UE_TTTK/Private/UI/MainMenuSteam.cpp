@@ -10,7 +10,7 @@
 #include "Components/Overlay.h"
 #include "Online/OnlineSessionNames.h"
 #include "UI/CreatingSession.h"
-#include "UI/SessionsList.h"
+#include "UI/SessionsEntry.h"
 #include "Network/SteamSessionSubsystem.h"
 
 void UMainMenuSteam::NativeConstruct()
@@ -63,7 +63,8 @@ void UMainMenuSteam::CreateHost()
 
 void UMainMenuSteam::OnCompleteCreateSession(FName inSessionName, bool bWasSuccess)
 {
-	
+	if (!bWasSuccess) {return;}
+	GetWorld()->ServerTravel(inSessionName.ToString() + "?listen");
 }
 
 void UMainMenuSteam::ClickFindButton()
@@ -82,9 +83,9 @@ void UMainMenuSteam::ClickFindButton()
 
 void UMainMenuSteam::OnSessionsFound(const TArray<FOnlineSessionSearchResult>& SearchResults)
 {
-	if (IsValid(sessionsList))
+	if (IsValid(sessionsEntry))
 	{
-		sessionsList->PopulateSessionsList(SearchResults);
+		sessionsEntry->PopulateSessionsList(SearchResults);
 	}
 }
 

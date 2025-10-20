@@ -1,32 +1,32 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "UI/SessionsList.h"
+#include "UI/SessionsEntry.h"
 
 #include "Components/ListView.h"
 #include "Components/Button.h"
 #include "UI/SessionNodeData.h"
 #include "Network/SteamSessionSubsystem.h"
 
-void USessionsList::NativeOnInitialized()
+void USessionsEntry::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
 	if (IsValid(joinButton))
 	{
-		joinButton->OnClicked.AddDynamic(this, &USessionsList::OnJoinButtonClicked);
+		joinButton->OnClicked.AddDynamic(this, &USessionsEntry::OnJoinButtonClicked);
 	}
 	if (IsValid(cancelButton))
 	{
-		cancelButton->OnClicked.AddDynamic(this, &USessionsList::OnCancelButtonClicked);
+		cancelButton->OnClicked.AddDynamic(this, &USessionsEntry::OnCancelButtonClicked);
 	}
-	if (IsValid(sessionsListContainer))
+	/*if (IsValid(sessionsListContainer))
 	{
-		sessionsListContainer->OnItemClicked().AddUObject(this, &USessionsList::OnSessionNodeClicked);
-	}
+		sessionsListContainer->OnItemClicked().AddUObject(this, &USessionsEntry::OnSessionNodeClicked);
+	}*/
 }
 
-void USessionsList::PopulateSessionsList(const TArray<FOnlineSessionSearchResult>& SearchResults)
+void USessionsEntry::PopulateSessionsList(const TArray<FOnlineSessionSearchResult>& SearchResults)
 {
 	if (!IsValid(sessionsListContainer))
 	{
@@ -59,7 +59,7 @@ void USessionsList::PopulateSessionsList(const TArray<FOnlineSessionSearchResult
 	}
 }
 
-void USessionsList::OnJoinButtonClicked()
+void USessionsEntry::OnJoinButtonClicked()
 {
 	if (!IsValid(sessionsListContainer))
 	{
@@ -78,13 +78,15 @@ void USessionsList::OnJoinButtonClicked()
 	}
 }
 
-void USessionsList::OnCancelButtonClicked()
+void USessionsEntry::OnCancelButtonClicked()
 {
-	
 	GetParent()->SetVisibility(ESlateVisibility::Collapsed);
+	SetVisibility(ESlateVisibility::Hidden);
 }
 
-void USessionsList::OnSessionNodeClicked(UObject* Item)
+/*
+void USessionsEntry::OnSessionNodeClicked(UObject* Item)
 {
 	// 클릭 시 선택 표시 (자동으로 처리됨)
 }
+*/
