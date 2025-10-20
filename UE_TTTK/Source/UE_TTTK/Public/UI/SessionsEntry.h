@@ -4,26 +4,37 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "SessionsList.generated.h"
+#include "OnlineSessionSettings.h"
+#include "SessionsEntry.generated.h"
 
 class USessionNode;
 class UButton;
 class UListView;
 /**
- * 
+ *
  */
 UCLASS()
-class UE_TTTK_API USessionsList : public UUserWidget
+class UE_TTTK_API USessionsEntry : public UUserWidget
 {
 	GENERATED_BODY()
 
 public:
 	virtual void NativeOnInitialized() override;
 
+	void PopulateSessionsList(const TArray<FOnlineSessionSearchResult>& SearchResults);
+
+private:
+	UFUNCTION()
+	void OnJoinButtonClicked();
+	UFUNCTION()
+	void OnCancelButtonClicked();
+	/*UFUNCTION()
+	void OnSessionNodeClicked(UObject* Item);*/
+
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
 	UListView* sessionsListContainer;
-	
+
 	UPROPERTY(meta=(BindWidget))
 	UButton* joinButton;
 	UPROPERTY(meta=(BindWidget))
