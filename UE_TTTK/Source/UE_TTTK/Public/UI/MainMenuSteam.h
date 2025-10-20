@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "OnlineSessionSettings.h"
 #include "MainMenuSteam.generated.h"
 
 class USessionsList;
@@ -33,8 +34,9 @@ private:
 	
 	UFUNCTION()
 	void ClickFindButton();
+	void OnSessionsFound(const TArray<FOnlineSessionSearchResult>& SearchResults);
 	UFUNCTION()
-	void OnFindSessionComplete(bool bWasSuccess);
+	void ClickExit();
 	
 
 
@@ -63,6 +65,4 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
 	USessionsList* sessionsList;
 
-private:
-	TSharedPtr<FOnlineSessionSearch> sessionSearch;
 };

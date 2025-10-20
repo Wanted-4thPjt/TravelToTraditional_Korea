@@ -7,9 +7,11 @@
 #include "Interfaces/OnlineSessionInterface.h"
 #include "OnlineSessionSettings.h"
 #include "Components/Button.h"
+#include "Components/Overlay.h"
 #include "Online/OnlineSessionNames.h"
 #include "UI/CreatingSession.h"
 #include "UI/SessionsList.h"
+#include "Network/SteamSessionSubsystem.h"
 
 void UMainMenuSteam::NativeConstruct()
 {
@@ -19,10 +21,31 @@ void UMainMenuSteam::NativeConstruct()
 	{
 		hostButton->OnClicked.AddDynamic(this, &UMainMenuSteam::CreateHost);
 	}
-	creatingSession = Cast<UCreatingSession>(CreateWidget(this, UCreatingSession::StaticClass()));
-	creatingSession->SetVisibility(ESlateVisibility::Hidden);
-	sessionsList = Cast<USessionsList>(CreateWidget(this, USessionsList::StaticClass()));
-	sessionsList->SetVisibility(ESlateVisibility::Hidden);
+	if (IsValid(findButton))
+	{
+		findButton->OnClicked.AddDynamic(this, &UMainMenuSteam::ClickFindButton);
+	}
+	if (IsValid(exitButton))
+	{
+		exitButton->OnClicked.AddDynamic(this, &UMainMenuSteam::ClickExit);
+	}
+
+	// Subsystem 델리게이트 바인딩
+	if (USteamSessionSubsystem* sessionSubsystem = GetGameInstance()->GetSubsystem<USteamSessionSubsystem>())
+	{
+		sessionSubsystem->OnSessionSearchComplete.Clear();
+		sessionSubsystem->OnSessionSearchComplete.AddUObject(this, &UMainMenuSteam::OnSessionsFound);
+	}
+
+	// 초기 상태 설정
+	if (creatingSessionOverlay)
+	{
+		creatingSessionOverlay->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	if (sessionsOverlay)
+	{
+		sessionsOverlay->SetVisibility(ESlateVisibility::Collapsed);
+	}
 }
 
 void UMainMenuSteam::NativeOnInitialized()
@@ -32,7 +55,10 @@ void UMainMenuSteam::NativeOnInitialized()
 
 void UMainMenuSteam::CreateHost()
 {
-	creatingSession->SetVisibility(ESlateVisibility::Visible);
+	if (creatingSessionOverlay)
+	{
+		creatingSessionOverlay->SetVisibility(ESlateVisibility::Visible);
+	}
 }
 
 void UMainMenuSteam::OnCompleteCreateSession(FName inSessionName, bool bWasSuccess)
@@ -42,29 +68,27 @@ void UMainMenuSteam::OnCompleteCreateSession(FName inSessionName, bool bWasSucce
 
 void UMainMenuSteam::ClickFindButton()
 {
-	if (IOnlineSubsystem* onlineSub = IOnlineSubsystem::Get())
+	if (USteamSessionSubsystem* sessionSubsystem = GetGameInstance()->GetSubsystem<USteamSessionSubsystem>())
 	{
-		IOnlineSessionPtr sessions = onlineSub->GetSessionInterface();
-		if (sessions.IsValid())
+		sessionSubsystem->FindSession(10);
+
+		// UI 전환
+		if (sessionsOverlay)
 		{
-			sessions->OnFindSessionsCompleteDelegates.AddUObject(
-				this, &UMainMenuSteam::OnFindSessionComplete
-			);
-			
-			sessionSearch = MakeShareable(new FOnlineSessionSearch());
-			sessionSearch->MaxSearchResults = 10;
-			sessionSearch->bIsLanQuery = false;
-			sessionSearch->QuerySettings.Set(
-				SEARCH_PRESENCE, true,
-				EOnlineComparisonOp::Equals
-			);
-			sessions->FindSessions(0, sessionSearch.ToSharedRef());
+			sessionsOverlay->SetVisibility(ESlateVisibility::Visible);
 		}
 	}
 }
 
-void UMainMenuSteam::OnFindSessionComplete(bool bWasSuccess)
+void UMainMenuSteam::OnSessionsFound(const TArray<FOnlineSessionSearchResult>& SearchResults)
 {
-	if (!bWasSuccess) {return;}
-	//const TArray<FOnlineSession>& results = ser
+	if (IsValid(sessionsList))
+	{
+		sessionsList->PopulateSessionsList(SearchResults);
+	}
+}
+
+void UMainMenuSteam::ClickExit()
+{
+	GetWorld()->EndPlay(EEndPlayReason::Type::Quit);
 }
