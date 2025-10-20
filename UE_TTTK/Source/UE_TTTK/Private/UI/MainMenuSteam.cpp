@@ -17,6 +17,12 @@ void UMainMenuSteam::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	
+}
+
+void UMainMenuSteam::NativeOnInitialized()
+{
+	Super::NativeOnInitialized();
 	if (IsValid(hostButton))
 	{
 		hostButton->OnClicked.AddDynamic(this, &UMainMenuSteam::CreateHost);
@@ -46,11 +52,6 @@ void UMainMenuSteam::NativeConstruct()
 	{
 		sessionsOverlay->SetVisibility(ESlateVisibility::Collapsed);
 	}
-}
-
-void UMainMenuSteam::NativeOnInitialized()
-{
-	Super::NativeOnInitialized();
 }
 
 void UMainMenuSteam::CreateHost()
