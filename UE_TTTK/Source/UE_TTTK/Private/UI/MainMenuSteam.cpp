@@ -23,6 +23,9 @@ void UMainMenuSteam::NativeConstruct()
 void UMainMenuSteam::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
+	
+	UE_LOG(LogTemp, Warning, TEXT("MainMenuSteam::NativeOnInitialized 호출됨"));
+	
 	if (IsValid(hostButton))
 	{
 		hostButton->OnClicked.AddDynamic(this, &UMainMenuSteam::CreateHost);
@@ -46,19 +49,30 @@ void UMainMenuSteam::NativeOnInitialized()
 	// 초기 상태 설정
 	if (creatingSessionOverlay)
 	{
-		creatingSessionOverlay->SetVisibility(ESlateVisibility::Collapsed);
+		creatingSessionOverlay->SetVisibility(ESlateVisibility::Hidden);
 	}
 	if (sessionsOverlay)
 	{
-		sessionsOverlay->SetVisibility(ESlateVisibility::Collapsed);
+		sessionsOverlay->SetVisibility(ESlateVisibility::Hidden);
 	}
 }
 
 void UMainMenuSteam::CreateHost()
 {
+	UE_LOG(LogTemp, Warning, TEXT("CreateHost 호출됨!"));
+
+	if (!creatingSessionOverlay)
+	{
+		UE_LOG(LogTemp, Error, TEXT("creatingSessionOverlay가 nullptr입니다!"));
+		return;
+	}
+
+	UE_LOG(LogTemp, Display, TEXT("Overlay 표시 중..."));
+
 	if (creatingSessionOverlay)
 	{
 		creatingSessionOverlay->SetVisibility(ESlateVisibility::Visible);
+		creatingSession->SetVisibility(ESlateVisibility::Visible);
 	}
 }
 
@@ -70,16 +84,29 @@ void UMainMenuSteam::OnCompleteCreateSession(FName inSessionName, bool bWasSucce
 
 void UMainMenuSteam::ClickFindButton()
 {
+	UE_LOG(LogTemp, Warning, TEXT("ClickFindButton 호출됨!"));
+
 	if (USteamSessionSubsystem* sessionSubsystem = GetGameInstance()->GetSubsystem<USteamSessionSubsystem>())
 	{
+		UE_LOG(LogTemp, Display, TEXT("Subsystem 획득 성공, FindSession 호출"));
 		sessionSubsystem->FindSession(10);
 
-		// UI 전환
 		if (sessionsOverlay)
 		{
+			UE_LOG(LogTemp, Display, TEXT("sessionsOverlay 표시"));
 			sessionsOverlay->SetVisibility(ESlateVisibility::Visible);
+			sessionsEntry->SetVisibility(ESlateVisibility::Visible);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("sessionsOverlay가 nullptr입니다!"));
 		}
 	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("SteamSessionSubsystem을 가져올 수 없습니다!"));
+	}
+
 }
 
 void UMainMenuSteam::OnSessionsFound(const TArray<FOnlineSessionSearchResult>& SearchResults)
@@ -92,5 +119,7 @@ void UMainMenuSteam::OnSessionsFound(const TArray<FOnlineSessionSearchResult>& S
 
 void UMainMenuSteam::ClickExit()
 {
+	UE_LOG(LogTemp, Warning, TEXT("ClickExit 호출됨!"));
+
 	GetWorld()->EndPlay(EEndPlayReason::Type::Quit);
 }

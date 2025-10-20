@@ -23,25 +23,6 @@ void UCreatingSession::NativeConstruct()
 	
 	mapList = settings->mapListAsset.LoadSynchronous();
 	if (!IsValid(mapList)) {return;}
-	
-	InitializeMapSelector();
-	
-	if (IsValid(createButton))
-	{
-		createButton->OnClicked.AddDynamic(this, &UCreatingSession::OnCreateButtonClick);
-	}
-	if (IsValid(cancelButton))
-	{
-		cancelButton->OnClicked.AddDynamic(this, &UCreatingSession::OnCancelButtonClick);
-	}
-	if (IsValid(hostNameDisplay))
-	{
-		hostNameDisplay->SetText(FText::FromString(GetSteamNickName()));
-	}
-	if (IsValid(maxPlayerSpinBox))
-	{
-		maxPlayerSpinBox->SetDelta(1.f);
-	}
 }
 
 void UCreatingSession::NativeOnInitialized()

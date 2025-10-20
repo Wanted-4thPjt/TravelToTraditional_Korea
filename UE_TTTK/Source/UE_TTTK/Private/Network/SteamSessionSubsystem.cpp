@@ -5,6 +5,7 @@
 
 #include "Network/SteamSessionSettings.h"
 #include "OnlineSubsystem.h"
+#include "OnlineSubsystemSteam.h"
 #include "OnlineSessionSettings.h"
 #include "Online/OnlineSessionNames.h"
 #include "Interfaces/OnlineSessionInterface.h"
@@ -23,15 +24,17 @@ void USteamSessionSubsystem::Deinitialize()
 
 void USteamSessionSubsystem::CreateSession(FName mapName, int32 maxPlayerCount)
 {
-	if (IOnlineSubsystem* onlineSub = IOnlineSubsystem::Get())
+	//steam.GetSessionInterface();
+	if (IOnlineSubsystem* onlineSub = IOnlineSubsystem::Get("Steam"))
 	{
 		IOnlineSessionPtr sessions = onlineSub->GetSessionInterface();
+		
 		if (sessions.IsValid())
 		{
 			sessions->OnCreateSessionCompleteDelegates.Clear();
 			sessions->OnCreateSessionCompleteDelegates.AddUObject(
 				this, &USteamSessionSubsystem::OnCompleteCreateSession);
-
+			
 			FOnlineSessionSettings sessionSettings;
 			sessionSettings.NumPublicConnections = maxPlayerCount;
 			sessionSettings.bShouldAdvertise = true;  // open in Steam friend list
@@ -54,7 +57,7 @@ void USteamSessionSubsystem::CreateSession(FName mapName, int32 maxPlayerCount)
 
 void USteamSessionSubsystem::FindSession(int32 maxSearchResult)
 {
-	if (IOnlineSubsystem* onlineSub = IOnlineSubsystem::Get())
+	if (IOnlineSubsystem* onlineSub = IOnlineSubsystem::Get("Steam"))
 	{
 		IOnlineSessionPtr sessions = onlineSub->GetSessionInterface();
 		if (sessions.IsValid())
@@ -85,7 +88,7 @@ void USteamSessionSubsystem::JoinSession(int32 searchResultIndex)
 		return;
 	}
 
-	if (IOnlineSubsystem* onlineSub = IOnlineSubsystem::Get())
+	if (IOnlineSubsystem* onlineSub = IOnlineSubsystem::Get("Steam"))
 	{
 		IOnlineSessionPtr sessions = onlineSub->GetSessionInterface();
 		if (sessions.IsValid())

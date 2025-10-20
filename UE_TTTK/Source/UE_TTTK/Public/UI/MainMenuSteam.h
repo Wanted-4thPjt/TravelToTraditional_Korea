@@ -22,10 +22,11 @@ UCLASS()
 class UE_TTTK_API UMainMenuSteam : public UUserWidget
 {
 	GENERATED_BODY()
+	
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnInitialized() override;
-
+	
 private:
 	UFUNCTION()
 	void CreateHost();
@@ -38,7 +39,6 @@ private:
 	UFUNCTION()
 	void ClickExit();
 	
-
 
 protected:
 	UPROPERTY(meta=(BindWidget))

@@ -7,6 +7,7 @@
 #include "Components/Button.h"
 #include "UI/SessionNodeData.h"
 #include "Network/SteamSessionSubsystem.h"
+#include "UI/MainMenuSteam.h"
 
 void USessionsEntry::NativeOnInitialized()
 {
@@ -80,7 +81,7 @@ void USessionsEntry::OnJoinButtonClicked()
 
 void USessionsEntry::OnCancelButtonClicked()
 {
-	GetParent()->SetVisibility(ESlateVisibility::Collapsed);
+	GetParent()->SetVisibility(ESlateVisibility::Hidden);
 	SetVisibility(ESlateVisibility::Hidden);
 }
 

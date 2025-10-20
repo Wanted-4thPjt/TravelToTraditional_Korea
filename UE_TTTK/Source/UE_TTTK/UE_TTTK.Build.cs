@@ -14,7 +14,7 @@ public class UE_TTTK : ModuleRules
 			"AIModule", "StateTreeModule", "GameplayStateTreeModule",
 			"UMG", "Slate", "SlateCore",
 			/*251001*/"Networking", "Sockets",
-			/*251002*/"OnlineSubsystem", "OnlineSubsystemSteam", "OnlineSubsystemUtils",
+			/*251002*/"OnlineSubsystem", "OnlineSubsystemSteam", "OnlineSubsystemUtils", "SteamSockets",
 			/*251003*/"DeveloperSettings",
 			/*251005*/"Niagara"
 		});
