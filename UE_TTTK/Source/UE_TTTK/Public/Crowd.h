@@ -34,6 +34,7 @@ public:
 	class ACrowdTargetPoint* GoWorkTargetPoint;
 	UPROPERTY()
 	FVector currentTargetLocation = FVector::ZeroVector;
+	
 
 	UPROPERTY(BlueprintReadOnly, Category = "Time")
 	bool bShouldGoWork = false;
@@ -75,7 +76,7 @@ public:
 	ACrowdTargetPoint* GetGoHomeTargetPoint(){return GoHomeTargetPoint;};
 	ACrowdTargetPoint* GetGoWorkTargetPoint(){return GoWorkTargetPoint;};
 	FVector GetCurrentTargetLocation(){return currentTargetLocation;};
-
+	
 	UFUNCTION()
 	void CheckTime(FTimeOfDayData TimeData);
 	UFUNCTION()
