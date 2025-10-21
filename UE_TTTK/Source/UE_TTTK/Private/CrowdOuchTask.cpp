@@ -10,21 +10,28 @@
 EStateTreeRunStatus UCrowdOuchTask::EnterState(FStateTreeExecutionContext& Context,
                                                const FStateTreeTransitionResult& Transition)
 {
-	UE_LOG(LogTemp, Warning, TEXT("OuchState진입"));
+	UE_LOG(LogTemp, Error, TEXT("=== Crowd OuchState진입"));
+	
 	OwnerAiController = Cast<ACrowdAiController>(Context.GetOwner());
 	OwnerCrowd = Cast<ACrowd>(OwnerAiController->GetPawn());
 	OwnerAiController->Ouch();
-	
+	UE_LOG(LogTemp,Error,TEXT("====%s에서 Ouch Enter진입"),*(OwnerCrowd->GetCrowdCurrentState().ToString()))
 	return EStateTreeRunStatus::Running;
 }
 
 void UCrowdOuchTask::ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition)
 {
-	if (Transition.SourceState.IsValid())
-	{
-		Context.RequestTransition(Transition.SourceState);
-	}
+	
 	Super::ExitState(Context, Transition);
+	UE_LOG(LogTemp,Error,TEXT("===EXIT Ouch스테이트"));
+	if (Transition.SourceState.IsValid()) // 이전 스텡이트 정보 가져오기
+	{
+		
+		FGameplayTag PrevieousTag = FGameplayTag::RequestGameplayTag(OwnerCrowd->GetCrowdCurrentState());
+		Context.SendEvent(PrevieousTag);
+		FinishTask(true);
+		
+	}
 }
 
 void UCrowdOuchTask::StateCompleted(FStateTreeExecutionContext& Context, const EStateTreeRunStatus CompletionStatus,
@@ -35,5 +42,17 @@ void UCrowdOuchTask::StateCompleted(FStateTreeExecutionContext& Context, const E
 
 EStateTreeRunStatus UCrowdOuchTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime)
 {
+	currentTime+=DeltaTime;
+	if (currentTime>=2)
+	{
+		return EStateTreeRunStatus::Succeeded;
+	}
 	return Super::Tick(Context, DeltaTime);
+	
+	
+}
+UCrowdOuchTask::UCrowdOuchTask(const FObjectInitializer& ObjectInitializer)  : Super(ObjectInitializer)
+{
+	bShouldCallTick = true;
+	bShouldCallTickOnlyOnEvents = false;
 }

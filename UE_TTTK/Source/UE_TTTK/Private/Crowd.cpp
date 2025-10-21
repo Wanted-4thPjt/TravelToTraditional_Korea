@@ -41,6 +41,11 @@ void ACrowd::BeginPlay()
 void ACrowd::OnCapsuleHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	FVector NormalImpulse, const FHitResult& Hit)
 {
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && AnimInstance->IsAnyMontagePlaying())
+	{
+		return;
+	}
 	UE_LOG(LogTemp, Warning, TEXT("===플레이어랑 부딫혓다===="));
 	if (OtherActor->ActorHasTag("Player"))
 	{
@@ -221,6 +226,11 @@ void ACrowd::CheckTime(FTimeOfDayData TimeData)
 	}
 
 	
+}
+
+void ACrowd::SetCrowdCurrentState(FName NewState)
+{
+	currentState = NewState;
 }
 
 

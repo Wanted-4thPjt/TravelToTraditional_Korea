@@ -60,6 +60,8 @@ public:
 	int32 FindIndexByLocation(FVector location);
 	UFUNCTION()
 	void DrawDebugPoint();
+	UFUNCTION()
+	FVector FindLocationByCrowd(class ACrowd* crowd);
 	
 	
 };

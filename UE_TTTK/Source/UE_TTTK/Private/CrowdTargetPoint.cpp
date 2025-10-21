@@ -139,3 +139,13 @@ void ACrowdTargetPoint::DrawDebugPoint()
 		}
 	}
 }
+
+FVector ACrowdTargetPoint::FindLocationByCrowd(class ACrowd* crowd)
+{
+	int32 index = FindIndexByCrowd(crowd);
+	if (index!=-1)
+	{
+		return subTargets[index]->location;
+	}
+	return FVector::ZeroVector;
+}

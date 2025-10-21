@@ -28,6 +28,12 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Ani")
 	class UAnimMontage* OuchAnimMontage;
 	FTimerHandle CheckTimerHandle;
+	UPROPERTY()
+	class ACrowdTargetPoint* GoHomeTargetPoint;
+	UPROPERTY()
+	class ACrowdTargetPoint* GoWorkTargetPoint;
+	UPROPERTY()
+	FVector currentTargetLocation = FVector::ZeroVector;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Time")
 	bool bShouldGoWork = false;
@@ -37,7 +43,7 @@ public:
 
 private:
 	bool bIsMoving;
-	
+	FName currentState;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -62,8 +68,19 @@ public:
 	void PlayOuch();
 	bool CheckGoHomeTime();
 	bool CheckGoWorkTime();
+	void SetGoHomeTargetPoint(class ACrowdTargetPoint* TargetPoint){GoHomeTargetPoint = TargetPoint;};
+	void SetGoWorkTargetPoint(class ACrowdTargetPoint* TargetPoint){GoWorkTargetPoint = TargetPoint;};
+	void SetCurrentTargetLocation(FVector loc){currentTargetLocation = loc;};
+
+	ACrowdTargetPoint* GetGoHomeTargetPoint(){return GoHomeTargetPoint;};
+	ACrowdTargetPoint* GetGoWorkTargetPoint(){return GoWorkTargetPoint;};
+	FVector GetCurrentTargetLocation(){return currentTargetLocation;};
+
 	UFUNCTION()
 	void CheckTime(FTimeOfDayData TimeData);
+	UFUNCTION()
+	void SetCrowdCurrentState(FName NewState);
+	FName GetCrowdCurrentState(){return currentState;};
 
 	UFUNCTION(BlueprintCallable, Category = "Time")
 	void ResetTimeFlags() { bShouldGoWork = false; bShouldGoHome = false; }
