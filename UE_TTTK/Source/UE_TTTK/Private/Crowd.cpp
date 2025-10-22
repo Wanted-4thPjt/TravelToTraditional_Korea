@@ -154,6 +154,10 @@ void ACrowd::PlayOuch()
 {
 	PlayAnimMontage(OuchAnimMontage);
 }
+void ACrowd::PlayCheck()
+{
+	//PlayAnimMontage()
+}
 
 bool ACrowd::CheckGoHomeTime()
 {

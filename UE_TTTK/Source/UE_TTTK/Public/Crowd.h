@@ -67,6 +67,7 @@ public:
 	void CollectingTargetPoints();
 	void PlayGreeting();
 	void PlayOuch();
+	void PlayCheck();
 	bool CheckGoHomeTime();
 	bool CheckGoWorkTime();
 	void SetGoHomeTargetPoint(class ACrowdTargetPoint* TargetPoint){GoHomeTargetPoint = TargetPoint;};

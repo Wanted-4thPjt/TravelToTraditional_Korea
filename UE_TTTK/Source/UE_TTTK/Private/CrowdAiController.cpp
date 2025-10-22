@@ -4,6 +4,8 @@
 #include "CrowdAiController.h"
 
 #include "Crowd.h"
+#include "PatrolArmy.h"
+#include "PatrolPath.h"
 #include "Components/StateTreeAIComponent.h"
 
 ACrowdAiController::ACrowdAiController()
@@ -50,6 +52,18 @@ void ACrowdAiController::NotifyArrived()
 	
 }
 
+void ACrowdAiController::Patrol()
+{
+	if (APatrolArmy* army =Cast<APatrolArmy>(OwnerCrowd))
+	{
+		if (army)
+		{
+			WalkToLocation(army->GetNextPatrolPoint()->PatrolLocation);
+		}
+		return;
+	}
+}
+
 
 void ACrowdAiController::Talk(ACrowd* crowd)
 {
@@ -63,6 +77,7 @@ void ACrowdAiController::GoMarket()
 
 void ACrowdAiController::GoHome()
 {
+	
 }
 
 void ACrowdAiController::Greeting()
