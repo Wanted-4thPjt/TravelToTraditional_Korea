@@ -60,7 +60,6 @@ void USessionsEntry::PopulateSessionsList(const TArray<FOnlineSessionSearchResul
 		}
 
 		// 맵 이름 (설정에서 가져오기 - 나중에 구현)
-		NodeData->mapName = TEXT("Unknown Map");
 
 		sessionsListContainer->AddItem(NodeData);
 	}
@@ -92,7 +91,7 @@ void USessionsEntry::OnSearchSessionsClicked()
 		UE_LOG(LogTemp, Display, TEXT("Subsystem 획득 성공, FindSession 호출"));
 		sessionsListContainer->ClearListItems();
 		sessionSubsystem->FindSession();
-		sessionFindText->SetText(FText::FromString("세션 찾는 중 ..."));
+		sessionFindText->SetText(FText::FromString("Searching Sessions ..."));
 		searchButton->SetIsEnabled(false);
 	}
 	else

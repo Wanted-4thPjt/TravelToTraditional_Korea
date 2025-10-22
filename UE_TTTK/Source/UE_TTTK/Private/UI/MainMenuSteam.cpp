@@ -6,6 +6,7 @@
 #include "OnlineSessionSettings.h"
 #include "Components/Button.h"
 #include "Components/WidgetSwitcher.h"
+#include "Network/SteamSessionSubsystem.h"
 #include "UI/CreatingSession.h"
 #include "UI/SessionsEntry.h"
 
@@ -70,7 +71,13 @@ void UMainMenuSteam::ClickFindButton()
 void UMainMenuSteam::ClickExit()
 {
 	UE_LOG(LogTemp, Warning, TEXT("ClickExit 호출됨!"));
-	GetGameInstance()->Shutdown();
-
-	GetWorld()->EndPlay(EEndPlayReason::Type::Quit);
+	USteamSessionSubsystem* sss = GetGameInstance()->GetSubsystem<USteamSessionSubsystem>();
+	if (!(sss && sss->DestroySession()))
+	{
+		if (GetWorld()->GetNetDriver())
+		{
+			GetWorld()->GetNetDriver()->Shutdown();
+		}
+		FGenericPlatformMisc::RequestExit(false);
+	}
 }

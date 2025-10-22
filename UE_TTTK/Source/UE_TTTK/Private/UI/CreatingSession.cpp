@@ -58,6 +58,7 @@ void UCreatingSession::NativeOnInitialized()
 			maxPlayerCounterValue = 0;
 		}
 	}
+	createButton->SetIsEnabled(false);
 }
 
 void UCreatingSession::OnCreateButtonClick()
@@ -78,8 +79,9 @@ void UCreatingSession::OnCreateButtonClick()
 
 void UCreatingSession::OnPlayerCounterValueChanged(float inValue)
 {
-	maxPlayerCounterValue = static_cast<int32>(inValue);
+	maxPlayerCounterValue = FMath::RoundToInt(inValue);
 	maxPlayerCounterText->SetText(FText::FromString(FString::FromInt(maxPlayerCounterValue)));
+	maxPlayerCounterSlider->SetValue(static_cast<float>(maxPlayerCounterValue));
 }
 
 void UCreatingSession::OnSessionNameInputChanged(const FText& inputText)

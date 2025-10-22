@@ -27,6 +27,8 @@ void USteamSessionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 			this, &USteamSessionSubsystem::OnCompleteFindSession);
 		sessionInterface->OnJoinSessionCompleteDelegates.AddUObject(
 			this, &USteamSessionSubsystem::OnCompleteJoinSession);
+		sessionInterface->OnDestroySessionCompleteDelegates.AddUObject(
+			this, &USteamSessionSubsystem::OnCompleteDestroySession);
 	}
 }
 
@@ -43,7 +45,10 @@ void USteamSessionSubsystem::CreateSession(const FString& mapName, const FString
 	{
 		UE_LOG(LogTemp, Warning, TEXT("최대 플레이어 수 : %i"), maxPlayerCount);
 		FMapInfo mapInfo;
-		steamMapSettings->mapListAsset->GetMapInfoByName(mapName, mapInfo);
+		if (steamMapSettings->mapListAsset)
+		{
+			steamMapSettings->mapListAsset->GetMapInfoByName(mapName, mapInfo);
+		}
 		if (maxPlayerCount <= 0)
 		{
 			if (!mapInfo.mapName.IsEmpty())
@@ -63,8 +68,8 @@ void USteamSessionSubsystem::CreateSession(const FString& mapName, const FString
 		sessionSettings.Set(FName("DP_NAME"), /*mapName*/displayName, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
 		//FName sessionName = FName(mapName + displayNamePrefix + displayName);
-		sessionMapAsset = mapName;
-		UE_LOG(LogTemp, Warning, TEXT("map path : %s"), *sessionMapAsset);
+		sessionMapAssetName = mapName;
+		UE_LOG(LogTemp, Warning, TEXT("map path : %s"), *sessionMapAssetName);
 		FUniqueNetIdPtr netId = GetWorld()->GetFirstLocalPlayerFromController()->GetUniqueNetIdForPlatformUser().GetUniqueNetId();
 		sessionInterface->CreateSession(*netId, FName(displayName), sessionSettings);
 	}
@@ -104,12 +109,32 @@ void USteamSessionSubsystem::JoinSession(int32 sessionIndex)
 	sessionInterface->JoinSession(0, FName(displayName), results[sessionIndex]);
 }
 
+bool USteamSessionSubsystem::DestroySession()
+{
+	if (!sessionInterface.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SessionInterface가 유효하지 않음"));
+		return false;
+	}
+	
+	if (FNamedOnlineSession* currentSession = sessionInterface->GetNamedSession(NAME_GameSession))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("세션 파괴 시작: %s"), *currentSession->SessionName.ToString());
+		sessionInterface->DestroySession(currentSession->SessionName);
+		return true;
+	}
+	
+	UE_LOG(LogTemp, Warning, TEXT("파괴할 세션이 없음"));
+	return false;
+	
+}
+
 void USteamSessionSubsystem::OnCompleteCreateSession(FName inSessionName, bool bWasSuccess)
 {
 	if (bWasSuccess)
 	{
-		if (sessionMapAsset.IsEmpty()) {return;}
-		FString url = sessionMapAsset + FString("?listen");
+		if (sessionMapAssetName.IsEmpty()) {return;}
+		FString url = sessionMapAssetName + FString("?listen");
 		UE_LOG(LogTemp, Warning, TEXT("[%s] 세션 생성 성공"), *inSessionName.ToString());
 		GetWorld()->ServerTravel(url);
 	}
@@ -155,4 +180,22 @@ void USteamSessionSubsystem::OnCompleteJoinSession(FName SessionName, EOnJoinSes
 		pc->ClientTravel(url, TRAVEL_Absolute);
 	}
 	
+}
+
+void USteamSessionSubsystem::OnCompleteDestroySession(FName SessionName, bool bWasSuccess)
+{
+	if (bWasSuccess)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[%s] 세션 파괴 성공"), *SessionName.ToString());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[%s] 세션 파괴 실패"), *SessionName.ToString());
+	}
+
+	if (GetWorld()->GetNetDriver())
+	{
+		GetWorld()->GetNetDriver()->Shutdown();
+	}
+	FGenericPlatformMisc::RequestExit(false);
 }

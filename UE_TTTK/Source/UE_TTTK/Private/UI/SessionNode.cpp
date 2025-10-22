@@ -3,10 +3,8 @@
 
 #include "UI/SessionNode.h"
 #include "Components/TextBlock.h"
-#include "Components/GridPanel.h"
 #include "Components/Image.h"
 #include "UI/SessionNodeData.h"
-
 
 
 void USessionNode::NativeOnListItemObjectSet(UObject* ListItemObject)

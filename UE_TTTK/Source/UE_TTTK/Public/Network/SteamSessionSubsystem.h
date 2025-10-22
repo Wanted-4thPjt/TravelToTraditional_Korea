@@ -28,6 +28,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void FindSession();
 	void JoinSession(int32 sessionIndex);
+	bool DestroySession();
 
 	FOnFindSessions OnFindSessions;
 
@@ -37,6 +38,8 @@ private:
 	UFUNCTION()
 	void OnCompleteFindSession(bool bWasSuccess);
 	void OnCompleteJoinSession(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
+	UFUNCTION()
+	void OnCompleteDestroySession(FName SessionName, bool bWasSuccess);
 
 protected:
 	TSharedPtr<FOnlineSessionSearch> sessionSearch;
@@ -44,5 +47,5 @@ protected:
 	const USteamSessionSettings* steamMapSettings;
 
 	FString displayNamePrefix = "===";
-	FString sessionMapAsset;
+	FString sessionMapAssetName;
 };
