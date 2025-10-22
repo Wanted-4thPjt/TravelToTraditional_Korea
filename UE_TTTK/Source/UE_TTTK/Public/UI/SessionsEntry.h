@@ -7,6 +7,8 @@
 #include "OnlineSessionSettings.h"
 #include "SessionsEntry.generated.h"
 
+class UTextBlock;
+class UOverlay;
 class USessionNode;
 class UButton;
 class UListView;
@@ -26,18 +28,21 @@ public:
 private:
 	UFUNCTION()
 	void OnJoinButtonClicked();
+
 	UFUNCTION()
-	void OnCancelButtonClicked();
+	void OnSearchSessionsClicked();
+	void OnSearchSessionsCompleted(const TArray<FOnlineSessionSearchResult>& results);
 	/*UFUNCTION()
 	void OnSessionNodeClicked(UObject* Item);*/
 
-protected:
+protected:	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
 	UListView* sessionsListContainer;
-
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
+	UButton* searchButton;
 	UPROPERTY(meta=(BindWidget))
 	UButton* joinButton;
 	UPROPERTY(meta=(BindWidget))
-	UButton* cancelButton;
-
+	UTextBlock* sessionFindText;
 };

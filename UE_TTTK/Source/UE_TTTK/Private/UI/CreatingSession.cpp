@@ -4,11 +4,13 @@
 #include "UI/CreatingSession.h"
 
 #include "OnlineSubsystem.h"
+#include "OnlineSubsystemUtils.h"
 #include "Network/SteamSessionSettings.h"
 #include "Components/Button.h"
-#include "Components/SpinBox.h"
 #include "Components/TextBlock.h"
 #include "Components/ComboBoxString.h"
+#include "Components/EditableTextBox.h"
+#include "Components/Slider.h"
 #include "Data/MapInfo.h"
 #include "Data/PDA_MapList.h"
 #include "Interfaces/OnlineIdentityInterface.h"
@@ -32,22 +34,29 @@ void UCreatingSession::NativeOnInitialized()
 	if (!IsValid(mapList)) {return;}
 	
 	InitializeMapSelector();
-	
+
+	if (IsValid(displayNameText))
+	{
+		displayNameText->OnTextChanged.AddDynamic(this, &UCreatingSession::OnSessionNameInputChanged);
+	}
 	if (IsValid(createButton))
 	{
 		createButton->OnClicked.AddDynamic(this, &UCreatingSession::OnCreateButtonClick);
-	}
-	if (IsValid(cancelButton))
-	{
-		cancelButton->OnClicked.AddDynamic(this, &UCreatingSession::OnCancelButtonClick);
 	}
 	if (IsValid(hostNameDisplay))
 	{
 		hostNameDisplay->SetText(FText::FromString(GetSteamNickName()));
 	}
-	if (IsValid(maxPlayerSpinBox))
+	if (IsValid(maxPlayerCounterSlider))
 	{
-		maxPlayerSpinBox->SetDelta(1.f);
+		maxPlayerCounterSlider->OnValueChanged.AddDynamic(this, &UCreatingSession::OnPlayerCounterValueChanged);
+		maxPlayerCounterSlider->SetValue(0.f);
+		maxPlayerCounterSlider->SetStepSize(1.f);
+		if (IsValid(maxPlayerCounterText))
+		{
+			maxPlayerCounterText->SetText(FText::AsNumber(maxPlayerCounterSlider->GetValue()));
+			maxPlayerCounterValue = 0;
+		}
 	}
 }
 
@@ -62,47 +71,47 @@ void UCreatingSession::OnCreateButtonClick()
 	USteamSessionSubsystem* sessionSubsystem = GetGameInstance()->GetSubsystem<USteamSessionSubsystem>();
 	if (IsValid(sessionSubsystem))
 	{
-		sessionSubsystem->CreateSession(FName(*mapInfo.mapName), static_cast<int32>(maxPlayerSpinBox->GetValue()));
+		UE_LOG(LogTemp, Warning, TEXT("Creating name : %s"), *mapInfo.mapName)
+		sessionSubsystem->CreateSession(mapInfo.mapName, displayNameText->GetText().ToString(), maxPlayerCounterValue);
 	}
-	
-	RemoveFromParent();
 }
 
-void UCreatingSession::OnCancelButtonClick()
+void UCreatingSession::OnPlayerCounterValueChanged(float inValue)
 {
-	GetParent()->SetVisibility(ESlateVisibility::Hidden);
-	SetVisibility(ESlateVisibility::Hidden);
+	maxPlayerCounterValue = static_cast<int32>(inValue);
+	maxPlayerCounterText->SetText(FText::FromString(FString::FromInt(maxPlayerCounterValue)));
+}
+
+void UCreatingSession::OnSessionNameInputChanged(const FText& inputText)
+{
+	createButton->SetIsEnabled(!inputText.IsEmpty());
 }
 
 void UCreatingSession::OnSelectionChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
 {
-	if (!IsValid(mapList) || !IsValid(maxPlayerSpinBox)) {return;}
+	if (!IsValid(mapList)) {return;}
 	
 	FMapInfo SelectedMapInfo;
 	if (mapList->GetMapInfoByDisplayName(FText::FromString(SelectedItem), SelectedMapInfo))
 	{
-		maxPlayerSpinBox->SetMaxValue(static_cast<float>(SelectedMapInfo.maxPlayers));
-		maxPlayerSpinBox->SetMinValue(1.f);
-
-		if (maxPlayerSpinBox->GetValue() > SelectedMapInfo.maxPlayers)
-		{
-			maxPlayerSpinBox->SetValue(static_cast<float>(SelectedMapInfo.maxPlayers));
-		}
+		maxPlayerCounterSlider->SetMaxValue(static_cast<float>(SelectedMapInfo.maxPlayers));
+		maxPlayerCounterSlider->SetMinValue(0.f);
+		maxPlayerCounterSlider->SetValue(0.f);
+		maxPlayerCounterValue = 0;
+		maxPlayerCounterText->SetText(FText::FromString(FString::FromInt(maxPlayerCounterValue)));
 	}
 
 }
 
-
 FString UCreatingSession::GetSteamNickName() const
 {
-	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
+	IOnlineSubsystem* OnlineSub = Online::GetSubsystem(GetWorld());
 	if (!OnlineSub) return TEXT("Unknown");
 
 	IOnlineIdentityPtr Identity = OnlineSub->GetIdentityInterface();
 	if (!Identity.IsValid()) return TEXT("Unknown");
 
 	FString Nickname = Identity->GetPlayerNickname(0);
-
 	return Nickname.IsEmpty() ? TEXT("Unknown") : Nickname;
 }
 

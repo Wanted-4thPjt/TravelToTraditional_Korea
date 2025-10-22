@@ -13,7 +13,7 @@ public class UE_TTTK : ModuleRules
 			"InputCore", "EnhancedInput",
 			"AIModule", "StateTreeModule", "GameplayStateTreeModule",
 			"UMG", "Slate", "SlateCore",
-			/*251001*/"Networking", "Sockets",
+			/*/*251001#1#"Networking", "Sockets",*/
 			/*251002*/"OnlineSubsystem", "OnlineSubsystemSteam", "OnlineSubsystemUtils", "SteamSockets",
 			/*251003*/"DeveloperSettings",
 			/*251005*/"Niagara"

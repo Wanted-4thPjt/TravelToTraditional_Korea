@@ -28,16 +28,16 @@ void UMainMenu::NativeOnInitialized()
 
 void UMainMenu::CreateHost()
 {
-	bool bCanBindAll;
-	TSharedPtr<FInternetAddr> LocalAddr = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->GetLocalHostAddr(*GLog, bCanBindAll);
+	//bool bCanBindAll;
+	//TSharedPtr<FInternetAddr> LocalAddr = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->GetLocalHostAddr(*GLog, bCanBindAll);
     
-	url = LocalAddr.IsValid() ?
-		 LocalAddr->ToString(false) : "127.0.0.1";
+	//url = LocalAddr.IsValid() ?
+	//	 LocalAddr->ToString(false) : "127.0.0.1";
 	
 	UE_LOG(LogTemp, Display, TEXT("Host URL : %s"), *url);
 	// Get Level Name from GameInstance or GameMode later.
 	//FWorldContext context;
-	UGameplayStatics::OpenLevel(this, FName("Demo"), true, "listen");
+	//UGameplayStatics::OpenLevel(this, FName("Demo"), true, "listen");
 	
 }
 
@@ -53,5 +53,5 @@ void UMainMenu::JoinToUrl(const FText& inText, ETextCommit::Type inCommitMethod)
 		return;
 	}
 	//inText 에 해당하는 url 검증 과정 필요
-	UGameplayStatics::OpenLevel(this, *inText.ToString(), true);
+	//UGameplayStatics::OpenLevel(this, *inText.ToString(), true);
 }

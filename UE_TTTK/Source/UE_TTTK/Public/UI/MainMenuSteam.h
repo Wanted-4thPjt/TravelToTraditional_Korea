@@ -7,14 +7,13 @@
 #include "OnlineSessionSettings.h"
 #include "MainMenuSteam.generated.h"
 
+class UWidgetSwitcher;
 class USessionsEntry;
 class UCreatingSession;
 class UListView;
-class UOverlay;
 class FOnlineSessionSearch;
 class UVerticalBox;
 class UButton;
-class UCanvasPanel;
 /**
  * 
  */
@@ -29,40 +28,32 @@ protected:
 	
 private:
 	UFUNCTION()
-	void CreateHost();
+	void ClickLobbyButton();
 	UFUNCTION()
-	void OnCompleteCreateSession(FName inSessionName, bool bWasSuccess);
+	void ClickHostButton();
 	
 	UFUNCTION()
 	void ClickFindButton();
-	void OnSessionsFound(const TArray<FOnlineSessionSearchResult>& SearchResults);
 	UFUNCTION()
 	void ClickExit();
 	
 
 protected:
 	UPROPERTY(meta=(BindWidget))
-	UCanvasPanel* canvas;
+	UWidgetSwitcher* lobbySwitcher;
 
-	UPROPERTY(meta=(BindWidget))
-	UVerticalBox* buttonContainer;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget), Category=Button)
-	UButton* hostButton;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget), Category=Button)
-	UButton* findButton;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget), Category=Button)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget), Category=MainWidget)
+	UButton* goLobbyButton;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget), Category=MainWidget)
+	UButton* goHostButton;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget), Category=MainWidget)
+	UButton* goFindButton;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget), Category=MainWidget)
 	UButton* exitButton;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
-	TObjectPtr<UOverlay> creatingSessionOverlay;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget), Category=HostWidget)
 	TObjectPtr<UCreatingSession> creatingSession;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
-	TObjectPtr<UOverlay> sessionsOverlay;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget), Category=FindWidget)
 	TObjectPtr<USessionsEntry> sessionsEntry;
 
 };

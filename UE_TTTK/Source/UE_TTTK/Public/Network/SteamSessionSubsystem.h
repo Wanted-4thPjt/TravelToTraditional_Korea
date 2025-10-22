@@ -7,8 +7,8 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "SteamSessionSubsystem.generated.h"
 
-
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnSessionSearchComplete, const TArray<FOnlineSessionSearchResult>&);
+class USteamSessionSettings;
+DECLARE_DELEGATE_OneParam(FOnFindSessions, const TArray<FOnlineSessionSearchResult>&);
 
 /**
  *
@@ -24,11 +24,12 @@ protected:
 
 public:
 	// if max players count <= 0 : it sets by map default
-	void CreateSession(FName mapName, int32 maxPlayerCount = 0);
-	void FindSession(int32 maxSearchResult = 10);
-	void JoinSession(int32 searchResultIndex);
+	void CreateSession(const FString& mapName, const FString& displayName, int32 maxPlayerCount);
+	UFUNCTION(BlueprintCallable)
+	void FindSession();
+	void JoinSession(int32 sessionIndex);
 
-	FOnSessionSearchComplete OnSessionSearchComplete;
+	FOnFindSessions OnFindSessions;
 
 private:
 	UFUNCTION()
@@ -39,4 +40,9 @@ private:
 
 protected:
 	TSharedPtr<FOnlineSessionSearch> sessionSearch;
+	IOnlineSessionPtr sessionInterface;
+	const USteamSessionSettings* steamMapSettings;
+
+	FString displayNamePrefix = "===";
+	FString sessionMapAsset;
 };

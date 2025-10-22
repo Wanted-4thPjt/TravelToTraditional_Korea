@@ -5,6 +5,7 @@
 
 #include "Components/ListView.h"
 #include "Components/Button.h"
+#include "Components/TextBlock.h"
 #include "UI/SessionNodeData.h"
 #include "Network/SteamSessionSubsystem.h"
 #include "UI/MainMenuSteam.h"
@@ -17,10 +18,15 @@ void USessionsEntry::NativeOnInitialized()
 	{
 		joinButton->OnClicked.AddDynamic(this, &USessionsEntry::OnJoinButtonClicked);
 	}
-	if (IsValid(cancelButton))
+	if (IsValid(searchButton))
 	{
-		cancelButton->OnClicked.AddDynamic(this, &USessionsEntry::OnCancelButtonClicked);
+		searchButton->OnClicked.AddDynamic(this, &USessionsEntry::OnSearchSessionsClicked);
 	}
+	if (USteamSessionSubsystem* sessionSubsystem = GetGameInstance()->GetSubsystem<USteamSessionSubsystem>())
+	{
+		sessionSubsystem->OnFindSessions.BindUObject(this, &USessionsEntry::OnSearchSessionsCompleted);
+	}
+	sessionFindText->SetText(FText::FromString("Search"));
 	/*if (IsValid(sessionsListContainer))
 	{
 		sessionsListContainer->OnItemClicked().AddUObject(this, &USessionsEntry::OnSessionNodeClicked);
@@ -68,9 +74,8 @@ void USessionsEntry::OnJoinButtonClicked()
 	}
 
 	UObject* SelectedItem = sessionsListContainer->GetSelectedItem();
-	USessionNodeData* SelectedData = Cast<USessionNodeData>(SelectedItem);
 
-	if (SelectedData)
+	if (USessionNodeData* SelectedData = Cast<USessionNodeData>(SelectedItem))
 	{
 		if (USteamSessionSubsystem* sessionSubsystem = GetGameInstance()->GetSubsystem<USteamSessionSubsystem>())
 		{
@@ -79,10 +84,28 @@ void USessionsEntry::OnJoinButtonClicked()
 	}
 }
 
-void USessionsEntry::OnCancelButtonClicked()
+
+void USessionsEntry::OnSearchSessionsClicked()
 {
-	GetParent()->SetVisibility(ESlateVisibility::Hidden);
-	SetVisibility(ESlateVisibility::Hidden);
+	if (USteamSessionSubsystem* sessionSubsystem = GetGameInstance()->GetSubsystem<USteamSessionSubsystem>())
+	{
+		UE_LOG(LogTemp, Display, TEXT("Subsystem 획득 성공, FindSession 호출"));
+		sessionsListContainer->ClearListItems();
+		sessionSubsystem->FindSession();
+		sessionFindText->SetText(FText::FromString("세션 찾는 중 ..."));
+		searchButton->SetIsEnabled(false);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("SteamSessionSubsystem을 가져올 수 없습니다!"));
+	}
+}
+
+void USessionsEntry::OnSearchSessionsCompleted(const TArray<FOnlineSessionSearchResult>& results)
+{
+	PopulateSessionsList(results);
+	sessionFindText->SetText(FText::FromString("Search"));
+	searchButton->SetIsEnabled(true);
 }
 
 /*

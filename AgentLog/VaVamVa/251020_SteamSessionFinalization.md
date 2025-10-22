@@ -124,3 +124,82 @@ Co-Authored-By: Claude <noreply@anthropic.com>
    - 세션 생성 → 맵 이동 확인
    - 세션 검색 → 목록 표시 확인
    - 세션 참가 → ClientTravel 확인
+
+---
+
+## Compact Log 2
+- 20251020 11:17
+
+### 요약 내용
+
+**UI 입력 문제 진단 및 해결 방안 제시**
+
+1. **MainMenuSteam 버튼 클릭 문제 확인**
+   - Host, Find, Exit 버튼이 눌리지 않는 문제 보고
+   - MainMenuSteam.cpp 코드 검토: 버튼 바인딩은 정상 (NativeOnInitialized에서 OnClicked 바인딩 확인)
+   - 함수 호출 여부 확인을 위한 디버그 로그 추가 제안
+   - CreateHost(), ClickFindButton(), ClickExit()에 UE_LOG 추가 권장
+
+2. **SessionsEntry Cancel 후 입력 불가 문제 진단**
+   - 증상: SessionsEntry 열고 Cancel 후 MainMenuSteam 버튼들이 보이지만 Hover/Click 안 됨
+   - Focus 문제 가설 검증: SetVisibility로는 Focus가 변경되지 않음 확인
+   - Visibility 문제 검증:
+     - Hidden은 Hit-Test를 차단함 (문서 확인)
+     - 실제로는 Collapsed 상태가 아니었음 (사용자 피드백)
+   - 원인 추정: `OnCancelButtonClicked()`의 `GetParent()->SetVisibility()`가 잘못된 Widget을 대상으로 할 가능성
+     - GetParent()가 sessionsOverlay가 아닌 MainMenuSteam을 반환할 수 있음
+
+3. **해결 방안 제시**
+   - **방안 1**: GetParent() 확인용 디버그 로그 추가
+     ```cpp
+     UE_LOG(LogTemp, Display, TEXT("Parent 클래스: %s"), *Parent->GetClass()->GetName());
+     ```
+   - **방안 2**: MainMenuSteam에 CloseSessionsList() 함수 추가
+     - SessionsEntry에서 GetTypedOuter<UMainMenuSteam>()로 부모 찾아 호출
+     - MainMenuSteam에서 직접 sessionsOverlay와 sessionsEntry Visibility 제어
+   - **방안 3**: Delegate 패턴 사용
+     - SessionsEntry에 FOnSessionsEntryClosed Delegate 추가
+     - MainMenuSteam에서 바인딩하여 처리
+
+### 현재 상태
+
+- 핵심 기능은 구현 완료되었으나 UI 입력 문제로 실제 테스트 불가
+- 문제 원인은 Widget 계층 구조 및 GetParent() 대상 Widget 불일치로 추정
+- 디버그 로그를 통한 원인 파악 필요
+
+### 다음 단계
+
+1. GetParent() 디버그 로그 추가하여 실제 반환 Widget 확인
+2. MainMenuSteam에 CloseSessionsList() 추가하여 안전한 닫기 구현
+3. 테스트 후 세션 검색/참가 기능 검증
+
+---
+
+## End Log
+- 20251020 11:17
+- 작업자 : VaVamVa
+
+### 오늘 한 일
+
+1. **스팀 세션 검색/참가 시스템 구현**
+   - SteamSessionSubsystem: FindSession, JoinSession, Delegate 브로드캐스트
+   - MainMenuSteam: Subsystem 연동, UI 전환 로직
+   - SessionsEntry: 세션 목록 표시, Join/Cancel 기능
+   - SessionNode: ListView Entry Widget 구현
+
+2. **컴파일 오류 해결**
+   - FOnlineSessionSearchResult UFUNCTION 오류 → Multicast Delegate로 변경
+   - Delegate 이름 충돌 → FOnSessionSearchComplete로 변경
+   - EOS 간섭 문제 → DefaultEngine.ini 설정
+
+3. **UI 입력 문제 진단**
+   - 버튼 클릭 문제 원인 조사
+   - SessionsEntry Cancel 후 입력 불가 문제 진단
+   - Widget 계층 구조 및 GetParent() 문제 파악
+   - 해결 방안 제시 (디버그 로그, CloseSessionsList 함수)
+
+### 미완료 작업
+
+- UI 입력 문제 실제 수정 및 검증
+- 세션 검색/참가 기능 멀티플레이 테스트
+- ListView Entry Widget Class Blueprint 설정 확인

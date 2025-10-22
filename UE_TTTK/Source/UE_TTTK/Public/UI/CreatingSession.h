@@ -6,8 +6,10 @@
 #include "Blueprint/UserWidget.h"
 #include "CreatingSession.generated.h"
 
+class UEditableTextBox;
+class USlider;
+class UOverlay;
 class UComboBoxString;
-class USpinBox;
 class UButton;
 class UTextBlock;
 class UPDA_MapList;
@@ -27,7 +29,9 @@ protected:
 	UFUNCTION()
 	void OnCreateButtonClick();
 	UFUNCTION()
-	void OnCancelButtonClick();
+	void OnPlayerCounterValueChanged(float inValue);
+	UFUNCTION()
+	void OnSessionNameInputChanged(const FText& inputText);
 	UFUNCTION()
 	void OnSelectionChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
 	
@@ -35,22 +39,25 @@ private:
 	FString GetSteamNickName() const;
 	void InitializeMapSelector();
 
-protected:
+protected:	
 	UPROPERTY(meta=(BindWidget))
 	UComboBoxString* mapSelector;
 
 	UPROPERTY(meta=(BindWidget))
-	USpinBox* maxPlayerSpinBox;
+	UEditableTextBox* displayNameText;
+
+	UPROPERTY(meta=(BindWidget))
+	USlider* maxPlayerCounterSlider;
+
+	UPROPERTY(meta=(BindWidget))
+	UTextBlock* maxPlayerCounterText;
+	int32 maxPlayerCounterValue;
 
 	UPROPERTY(meta=(BindWidget))
 	UTextBlock* hostNameDisplay;
 
 	UPROPERTY(meta=(BindWidget))
 	UButton* createButton;
-
-
-	UPROPERTY(meta=(BindWidget))
-	UButton* cancelButton;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Map")
 	UPDA_MapList* mapList;
