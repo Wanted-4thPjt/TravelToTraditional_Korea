@@ -16,7 +16,11 @@ ACrowdTargetPoint::ACrowdTargetPoint()
 void ACrowdTargetPoint::BeginPlay()
 {
 	Super::BeginPlay();
-	InitializeCrowdPoint_circle();
+	if (!bisHome)
+	{
+		InitializeCrowdPoint_circle();
+	}
+	
 }
 
 void ACrowdTargetPoint::Tick(float DeltaTime)
@@ -148,4 +152,18 @@ FVector ACrowdTargetPoint::FindLocationByCrowd(class ACrowd* crowd)
 		return subTargets[index]->location;
 	}
 	return FVector::ZeroVector;
+}
+
+bool ACrowdTargetPoint::IsHome()
+{
+	return bisHome;
+}
+
+void ACrowdTargetPoint::SetHomeOwner(ACrowd* HomeOwner)
+{
+	Homevar.HomeOwner = HomeOwner; 
+}
+ACrowd* ACrowdTargetPoint::GetHomeOwner()
+{
+	return Homevar.HomeOwner;
 }

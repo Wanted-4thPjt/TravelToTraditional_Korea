@@ -49,6 +49,7 @@ EStateTreeRunStatus UCrowdWaitingTask::Tick(FStateTreeExecutionContext& Context,
 	{
 		FStateTreeEvent GoHomeEvent;
 		GoHomeEvent.Tag = FGameplayTag::RequestGameplayTag("Crowd.Event.GoHome");
+		UE_LOG(LogTemp,Warning,TEXT("집갈 시간이다"));
 		OwnerAiController->StateTreeComp->SendStateTreeEvent(GoHomeEvent.Tag);
 		FinishTask(true);
 		return EStateTreeRunStatus::Succeeded;
