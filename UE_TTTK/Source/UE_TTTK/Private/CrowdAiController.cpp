@@ -54,13 +54,30 @@ void ACrowdAiController::NotifyArrived()
 
 void ACrowdAiController::Patrol()
 {
-	if (APatrolArmy* army =Cast<APatrolArmy>(OwnerCrowd))
+	UE_LOG(LogTemp, Warning, TEXT("===== Patrol 호출됨 ====="));
+
+	if (!OwnerCrowd)
 	{
-		if (army)
-		{
-			WalkToLocation(army->GetNextPatrolPoint()->PatrolLocation);
-		}
+		UE_LOG(LogTemp, Error, TEXT("Patrol: OwnerCrowd is null!"));
 		return;
+	}
+
+	if (APatrolArmy* army = Cast<APatrolArmy>(OwnerCrowd))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Patrol: PatrolArmy 캐스팅 성공 - %s"), *army->GetName());
+
+		FPatrolPoint* nextPoint = army->GetcurrentPatrolPoint();
+		if (nextPoint)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Patrol: 다음 목적지로 이동 명령 - %s"), *nextPoint->PatrolLocation.ToString());
+			WalkToLocation(nextPoint->PatrolLocation);
+		}
+		
+		return;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Patrol: OwnerCrowd는 PatrolArmy가 아님!"));
 	}
 }
 

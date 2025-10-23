@@ -10,9 +10,22 @@ USTRUCT()
 struct FPatrolPoint
 {
 	GENERATED_BODY()
+
 	FVector PatrolLocation;
-	int idx;
+	int32 idx;
 	bool visited = false;
+
+	// 기본 생성자
+	FPatrolPoint()
+		: PatrolLocation(FVector::ZeroVector), idx(0), visited(false)
+	{
+	}
+
+	// 매개변수 생성자
+	FPatrolPoint(FVector InLocation, int32 InIdx, bool InVisited)
+		: PatrolLocation(InLocation), idx(InIdx), visited(InVisited)
+	{
+	}
 };
 UCLASS()
 class UE_TTTK_API APatrolPath : public AActor
@@ -39,6 +52,7 @@ public:
 	int32 GetFinalPatrolPointIdx();
 	bool isFinalPoint(int32 idx);
 	void ClearPatrolPoints();
+	bool IsValidIndex(int32 idx);
 	
 
 

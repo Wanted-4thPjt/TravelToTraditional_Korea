@@ -14,9 +14,11 @@ class UE_TTTK_API APatrolArmy : public ACrowd
 {
 	GENERATED_BODY()
 public :
+	UPROPERTY(EditAnywhere)
 	class APatrolPath* armyPath;
 	int32 idx =0; //current 인덱스
 	bool bIsNight = false;
+	bool bIsForward = true;
 	void PlayHangFireAnimation();
 	class APatrolPath* GetPatrolPath();
 	void SetPatrolPath(class APatrolPath* path);
@@ -27,4 +29,5 @@ public :
 	struct FPatrolPoint* GetNextPatrolPoint();
 	struct FPatrolPoint* GetPreviousPatrolPoint();
 	void UpdateIndex();
+	void SetIndex(int32 index);
 };
