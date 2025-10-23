@@ -16,7 +16,11 @@ ACrowdTargetPoint::ACrowdTargetPoint()
 void ACrowdTargetPoint::BeginPlay()
 {
 	Super::BeginPlay();
-	InitializeCrowdPoint_circle();
+	if (!bisHome)
+	{
+		InitializeCrowdPoint_circle();
+	}
+	
 }
 
 void ACrowdTargetPoint::Tick(float DeltaTime)
@@ -138,4 +142,28 @@ void ACrowdTargetPoint::DrawDebugPoint()
 			DrawDebugLine(GetWorld(), GetActorLocation(), subTargets[i]->location, FColor::Cyan, false, -1.0f, 0, 1.0f);
 		}
 	}
+}
+
+FVector ACrowdTargetPoint::FindLocationByCrowd(class ACrowd* crowd)
+{
+	int32 index = FindIndexByCrowd(crowd);
+	if (index!=-1)
+	{
+		return subTargets[index]->location;
+	}
+	return FVector::ZeroVector;
+}
+
+bool ACrowdTargetPoint::IsHome()
+{
+	return bisHome;
+}
+
+void ACrowdTargetPoint::SetHomeOwner(ACrowd* HomeOwner)
+{
+	Homevar.HomeOwner = HomeOwner; 
+}
+ACrowd* ACrowdTargetPoint::GetHomeOwner()
+{
+	return Homevar.HomeOwner;
 }

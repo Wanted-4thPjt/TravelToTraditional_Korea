@@ -10,7 +10,7 @@
 EStateTreeRunStatus UCrowdGreetingTask::EnterState(FStateTreeExecutionContext& Context,
                                                    const FStateTreeTransitionResult& Transition)
 {
-	UE_LOG(LogTemp, Warning, TEXT("=== CrowdGreetingTask EnterState 시작 ==="));
+	UE_LOG(LogTemp, Error, TEXT("=== CrowdGreetingTask EnterState 시작 ==="));
 
 	//return Super::EnterState(Context, Transition);
 	AIController = Cast<ACrowdAiController>(Context.GetOwner());

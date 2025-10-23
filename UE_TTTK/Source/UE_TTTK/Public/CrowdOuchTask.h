@@ -23,4 +23,8 @@ protected:
 	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, const float DeltaTime) override;
 	class ACrowdAiController* OwnerAiController;
 	class ACrowd* OwnerCrowd;
+	
+public:
+	float currentTime;
+	UCrowdOuchTask(const FObjectInitializer& ObjectInitializer);
 };
