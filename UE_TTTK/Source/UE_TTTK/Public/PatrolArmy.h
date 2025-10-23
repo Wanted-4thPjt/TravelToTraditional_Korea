@@ -30,4 +30,5 @@ public :
 	struct FPatrolPoint* GetPreviousPatrolPoint();
 	void UpdateIndex();
 	void SetIndex(int32 index);
+	bool isFinalPatrolPoint();
 };

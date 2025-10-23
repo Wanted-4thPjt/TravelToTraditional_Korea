@@ -38,6 +38,11 @@ FPatrolPoint* APatrolPath::GetPatrolPoint(int32 idx)
 	return nullptr;
 }
 
+int32 APatrolPath::GetNumPatrolPoints()
+{
+	return patrolPoints.Num();
+}
+
 FPatrolPoint* APatrolPath::FindNextPoint(int32 idx)
 {
 	

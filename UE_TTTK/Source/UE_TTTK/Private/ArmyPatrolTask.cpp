@@ -3,6 +3,8 @@
 
 #include "ArmyPatrolTask.h"
 
+#include <gsl/pointers>
+
 #include "CrowdAiController.h"
 #include "PatrolArmy.h"
 #include "PatrolPath.h"
@@ -77,23 +79,34 @@ EStateTreeRunStatus UArmyPatrolTask::Tick(FStateTreeExecutionContext& Context, c
 	
 
 	// 도착 체크 (거리 임계값 증가)
-	if (dist <=100.0f)  // 0.2f에서 100.0f로 임시 변경
+	if (dist <=100.0f && OwnerArmy->GetVelocity().Length()<=0.1f)  // 0.2f에서 100.0f로 임시 변경
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[%s] ===== 목적지 도착! ====="), *OwnerArmy->GetName());
 		UE_LOG(LogTemp, Warning, TEXT("거리: %.2f, 속도: %.2f"), dist, velocity);
 
 		//AiController->StopMovement();
 		UE_LOG(LogTemp, Warning, TEXT("[%s] UpdateIndex 호출 - idx: %d"), *OwnerArmy->GetName(), OwnerArmy->idx);
+		int32 currentIdx = OwnerArmy->idx;
 		
-		if (OwnerArmy->bIsForward)
+		if (OwnerArmy->isFinalPatrolPoint()) //현재가 종점이라면 
 		{
-			int32 nexidx = OwnerArmy->idx+1;
-			OwnerArmy->SetIndex(nexidx);
+			if (OwnerArmy->bIsForward)
+			{
+				OwnerArmy->bIsForward = false;
+				
+			}
+			else
+			{
+				OwnerArmy->bIsForward = true;
+			}
+			OwnerArmy->UpdateIndex();
 		}
 		else
 		{
-			OwnerArmy->SetIndex(OwnerArmy->idx--);
+			OwnerArmy->UpdateIndex();
 		}
+		
+		
 
 		//UE_LOG(LogTemp, Warning, TEXT("[%s] UpdateIndex 호출 후 - idx:  %s"), *OwnerArmy->GetName(), *FString(OwnerArmy->bIsForward ? "Forward" : "Reverse"));
 

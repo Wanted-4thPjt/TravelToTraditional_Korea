@@ -47,6 +47,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	FPatrolPoint* GetPatrolPoint(int32 idx);
+	int32 GetNumPatrolPoints();
 	FPatrolPoint* FindNextPoint(int32 idx);
 	FPatrolPoint* FindPervPoint(int32 currentIdx);
 	int32 GetFinalPatrolPointIdx();

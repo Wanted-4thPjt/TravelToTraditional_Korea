@@ -30,32 +30,37 @@ void APatrolArmy::UpdateIndex()
 	{
 		UE_LOG(LogTemp,Warning, TEXT("증가한다. %d"),idx);
 		
-		idx++;
+		idx = idx+1;
 	}
 	else
 	{
 		UE_LOG(LogTemp,Warning, TEXT("감소한다. %d"),idx);
-		idx--;
+		idx = idx-1;;
 	}
 	UE_LOG(LogTemp,Warning,TEXT("업데이트 "));
-	if (armyPath->isFinalPoint(idx))
-	{
-		bIsForward = !bIsForward;
-		UE_LOG(LogTemp, Warning, TEXT("[%s] 방향 전환! idx[%d->%d], 방향[%s->%s]"),
-			*GetName(), oldIdx, idx,
-			oldDirection ? TEXT("Forward") : TEXT("Backward"),
-			bIsForward ? TEXT("Forward") : TEXT("Backward"));
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[%s] UpdateIndex: idx[%d->%d], 방향[%s]"),
-			*GetName(), oldIdx, idx, bIsForward ? TEXT("Forward") : TEXT("Backward"));
-	}
+	
+	
 }
 
 void APatrolArmy::SetIndex(int32 index)
 {
 	idx = index;
+}
+
+bool APatrolArmy::isFinalPatrolPoint()
+{
+	if (idx ==0 && !bIsForward) // 시작점이면서 역행 
+	{
+		UE_LOG(LogTemp,Warning,TEXT("역방향 도착"));
+		return true;
+	}
+	else if (idx== armyPath->GetNumPatrolPoints()-1 && bIsForward)
+	{
+		UE_LOG(LogTemp,Warning,TEXT("도착했을까? 현재 인덱스 %d    도착하려면"),idx,armyPath->GetNumPatrolPoints()-1 );
+		UE_LOG(LogTemp,Warning,TEXT("정방향 도착"));
+		return true;
+	}
+	return false;
 }
 
 FPatrolPoint* APatrolArmy::GetcurrentPatrolPoint()
