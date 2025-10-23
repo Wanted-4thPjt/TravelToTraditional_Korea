@@ -6,6 +6,7 @@
 #include "GameFramework/PlayerController.h"
 #include "UE_TTTKPlayerController.generated.h"
 
+class UPlayerWidgetComponent;
 class UInputMappingContext;
 class UUserWidget;
 
@@ -17,6 +18,9 @@ UCLASS(abstract)
 class AUE_TTTKPlayerController : public APlayerController
 {
 	GENERATED_BODY()
+
+public:
+	AUE_TTTKPlayerController();
 	
 protected:
 
@@ -41,4 +45,13 @@ protected:
 	/** Input mapping context setup */
 	virtual void SetupInputComponent() override;
 
+	UPROPERTY(VisibleAnywhere, Category="Widget")
+	TObjectPtr<UPlayerWidgetComponent> playerWidgetComponent;
+
+public:
+	UFUNCTION(Server, Reliable)
+	void Server_SendChat(const FText& inText);
+
+	UFUNCTION()
+	void UpdateChat(const FText& inText);
 };

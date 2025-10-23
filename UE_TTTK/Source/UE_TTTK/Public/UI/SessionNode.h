@@ -25,7 +25,9 @@ protected:
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
 	UGridPanel* sessionContainer;
-	
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
+	UTextBlock* sessionName;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
 	UTextBlock* hostName;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))

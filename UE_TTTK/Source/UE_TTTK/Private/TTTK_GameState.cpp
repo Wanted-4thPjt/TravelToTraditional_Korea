@@ -1,7 +1,9 @@
 #include "TTTK_GameState.h"
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
+#include "UE_TTTKPlayerController.h"
 #include "Engine/World.h"
+#include "GameFramework/PlayerState.h"
 
 ATTTK_GameState::ATTTK_GameState()
 {
@@ -97,6 +99,17 @@ void ATTTK_GameState::BroadcastTimeChange()
 		TimeData.bIsDaytime = IsDaytime();
 
 		OnTimeOfDayChanged.Broadcast(TimeData);
+	}
+}
+
+void ATTTK_GameState::ReceiveChat(const FText& inputText)
+{
+	for (TObjectPtr<APlayerState> ps : PlayerArray)
+	{
+		if (AUE_TTTKPlayerController* pc = Cast<AUE_TTTKPlayerController>(ps->GetPlayerController()))
+		{
+			pc->UpdateChat(inputText);
+		}
 	}
 }
 

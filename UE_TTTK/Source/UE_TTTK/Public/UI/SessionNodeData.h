@@ -11,9 +11,9 @@ class UE_TTTK_API USessionNodeData : public UObject
 	
 public:
 	UPROPERTY(BlueprintReadOnly, Category="SessionData")
-	FString hostName;
+	FString sessionName;
 	UPROPERTY(BlueprintReadOnly, Category="SessionData")
-	TSoftObjectPtr<UTexture2D> mapIcon;
+	FString hostName;
 	UPROPERTY(BlueprintReadOnly, Category="SessionData")
 	FString mapName;
 	UPROPERTY(BlueprintReadOnly, Category="SessionData")

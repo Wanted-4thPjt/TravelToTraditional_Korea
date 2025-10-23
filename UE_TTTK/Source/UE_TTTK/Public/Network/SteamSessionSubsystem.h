@@ -29,9 +29,14 @@ public:
 	void FindSession();
 	void JoinSession(int32 sessionIndex);
 	bool DestroySession();
+	FString GetSteamNickName() const;
 
 	FOnFindSessions OnFindSessions;
 
+	FORCEINLINE FName GetHostNameKey() const {return hostNamePair.Key;}
+	FORCEINLINE FName GetDisplayNameKey() const {return displayNamePair.Key;}
+	FORCEINLINE FName GetMapNameKey() const {return mapNamePair.Key;}
+	
 private:
 	UFUNCTION()
 	void OnCompleteCreateSession(FName inSessionName, bool bWasSuccess);
@@ -44,8 +49,11 @@ private:
 protected:
 	TSharedPtr<FOnlineSessionSearch> sessionSearch;
 	IOnlineSessionPtr sessionInterface;
+	UPROPERTY()
 	const USteamSessionSettings* steamMapSettings;
 
-	FString displayNamePrefix = "===";
-	FString sessionMapAssetName;
+	TPair<FName, FString> hostNamePair = {"HOST_NAME", ""};
+	TPair<FName, FString> displayNamePair = {"DP_NAME", ""};
+	TPair<FName, FString> mapNamePair = {"MAP_NAME", ""};
+
 };

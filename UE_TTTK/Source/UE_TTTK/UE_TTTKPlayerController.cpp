@@ -5,9 +5,16 @@
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 #include "InputMappingContext.h"
+#include "TTTK_GameState.h"
 #include "Blueprint/UserWidget.h"
 #include "UE_TTTK.h"
+#include "UI/Components/PlayerWidgetComponent.h"
 #include "Widgets/Input/SVirtualJoystick.h"
+
+AUE_TTTKPlayerController::AUE_TTTKPlayerController()
+{
+	playerWidgetComponent = CreateDefaultSubobject<UPlayerWidgetComponent>("PlayerWidgets");
+}
 
 void AUE_TTTKPlayerController::BeginPlay()
 {
@@ -25,11 +32,8 @@ void AUE_TTTKPlayerController::BeginPlay()
 			MobileControlsWidget->AddToPlayerScreen(0);
 
 		} else {
-
 			UE_LOG(LogUE_TTTK, Error, TEXT("Could not spawn mobile controls widget."));
-
 		}
-
 	}
 }
 
@@ -58,4 +62,14 @@ void AUE_TTTKPlayerController::SetupInputComponent()
 			}
 		}
 	}
+}
+
+void AUE_TTTKPlayerController::UpdateChat(const FText& inText)
+{
+	playerWidgetComponent->UpdateChat(inText);
+}
+
+void AUE_TTTKPlayerController::Server_SendChat_Implementation(const FText& inText)
+{
+	GetWorld()->GetGameState<ATTTK_GameState>()->ReceiveChat(inText);
 }

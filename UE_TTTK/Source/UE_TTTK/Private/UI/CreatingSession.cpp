@@ -3,8 +3,6 @@
 
 #include "UI/CreatingSession.h"
 
-#include "OnlineSubsystem.h"
-#include "OnlineSubsystemUtils.h"
 #include "Network/SteamSessionSettings.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
@@ -13,7 +11,6 @@
 #include "Components/Slider.h"
 #include "Data/MapInfo.h"
 #include "Data/PDA_MapList.h"
-#include "Interfaces/OnlineIdentityInterface.h"
 #include "Network/SteamSessionSubsystem.h"
 
 void UCreatingSession::NativeConstruct()
@@ -45,7 +42,10 @@ void UCreatingSession::NativeOnInitialized()
 	}
 	if (IsValid(hostNameDisplay))
 	{
-		hostNameDisplay->SetText(FText::FromString(GetSteamNickName()));
+		if (USteamSessionSubsystem* sss = GetGameInstance()->GetSubsystem<USteamSessionSubsystem>())
+		{
+			hostNameDisplay->SetText(FText::FromString(sss->GetSteamNickName()));
+		}
 	}
 	if (IsValid(maxPlayerCounterSlider))
 	{
@@ -105,17 +105,6 @@ void UCreatingSession::OnSelectionChanged(FString SelectedItem, ESelectInfo::Typ
 
 }
 
-FString UCreatingSession::GetSteamNickName() const
-{
-	IOnlineSubsystem* OnlineSub = Online::GetSubsystem(GetWorld());
-	if (!OnlineSub) return TEXT("Unknown");
-
-	IOnlineIdentityPtr Identity = OnlineSub->GetIdentityInterface();
-	if (!Identity.IsValid()) return TEXT("Unknown");
-
-	FString Nickname = Identity->GetPlayerNickname(0);
-	return Nickname.IsEmpty() ? TEXT("Unknown") : Nickname;
-}
 
 void UCreatingSession::InitializeMapSelector()
 {

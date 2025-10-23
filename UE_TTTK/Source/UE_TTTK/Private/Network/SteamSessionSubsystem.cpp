@@ -30,6 +30,8 @@ void USteamSessionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		sessionInterface->OnDestroySessionCompleteDelegates.AddUObject(
 			this, &USteamSessionSubsystem::OnCompleteDestroySession);
 	}
+
+	hostNamePair.Value = GetSteamNickName();
 }
 
 void USteamSessionSubsystem::Deinitialize()
@@ -40,20 +42,24 @@ void USteamSessionSubsystem::Deinitialize()
 void USteamSessionSubsystem::CreateSession(const FString& mapName, const FString& displayName, int32 maxPlayerCount)
 {
 	FName subsysName = Online::GetSubsystem(GetWorld())->GetSubsystemName();
+
+	displayNamePair.Value = displayName;
 	
 	if (sessionInterface.IsValid())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("최대 플레이어 수 : %i"), maxPlayerCount);
-		FMapInfo mapInfo;
+		
 		if (steamMapSettings->mapListAsset)
 		{
+			FMapInfo mapInfo;
 			steamMapSettings->mapListAsset->GetMapInfoByName(mapName, mapInfo);
-		}
-		if (maxPlayerCount <= 0)
-		{
-			if (!mapInfo.mapName.IsEmpty())
+			mapNamePair.Value = mapInfo.mapAsset.GetAssetName();
+			if (maxPlayerCount <= 0)
 			{
-				maxPlayerCount = mapInfo.maxPlayers;
+				if (!mapInfo.mapName.IsEmpty())
+				{
+					maxPlayerCount = mapInfo.maxPlayers;
+				}
 			}
 		}
 		
@@ -65,11 +71,10 @@ void USteamSessionSubsystem::CreateSession(const FString& mapName, const FString
 		sessionSettings.bUsesPresence = true;  // for finding friends
 		sessionSettings.bAllowJoinViaPresence = true;  // allow friends able to  participate directly
 		sessionSettings.bUseLobbiesIfAvailable = true;
-		sessionSettings.Set(FName("DP_NAME"), /*mapName*/displayName, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+		sessionSettings.Set<FString>(hostNamePair.Key, hostNamePair.Value, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+		sessionSettings.Set<FString>(displayNamePair.Key, displayNamePair.Value, EOnlineDataAdvertisementType::ViaOnlineService);
+		sessionSettings.Set<FString>(mapNamePair.Key, mapNamePair.Value, EOnlineDataAdvertisementType::ViaOnlineService);
 
-		//FName sessionName = FName(mapName + displayNamePrefix + displayName);
-		sessionMapAssetName = mapName;
-		UE_LOG(LogTemp, Warning, TEXT("map path : %s"), *sessionMapAssetName);
 		FUniqueNetIdPtr netId = GetWorld()->GetFirstLocalPlayerFromController()->GetUniqueNetIdForPlatformUser().GetUniqueNetId();
 		sessionInterface->CreateSession(*netId, FName(displayName), sessionSettings);
 	}
@@ -129,12 +134,24 @@ bool USteamSessionSubsystem::DestroySession()
 	
 }
 
+FString USteamSessionSubsystem::GetSteamNickName() const
+{
+	IOnlineSubsystem* OnlineSub = Online::GetSubsystem(GetWorld());
+	if (!OnlineSub) return TEXT("Unknown");
+
+	IOnlineIdentityPtr Identity = OnlineSub->GetIdentityInterface();
+	if (!Identity.IsValid()) return TEXT("Unknown");
+
+	FString Nickname = Identity->GetPlayerNickname(0);
+	return Nickname.IsEmpty() ? TEXT("Unknown") : Nickname;
+}
+
 void USteamSessionSubsystem::OnCompleteCreateSession(FName inSessionName, bool bWasSuccess)
 {
 	if (bWasSuccess)
 	{
-		if (sessionMapAssetName.IsEmpty()) {return;}
-		FString url = sessionMapAssetName + FString("?listen");
+		if (mapNamePair.Value.IsEmpty()) {return;}
+		FString url = mapNamePair.Value + FString("?listen");
 		UE_LOG(LogTemp, Warning, TEXT("[%s] 세션 생성 성공"), *inSessionName.ToString());
 		GetWorld()->ServerTravel(url);
 	}
@@ -197,5 +214,7 @@ void USteamSessionSubsystem::OnCompleteDestroySession(FName SessionName, bool bW
 	{
 		GetWorld()->GetNetDriver()->Shutdown();
 	}
+	// TODO: MainMenu로 나가기 || 프로그램 종료로 나누기
 	FGenericPlatformMisc::RequestExit(false);
+	
 }

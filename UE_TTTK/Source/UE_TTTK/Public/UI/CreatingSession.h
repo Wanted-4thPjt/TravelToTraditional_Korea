@@ -36,7 +36,6 @@ protected:
 	void OnSelectionChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
 	
 private:
-	FString GetSteamNickName() const;
 	void InitializeMapSelector();
 
 protected:	

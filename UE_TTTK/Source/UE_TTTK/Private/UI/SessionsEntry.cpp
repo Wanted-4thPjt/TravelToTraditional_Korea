@@ -41,26 +41,25 @@ void USessionsEntry::PopulateSessionsList(const TArray<FOnlineSessionSearchResul
 	}
 
 	sessionsListContainer->ClearListItems();
-
+	USteamSessionSubsystem* sss = GetGameInstance()->GetSubsystem<USteamSessionSubsystem>();
 	for (int32 i = 0; i < SearchResults.Num(); ++i)
 	{
 		const FOnlineSessionSearchResult& Result = SearchResults[i];
 
 		USessionNodeData* NodeData = NewObject<USessionNodeData>();
+		
 		NodeData->searchResultIndex = i;
 		NodeData->currentPlayerCount = Result.Session.SessionSettings.NumPublicConnections - Result.Session.NumOpenPublicConnections;
 		NodeData->maxPlayerCount = Result.Session.SessionSettings.NumPublicConnections;
 		NodeData->ping = Result.PingInMs;
-
-		// 호스트 이름 (Steam 닉네임 또는 SessionId)
-		NodeData->hostName = Result.Session.OwningUserName;
-		if (NodeData->hostName.IsEmpty())
-		{
-			NodeData->hostName = Result.GetSessionIdStr();
-		}
-
-		// 맵 이름 (설정에서 가져오기 - 나중에 구현)
-
+		
+		FString tempValue;
+		Result.Session.SessionSettings.Get(sss->GetHostNameKey(), tempValue);
+		NodeData->hostName = tempValue;
+		Result.Session.SessionSettings.Get(sss->GetDisplayNameKey(), tempValue);
+		NodeData->sessionName = tempValue;
+		Result.Session.SessionSettings.Get(sss->GetMapNameKey(), tempValue);
+		NodeData->mapName = tempValue;
 		sessionsListContainer->AddItem(NodeData);
 	}
 }

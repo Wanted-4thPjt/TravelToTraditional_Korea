@@ -4,6 +4,9 @@
 #include "UI/SessionNode.h"
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
+#include "Data/MapInfo.h"
+#include "Data/PDA_MapList.h"
+#include "Network/SteamSessionSettings.h"
 #include "UI/SessionNodeData.h"
 
 
@@ -12,21 +15,33 @@ void USessionNode::NativeOnListItemObjectSet(UObject* ListItemObject)
 	USessionNodeData* data = Cast<USessionNodeData>(ListItemObject);
 	if (data == nullptr) {return;}
 
-	if (IsValid(hostName))
+	FMapInfo mapInfo;
+	if (const USteamSessionSettings* mapSettings = USteamSessionSettings::Get())
 	{
-		hostName->SetText(FText::FromString(data->hostName));
+		mapSettings->mapListAsset->GetMapInfoByName(data->mapName, mapInfo);
 	}
-	if (IsValid(mapIcon) && data->mapIcon.IsValid())
+	if (!mapInfo.mapAsset.IsValid()) {return;}
+
+	if (IsValid(sessionName))
 	{
-		mapIcon->SetBrushFromTexture(data->mapIcon.Get());
+		sessionName->SetText(FText::FromString(data->sessionName));
 	}
 	if (IsValid(mapName))
 	{
 		mapName->SetText(FText::FromString(data->mapName));
 	}
+	if (IsValid(hostName))
+	{
+		hostName->SetText(FText::FromString(data->hostName));
+	}
+	if (IsValid(mapIcon) && mapInfo.mapIcon.IsValid())
+	{
+		mapIcon->SetBrushFromTexture(mapInfo.mapIcon.Get());
+	}
 	if (IsValid(playerCounter))
 	{
-		FString counterText = FString::Printf(TEXT("%d / %d"),
+		FString counterText = FString::Printf(
+			TEXT(" %d / %d "),
 			data->currentPlayerCount, data->maxPlayerCount
 		);
 		playerCounter->SetText(FText::FromString(counterText));
