@@ -1,0 +1,36 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "ArmyCrowdHangingFireTask.h"
+
+#include "CrowdAiController.h"
+#include "PatrolArmy.h"
+#include "StateTreeExecutionContext.h"
+
+EStateTreeRunStatus UArmyCrowdHangingFireTask::EnterState(FStateTreeExecutionContext& Context,
+                                                          const FStateTreeTransitionResult& Transition)
+{
+
+	OwnerArmyController = Cast<ACrowdAiController>(Context.GetOwner());
+	OwnerArmy = Cast<APatrolArmy>(OwnerArmyController->GetPawn());
+	//OwnerArmy->PlayAnimMontage();
+	
+	return Super::EnterState(Context, Transition);
+}
+
+void UArmyCrowdHangingFireTask::ExitState(FStateTreeExecutionContext& Context,
+	const FStateTreeTransitionResult& Transition)
+{
+	Super::ExitState(Context, Transition);
+}
+
+void UArmyCrowdHangingFireTask::StateCompleted(FStateTreeExecutionContext& Context,
+	const EStateTreeRunStatus CompletionStatus, const FStateTreeActiveStates& CompletedActiveStates)
+{
+	Super::StateCompleted(Context, CompletionStatus, CompletedActiveStates);
+}
+
+EStateTreeRunStatus UArmyCrowdHangingFireTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime)
+{
+	return Super::Tick(Context, DeltaTime);
+}

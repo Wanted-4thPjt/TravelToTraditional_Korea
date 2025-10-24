@@ -22,9 +22,7 @@ public :
 	void PlayHangFireAnimation();
 	class APatrolPath* GetPatrolPath();
 	void SetPatrolPath(class APatrolPath* path);
-
 	
-
 	struct FPatrolPoint* GetcurrentPatrolPoint();
 	struct FPatrolPoint* GetNextPatrolPoint();
 	struct FPatrolPoint* GetPreviousPatrolPoint();
