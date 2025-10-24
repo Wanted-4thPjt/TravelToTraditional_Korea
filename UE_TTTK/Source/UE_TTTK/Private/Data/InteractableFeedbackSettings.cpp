@@ -26,7 +26,7 @@ void FInteractableFeedbackSettings::EnableWidget(const bool& bEnabled, const TSu
 }
 
 
-void FInteractableFeedbackSettings::EnableSound(const bool& bEnabled, USoundBase* inInteractedSound, USoundBase* inActivatedSound)
+void FInteractableFeedbackSettings::EnableSound(const bool& bEnabled, USoundBase* inInteractedSound)
 {
 	if (!bEnabled)
 	{
@@ -35,7 +35,6 @@ void FInteractableFeedbackSettings::EnableSound(const bool& bEnabled, USoundBase
 	}
 	effectType |= static_cast<uint8>(EEffectType::Sound);
 	interactedSound = inInteractedSound;
-	activatedSound = inActivatedSound;
 }
 
 void FInteractableFeedbackSettings::EnableNiagara(const bool& bEnabled, UNiagaraSystem* inInteractedNiagaraVFX)
@@ -68,6 +67,6 @@ void FInteractableFeedbackSettings::EnableNetwork(const bool& bEnabled, const in
 		return;
 	}
 	effectType |= static_cast<uint8>(EEffectType::Network);
-	availableInteractionCount = count;
+	//availableInteractionCount = count;
 }
 

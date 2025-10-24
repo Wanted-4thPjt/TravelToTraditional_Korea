@@ -4,6 +4,8 @@
 #include "Components/ActorComponent.h"
 #include "InteractionComponent.generated.h"
 
+class UInputAction;
+class UInputMappingContext;
 class UInteractableComponent;
 class AMainPlayer;
 
@@ -20,9 +22,7 @@ protected:
 	virtual void InitializeComponent() override;
 	virtual void BeginPlay() override;
 	
-public:
-	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-	
+public:	
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE AActor* GetFocusedActor() {return focusingActor;}
 	UFUNCTION(BlueprintCallable)
@@ -44,6 +44,11 @@ protected:
 	TObjectPtr<AActor> focusingActor;
 	UPROPERTY(Replicated)
 	TObjectPtr<UInteractableComponent> possessingInteractable;
+	
 	UPROPERTY()
-	APlayerController* tempPC = nullptr;
+	APlayerController* ownerPlayerController = nullptr;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Input|Context")
+	TObjectPtr<UInputMappingContext> IMC_Interaction;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Input|Action")
+	TObjectPtr<UInputAction> IA_Chat;
 };

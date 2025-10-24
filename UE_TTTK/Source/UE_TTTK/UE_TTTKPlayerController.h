@@ -10,6 +10,7 @@ class UPlayerWidgetComponent;
 class UInputMappingContext;
 class UUserWidget;
 
+
 /**
  *  Basic PlayerController class for a third person game
  *  Manages input mappings
@@ -49,6 +50,7 @@ protected:
 	TObjectPtr<UPlayerWidgetComponent> playerWidgetComponent;
 
 public:
+	
 	UFUNCTION(Server, Reliable)
 	void Server_SendChat(const FText& inText);
 

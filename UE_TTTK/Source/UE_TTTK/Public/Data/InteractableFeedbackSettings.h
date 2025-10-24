@@ -52,22 +52,16 @@ public:
     FVector widgetOffset = FVector(0.f, 0.f, 0.f);
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sound", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Sound", EditConditionHides))
-    TObjectPtr<USoundBase> activatedSound;
-    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sound", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Sound", EditConditionHides))
     TObjectPtr<USoundBase> interactedSound;
 
-    //UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Niagara", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Niagara", EditConditionHides))
-    //TObjectPtr<UNiagaraSystem> activatedNiagaraVFX;
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Niagara", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Niagara", EditConditionHides))
     TObjectPtr<UNiagaraSystem> interactedNiagaraVFX;
 
-    //UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Particle", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Particle", EditConditionHides))
-    //TObjectPtr<UParticleSystem> activatedParticleVFX;
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Particle", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Particle", EditConditionHides))
     TObjectPtr<UParticleSystem> interactedParticleVFX;
     
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Network", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Network", EditConditionHides))
-    int32 availableInteractionCount = 0;
+    bool bInteractionEffectsInNetwork = false;
 
     bool IsOutlineOn() const {return IsEnableEffect(effectType, EEffectType::Outline);}
     bool IsWidgetOn() const {return IsEnableEffect(effectType , EEffectType::Widget);}
@@ -78,7 +72,7 @@ public:
 
     void EnableOutline(const bool& bEnabled, UMeshComponent* inOutlineComponent, FLinearColor inOutlineColor = FLinearColor::Green);
     void EnableWidget(const bool& bEnabled, const TSubclassOf<UUserWidget>& inInteractionGuideWidgetClass, FVector inWidgetOffset = FVector(0.f, 0.f, 100.f));
-    void EnableSound(const bool& bEnabled, USoundBase* inInteractedSound, USoundBase* inActivatedSound = nullptr);
+    void EnableSound(const bool& bEnabled, USoundBase* inInteractedSound);
     void EnableNiagara(const bool& bEnabled, UNiagaraSystem* inInteractedNiagaraVFX);
     void EnableParticle(const bool& bEnabled, UParticleSystem* inInteractedParticleVFX);
     void EnableNetwork(const bool& bEnabled, const int32& count);

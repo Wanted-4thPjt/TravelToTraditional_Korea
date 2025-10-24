@@ -8,9 +8,16 @@
 
 UInteractionComponent::UInteractionComponent()
 {
-	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.bCanEverTick = false;
 
 	SetIsReplicatedByDefault(true);
+
+	if (ConstructorHelpers::FObjectFinder<UInputMappingContext> tempIMC_Interaction(TEXT("/Game/Input/IMC_Interaction.IMC_Interaction"));
+		tempIMC_Interaction.Succeeded()
+	)
+	{
+		IMC_Interaction = tempIMC_Interaction.Object;		
+	}
 }
 
 void UInteractionComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -31,25 +38,7 @@ void UInteractionComponent::InitializeComponent()
 void UInteractionComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	tempPC = GetOwner<APawn>()->GetController<APlayerController>();
-}
-
-void UInteractionComponent::TickComponent(float DeltaTime, enum ELevelTick TickType,
-	FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	if (possessingInteractable && tempPC)
-	{
-		if (tempPC->WasInputKeyJustPressed(EKeys::LeftMouseButton))
-		{
-			if (AJegi* jegi = Cast<AJegi>(possessingInteractable->GetOwner()))
-			{
-				jegi->TempKick();
-			}
-		}
-		
-	}
+	ownerPlayerController = GetOwner<APawn>()->GetController<APlayerController>();
 }
 
 void UInteractionComponent::InteractKeyInput()
@@ -104,8 +93,8 @@ void UInteractionComponent::FocusInteractableActor(const FHitResult& hitResult)
 void UInteractionComponent::Server_FinishInteraction_Implementation()
 {
 	if (!IsValid(possessingInteractable) || !IsValid(GetOwner<AMainPlayer>())) {return;}
-	possessingInteractable->Multicast_FinishInteracting(GetOwner<AMainPlayer>());
-	possessingInteractable = nullptr;
+	//possessingInteractable->Multicast_FinishInteracting(GetOwner<AMainPlayer>());
+	//possessingInteractable = nullptr;
 }
 
 void UInteractionComponent::Server_Focus_Implementation(AActor* focusedActor)

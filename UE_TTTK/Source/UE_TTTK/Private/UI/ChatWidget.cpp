@@ -17,9 +17,17 @@ void UChatWidget::NativeConstruct()
 
 void UChatWidget::OnChatCommitted(const FText& inputText, ETextCommit::Type commitType)
 {
-	AUE_TTTKPlayerController* pc = Cast<AUE_TTTKPlayerController>(GetOwningLocalPlayer()->GetPlayerController(GetWorld()));
+	FSlateApplication::Get().ClearKeyboardFocus(EFocusCause::Cleared);
+	GetOwningLocalPlayer()->GetPlayerController(GetWorld())->SetInputMode(FInputModeGameOnly());
 	
-	
+	if (inputText.IsEmptyOrWhitespace()) {return;}
+	if (commitType != ETextCommit::Type::OnEnter) {return;}
+
+	if (AUE_TTTKPlayerController* pc = Cast<AUE_TTTKPlayerController>(GetWorld()->GetFirstPlayerController()))
+	{
+		pc->Server_SendChat(inputText);
+		chatScrollBox->ScrollToEnd();
+	}
 }
 
 void UChatWidget::NativeOnFocusChanging(const FWeakWidgetPath& PreviousFocusPath, const FWidgetPath& NewWidgetPath,
@@ -31,13 +39,12 @@ void UChatWidget::NativeOnFocusChanging(const FWeakWidgetPath& PreviousFocusPath
 	{
 		case EFocusCause::SetDirectly:
 			{
-				chatSizeBox->SetHeightOverride(300.f);
-				chatScrollBox->ScrollToEnd();
+				chatSizeBox->SetHeightOverride(800.f);
 			}
 			break;
 		case EFocusCause::Cleared:
 			{
-				chatSizeBox->SetHeightOverride(800.f);
+				chatSizeBox->SetHeightOverride(300.f);
 			}
 			break;
 	}

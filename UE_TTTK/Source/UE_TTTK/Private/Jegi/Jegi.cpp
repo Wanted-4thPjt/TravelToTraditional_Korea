@@ -80,7 +80,7 @@ void AJegi::BeginPlay()
 	if (IsValid(interactable))
 	{
 		interactable->onRequestInteraction.AddDynamic(this, &AJegi::TempInteract);
-		interactable->onRequestFinishInteraction.AddDynamic(this, &AJegi::OnEnd);
+		//interactable->onRequestFinishInteraction.AddDynamic(this, &AJegi::OnEnd);
 	}
 
 	UGameplayStatics::GetAllActorsWithTag(GetWorld(), "Camera", tempCameraActor);

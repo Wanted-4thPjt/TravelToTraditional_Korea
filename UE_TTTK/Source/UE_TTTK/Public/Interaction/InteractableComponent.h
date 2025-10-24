@@ -22,7 +22,6 @@ ENUM_CLASS_FLAGS(EInteractableState)
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnChangeState, APlayerController*, playerController, const EInteractableState&, newInteractableState);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRequestInteraction, APawn*, player);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRequestFinishInteraction, APawn*, player);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class UE_TTTK_API UInteractableComponent : public UActorComponent
@@ -51,7 +50,7 @@ public:
 	UFUNCTION(BlueprintPure, Category="Interactable|Each Client")
 	FORCEINLINE bool IsInteracting() const {return clientState == EInteractableState::Interacting;}
 	UFUNCTION(BlueprintPure, Category="Interactable|All Client")
-	FORCEINLINE bool CanPossess() const {return feedbackSettings.IsNetworkOn() && possessingPlayers.Num() < feedbackSettings.availableInteractionCount;}
+	FORCEINLINE bool CanPossess() const {return feedbackSettings.IsNetworkOn();}
 
 	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
 	void TryDeactivateInteractable(APlayerController* playerController);
@@ -64,11 +63,12 @@ public:
 	void Multicast_TryInteract(APawn* player);
 	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
 	void FinishInteracting(APlayerController* Player, const EInteractableState& newState);
-	UFUNCTION(NetMulticast, Reliable, Category="Interactable|Multicast")
-	void Multicast_FinishInteracting(APawn* player);
 
 	UFUNCTION(BlueprintCallable, Category="Interactable|Visual")
-	void Client_UpdateVisuals(APlayerController* playerController);
+	void UpdateVisuals(APlayerController* playerController);
+	UFUNCTION(BlueprintCallable, Category="Interactable|Effect")
+	void PlayEffects();
+	
 
 protected:	
 	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
@@ -101,8 +101,6 @@ public:
 	FOnChangeState onChangeState;
 	UPROPERTY(BlueprintAssignable, Category="Interactable|Event")
 	FOnRequestInteraction onRequestInteraction;
-	UPROPERTY(BlueprintAssignable, Category="Interactable|Event")
-	FOnRequestFinishInteraction onRequestFinishInteraction;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")

@@ -111,7 +111,7 @@ void UInteractableComponent::BeginPlay()
 
 	if (feedbackSettings.IsNetworkOn())
 	{
-		possessingPlayers.Reserve(feedbackSettings.availableInteractionCount);
+		//possessingPlayers.Reserve(feedbackSettings.availableInteractionCount);
 	}
 }
 
@@ -155,7 +155,7 @@ void UInteractableComponent::OutOfInteractableRange(APlayerController* playerCon
 	playerInRange = nullptr;
 	clientState = EInteractableState::OutOfBound;
 	onChangeState.Broadcast(playerController, EInteractableState::OutOfBound);
-	Client_UpdateVisuals(playerController);
+	UpdateVisuals(playerController);
 }
 
 void UInteractableComponent::InInteractableRange(APlayerController* playerController)
@@ -173,7 +173,7 @@ void UInteractableComponent::InInteractableRange(APlayerController* playerContro
 		TryActivateInteractable(playerController);
 		return;
 	}
-	Client_UpdateVisuals(playerController);
+	UpdateVisuals(playerController);
 }
 
 void UInteractableComponent::TryDeactivateInteractable(APlayerController* playerController)
@@ -184,7 +184,7 @@ void UInteractableComponent::TryDeactivateInteractable(APlayerController* player
 	
 	clientState = EInteractableState::UnFocused;
 	onChangeState.Broadcast(playerController, EInteractableState::UnFocused);
-	Client_UpdateVisuals(playerController);
+	UpdateVisuals(playerController);
 }
 
 void UInteractableComponent::TryActivateInteractable(APlayerController* playerController)
@@ -195,9 +195,7 @@ void UInteractableComponent::TryActivateInteractable(APlayerController* playerCo
 	
 	clientState = EInteractableState::Focused;
 	onChangeState.Broadcast(playerController, EInteractableState::Focused);
-	Client_UpdateVisuals(playerController);
-
-	if (feedbackSettings.IsSoundOn()) {PlaySound(feedbackSettings.activatedSound);}
+	UpdateVisuals(playerController);
 
 	return;
 }
@@ -207,21 +205,18 @@ void UInteractableComponent::TryInteract(APlayerController* playerController)
 	if (!LIKELY(IsValid(playerController))) {return;}
 	if (clientState != EInteractableState::Focused) {return;}
 	if (!playerController->IsLocalController()) {return;}
-	
+
 	clientState = EInteractableState::Interacting;
 	onChangeState.Broadcast(playerController, EInteractableState::Interacting);
-	Client_UpdateVisuals(playerController);
-
-	if (feedbackSettings.IsSoundOn()) {PlaySound(feedbackSettings.interactedSound);}
-	if (feedbackSettings.IsNiagaraOn()) {PlayEffect(feedbackSettings.interactedNiagaraVFX);}
-	if (feedbackSettings.IsParticleOn()) {PlayEffect(feedbackSettings.interactedParticleVFX);}
+	UpdateVisuals(playerController);
+	PlayEffects();
 }
 
 void UInteractableComponent::Multicast_TryInteract_Implementation(APawn* player)
 {
-	if (!IsValid(player) || !CanPossess()) {return;}
-	possessingPlayers.Add(player);
-	onRequestInteraction.Broadcast(player);	
+	if (!IsValid(player) || !feedbackSettings.IsNetworkOn()) {return;}
+	onRequestInteraction.Broadcast(player);
+	PlayEffects();
 }
 
 void UInteractableComponent::FinishInteracting(APlayerController* playerController, const EInteractableState& newState)
@@ -240,17 +235,9 @@ void UInteractableComponent::FinishInteracting(APlayerController* playerControll
 	default:
 		clientState = newState;
 		onChangeState.Broadcast(playerController, clientState);
-		Client_UpdateVisuals(playerController);
+		UpdateVisuals(playerController);
 		return;
 	}
-}
-
-void UInteractableComponent::Multicast_FinishInteracting_Implementation(APawn* player)
-{
-	if (!IsValid(player) || !CanPossess()) {return;}
-	if (!possessingPlayers.Contains(player)) {return;}
-	possessingPlayers.RemoveSingleSwap(player, EAllowShrinking::No);
-	onRequestFinishInteraction.Broadcast(player);
 }
 
 void UInteractableComponent::OnInteractionSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent,
@@ -294,7 +281,7 @@ bool UInteractableComponent::UpdateAvailablePrimitiveComponents()
 	return true;
 }
 
-void UInteractableComponent::Client_UpdateVisuals(APlayerController* playerController)
+void UInteractableComponent::UpdateVisuals(APlayerController* playerController)
 {
 	if (!LIKELY(IsValid(playerController))) {return;}
 	APlayerController* pc = GetWorld()->GetFirstPlayerController();
@@ -302,6 +289,13 @@ void UInteractableComponent::Client_UpdateVisuals(APlayerController* playerContr
 	
 	UpdateOutline();
 	UpdateWidget();
+}
+
+void UInteractableComponent::PlayEffects()
+{
+	if (feedbackSettings.IsSoundOn()) {PlaySound(feedbackSettings.interactedSound);}
+	if (feedbackSettings.IsNiagaraOn()) {PlayEffect(feedbackSettings.interactedNiagaraVFX);}
+	if (feedbackSettings.IsParticleOn()) {PlayEffect(feedbackSettings.interactedParticleVFX);}
 }
 
 void UInteractableComponent::UpdateOutline()

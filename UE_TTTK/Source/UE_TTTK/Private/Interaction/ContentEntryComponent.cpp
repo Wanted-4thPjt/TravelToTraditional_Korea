@@ -7,6 +7,7 @@
 #include "MainPlayer.h"
 #include "GameFlow/BaseContentManager.h"
 #include "Interaction/InteractableComponent.h"
+#include "UI/EntryInfoWidget.h"
 
 
 UContentEntryComponent::UContentEntryComponent()
@@ -19,11 +20,13 @@ UContentEntryComponent::UContentEntryComponent()
 	hostPlayer = nullptr;
 	contentManager = nullptr;
 	
-	if (entryInfoWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("InteractWidget")))
-	{
-		entryInfoWidget->SetWidgetSpace(EWidgetSpace::Screen);
-		entryInfoWidget->SetDrawSize(FVector2D(200.f, 50.f));
-	}
+	ComponentTags.Add("Entry");
+}
+
+void UContentEntryComponent::InitializeComponent()
+{
+	Super::InitializeComponent();
+
 }
 
 void UContentEntryComponent::BeginPlay()
@@ -31,14 +34,6 @@ void UContentEntryComponent::BeginPlay()
 	Super::BeginPlay();
 
 	if (!IsValid(GetOwner())) {return;}
-	
-	if (IsValid(entryInfoWidget))
-	{
-		entryInfoWidget->SetupAttachment(GetOwner()->GetRootComponent());
-		entryInfoWidget->RegisterComponent();
-		entryInfoWidget->SetVisibility(false);
-	}
-	
 	
 	if (settings.contentManagerClass)
 	{

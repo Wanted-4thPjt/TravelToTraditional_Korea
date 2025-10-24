@@ -15,6 +15,11 @@ class UE_TTTK_API UChatLineWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
+	UFUNCTION()
+	void SetChatText(const FText& inputText);
+	
+protected:
 	UPROPERTY(meta=(BindWidget))
 	class UTextBlock* chatLineText;
+	
 };

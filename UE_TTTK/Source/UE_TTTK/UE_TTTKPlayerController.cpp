@@ -71,5 +71,8 @@ void AUE_TTTKPlayerController::UpdateChat(const FText& inText)
 
 void AUE_TTTKPlayerController::Server_SendChat_Implementation(const FText& inText)
 {
-	GetWorld()->GetGameState<ATTTK_GameState>()->ReceiveChat(inText);
+	if (ATTTK_GameState* gs = GetWorld()->GetGameState<ATTTK_GameState>())
+	{
+		gs->ReceiveChat(inText);
+	}
 }

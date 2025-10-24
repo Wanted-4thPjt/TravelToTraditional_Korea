@@ -6,10 +6,6 @@
 #include "Components/ActorComponent.h"
 #include "PlayerWidgetComponent.generated.h"
 
-DECLARE_DELEGATE_OneParam(FOnInputChatKey, const FText&)
-
-
-
 struct FInputActionValue;
 class UInputAction;
 class UChatLineWidget;
@@ -41,14 +37,16 @@ private:
 	UFUNCTION()
 	void OnInputChatKey(const FInputActionValue& inputActionValue);
 
-public:
-	FOnInputChatKey onInputChatKey;
+	UFUNCTION()
+	void OnInputSettingKey(const FInputActionValue& inputActionValue);
 
 protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Input")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Input|Context")
 	TObjectPtr<UInputMappingContext> IMC_UI;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Input")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Input|Action")
 	TObjectPtr<UInputAction> IA_Chat;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Input|Action")
+	TObjectPtr<UInputAction> IA_Setting;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Widget")
 	TSubclassOf<UPlayerWidget> playerWidgetFactory;
@@ -60,5 +58,9 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UChatWidget> chatWidget;
 
-	
+private:
+	UPROPERTY()
+	TObjectPtr<APlayerController> ownerPlayerController;
+
+	FInputModeUIOnly uiInputMode;
 };

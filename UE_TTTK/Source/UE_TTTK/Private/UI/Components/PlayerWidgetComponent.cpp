@@ -10,7 +10,6 @@
 #include "Blueprint/UserWidget.h"
 #include "Components/EditableTextBox.h"
 #include "Components/ScrollBox.h"
-#include "Components/TextBlock.h"
 #include "UI/ChatLineWidget.h"
 #include "UI/PlayerWidget.h"
 #include "UI/ChatWidget.h"
@@ -45,53 +44,85 @@ UPlayerWidgetComponent::UPlayerWidgetComponent()
 void UPlayerWidgetComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
+	
+	ownerPlayerController = GetOwner<APlayerController>();
 	InitPlayerControllerWidget();
 	BindInputMappingContext();
-	
 }
 
-void UPlayerWidgetComponent::UpdateChat(const FText& newText)
-{
-	UChatLineWidget* chatLine = CreateWidget<UChatLineWidget>(chatWidget->chatScrollBox, chatLineWidgetFactory);
-	chatLine->chatLineText->SetText(newText);
-	chatWidget->chatScrollBox->AddChild(chatLine);
-	
-	chatWidget->chatScrollBox->ScrollToEnd();
-	FSlateApplication::Get().ClearKeyboardFocus(EFocusCause::Cleared);
-	GetOwner<APlayerController>()->SetInputMode(FInputModeGameOnly());
-}
 
 void UPlayerWidgetComponent::InitPlayerControllerWidget()
 {
-	playerWidget = CreateWidget<UPlayerWidget>(GetOwner<APlayerController>(), playerWidgetFactory);
+	if (!IsValid(ownerPlayerController)) {return;}
+	playerWidget = CreateWidget<UPlayerWidget>(ownerPlayerController, playerWidgetFactory);
 	chatWidget = playerWidget->chatWidget;
 }
 
 void UPlayerWidgetComponent::BindInputMappingContext()
 {
-	APlayerController* pc = GetOwner<APlayerController>();
-
-	if (UEnhancedInputComponent* eic = Cast<UEnhancedInputComponent>(pc->GetPawn()->InputComponent))
-	{
-		eic->BindAction(IA_Chat, ETriggerEvent::Triggered, this, &UPlayerWidgetComponent::OnInputChatKey);
-	}
+	if (!IsValid(ownerPlayerController)) {return;}
 	
-	if (pc == GetWorld()->GetFirstPlayerController())
+	if (ownerPlayerController == GetWorld()->GetFirstPlayerController())
 	{
 		// Add Input Mapping Contexts
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(pc->GetLocalPlayer()))
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(ownerPlayerController->GetLocalPlayer()))
 		{
 			Subsystem->AddMappingContext(IMC_UI, 1);
 		}
+	}
+	if (UEnhancedInputComponent* eic = Cast<UEnhancedInputComponent>(ownerPlayerController->InputComponent))
+	{
+		for (auto mapping : IMC_UI->GetMappings())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("FKey Name == %s"), *(mapping.Key.ToString()));
+			if (mapping.Key == "Enter")
+			{
+				eic->BindAction(IA_Chat, ETriggerEvent::Triggered, this, &UPlayerWidgetComponent::OnInputChatKey);
+				
+			}
+		}
+		eic->BindAction(IA_Setting, ETriggerEvent::Triggered, this, &UPlayerWidgetComponent::OnInputSettingKey);
+	}
+}
+
+void UPlayerWidgetComponent::UpdateChat(const FText& newText)
+{
+	if (!IsValid(ownerPlayerController)) {return;}
+	float scrollOffset = chatWidget->chatScrollBox->GetScrollOffset();
+	float scrollOffsetOfEnd = chatWidget->chatScrollBox->GetScrollOffsetOfEnd();
+	
+	UChatLineWidget* chatLine = CreateWidget<UChatLineWidget>(chatWidget->chatScrollBox, chatLineWidgetFactory);
+	chatLine->SetChatText(newText);
+	chatWidget->chatScrollBox->AddChild(chatLine);
+
+	if (scrollOffset == scrollOffsetOfEnd)
+	{
+		GetWorld()->GetTimerManager().SetTimerForNextTick(
+			[this]() -> void
+			{
+				chatWidget->chatScrollBox->ScrollToEnd();
+			}
+		);
 	}
 }
 
 void UPlayerWidgetComponent::OnInputChatKey(const FInputActionValue& inputActionValue)
 {
-	if (chatWidget->HasKeyboardFocus())
-	{
-		onInputChatKey.ExecuteIfBound(chatWidget->inputChatBox->GetText());
-	}
+	if (!IsValid(ownerPlayerController)) {return;}
+
+	// Keyboard Focus가 자동으로 Player Key Input을 Consume하기 때문에, UI Mode가 유지되는 동안 추가적으로 Input을 제어할 필요 X
+	uiInputMode.SetWidgetToFocus(chatWidget->inputChatBox->TakeWidget());
+	uiInputMode.SetLockMouseToViewportBehavior(EMouseLockMode::LockAlways);
+	
+	ownerPlayerController->SetShowMouseCursor(true);
+	ownerPlayerController->SetInputMode(uiInputMode);
+}
+
+void UPlayerWidgetComponent::OnInputSettingKey(const FInputActionValue& inputActionValue)
+{
+	if (!IsValid(ownerPlayerController)) {return;}
+
+	//uiInputMode.SetWidgetToFocus();
+	
 }
 

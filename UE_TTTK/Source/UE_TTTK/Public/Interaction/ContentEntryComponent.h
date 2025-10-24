@@ -5,6 +5,7 @@
 #include "Data/ContentEntrySettings.h"
 #include "ContentEntryComponent.generated.h"
 
+class UEntryInfoWidget;
 class USphereComponent;
 class UWidgetComponent;
 class AMainPlayer;
@@ -24,8 +25,9 @@ public:
 
 protected:
 	// Called when the game starts
-	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void InitializeComponent() override;
+	virtual void BeginPlay() override;
 
 public:
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -124,7 +126,7 @@ protected:
 
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Outline")
-	TObjectPtr<UWidgetComponent> entryInfoWidget;
+	TSubclassOf<UEntryInfoWidget> entryInfoWidget;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Outline")
 	int32 outlineStencilValue;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Outline")
