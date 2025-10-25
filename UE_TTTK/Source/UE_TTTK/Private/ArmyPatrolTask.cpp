@@ -38,7 +38,7 @@ EStateTreeRunStatus UArmyPatrolTask::EnterState(FStateTreeExecutionContext& Cont
 
 	AiController->Patrol();
 	UE_LOG(LogTemp, Warning, TEXT("===== ArmyPatrolTask::EnterState 완료 - Running 상태 ====="));
-
+	OwnerArmy->SetCrowdCurrentState("Crowd.Event.Patrol");
 	return EStateTreeRunStatus::Running;
 }
 

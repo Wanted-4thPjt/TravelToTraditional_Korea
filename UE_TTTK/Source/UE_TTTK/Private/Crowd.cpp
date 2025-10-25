@@ -9,6 +9,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/StateTreeAIComponent.h"
 #include "Components/StateTreeComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values
@@ -17,8 +18,9 @@ ACrowd::ACrowd()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
-	
-	
+
+	// 플래그 초기화
+	bIsOuchAnimCompleted = false;
 }
 
 // Called when the game starts or when spawned
@@ -52,6 +54,7 @@ void ACrowd::OnCapsuleHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 		ACrowdAiController* AIController = Cast<ACrowdAiController>(GetController());
 		if (AIController!=nullptr)
 		{
+			GetCharacterMovement()->StopMovementImmediately();
 			FStateTreeEvent OuchEvent;
 			OuchEvent.Tag = FGameplayTag::RequestGameplayTag("Crowd.Event.Ouch");
 			AIController->StateTreeComp->SendStateTreeEvent(OuchEvent.Tag);
@@ -152,6 +155,8 @@ void ACrowd::PlayGreeting()
 
 void ACrowd::PlayOuch()
 {
+	UE_LOG(LogTemp,Warning,TEXT("Ouch재생"));
+	bIsOuchAnimCompleted = false; // 플래그 리셋
 	PlayAnimMontage(OuchAnimMontage);
 }
 void ACrowd::PlayCheck()

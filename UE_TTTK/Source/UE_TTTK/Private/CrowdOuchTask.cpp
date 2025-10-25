@@ -42,14 +42,14 @@ void UCrowdOuchTask::StateCompleted(FStateTreeExecutionContext& Context, const E
 
 EStateTreeRunStatus UCrowdOuchTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime)
 {
-	currentTime+=DeltaTime;
-	if (currentTime>=2)
+	// AnimNotify가 발생하여 플래그가 true로 설정되었는지 확인
+	if (OwnerCrowd && OwnerCrowd->GetOuchAnimCompleted())
 	{
+		UE_LOG(LogTemp, Warning, TEXT("CrowdOuchTask: Ouch 애니메이션 완료 감지, 상태 전환"));
 		return EStateTreeRunStatus::Succeeded;
 	}
-	return Super::Tick(Context, DeltaTime);
-	
-	
+
+	return EStateTreeRunStatus::Running;
 }
 UCrowdOuchTask::UCrowdOuchTask(const FObjectInitializer& ObjectInitializer)  : Super(ObjectInitializer)
 {

@@ -44,6 +44,7 @@ public:
 
 private:
 	bool bIsMoving;
+	bool bIsOuchAnimCompleted; // Ouch 애니메이션 완료 플래그 (AnimNotify에서 설정)
 	FName currentState;
 protected:
 	// Called when the game starts or when spawned
@@ -83,6 +84,10 @@ public:
 	UFUNCTION()
 	void SetCrowdCurrentState(FName NewState);
 	FName GetCrowdCurrentState(){return currentState;};
+
+	// Ouch 애니메이션 완료 플래그 관리
+	bool GetOuchAnimCompleted() const { return bIsOuchAnimCompleted; }
+	void SetOuchAnimCompleted(bool bCompleted) { bIsOuchAnimCompleted = bCompleted; }
 
 	UFUNCTION(BlueprintCallable, Category = "Time")
 	void ResetTimeFlags() { bShouldGoWork = false; bShouldGoHome = false; }
