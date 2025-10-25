@@ -41,5 +41,6 @@ void UPatrolArmyHangingFireNotifyState::NotifyEnd(USkeletalMeshComponent* MeshCo
 		// HangingFire 애니메이션 완료 플래그 설정 -> Patrol 상태로 전환
 		OwnerArmy->SetHangingFireAnimCompleted(true);
 		UE_LOG(LogTemp, Warning, TEXT("HangingFireNotifyState: 횃불 장착 완료, Patrol 전환 준비"));
+		
 	}
 }

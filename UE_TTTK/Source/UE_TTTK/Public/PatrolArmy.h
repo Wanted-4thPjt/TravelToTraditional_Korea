@@ -34,7 +34,8 @@ public :
 	void SetIndex(int32 index);
 	bool isFinalPatrolPoint();
 
-	
+	UFUNCTION(BlueprintCallable)
+	bool GetIsNight(){return bIsNight;};
 	bool GetHangingFireAnimCompleted() const { return bIsHangingFireAnimCompleted; }
 	void SetHangingFireAnimCompleted(bool bCompleted) { bIsHangingFireAnimCompleted = bCompleted; }
 

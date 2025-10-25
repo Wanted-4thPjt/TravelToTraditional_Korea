@@ -38,12 +38,12 @@ void UArmyHangingFireTask::StateCompleted(FStateTreeExecutionContext& Context,
 
 EStateTreeRunStatus UArmyHangingFireTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime)
 {
-	// AnimNotifyState가 발생하여 플래그가 true로 설정되었는지 확인
+	
 	if (OwnerArmy && OwnerArmy->GetHangingFireAnimCompleted())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("HangingFireTask: 횃불 장착 완료 감지, Patrol 전환"));
 
-		// Patrol 상태로 전환하기 위한 이벤트 발송
+		
 		FGameplayTag patrol = FGameplayTag::RequestGameplayTag("Crowd.Event.Patrol");
 		Context.SendEvent(patrol);
 
