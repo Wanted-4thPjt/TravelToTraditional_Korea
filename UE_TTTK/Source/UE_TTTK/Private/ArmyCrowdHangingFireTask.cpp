@@ -10,11 +10,15 @@
 EStateTreeRunStatus UArmyCrowdHangingFireTask::EnterState(FStateTreeExecutionContext& Context,
                                                           const FStateTreeTransitionResult& Transition)
 {
-
 	OwnerArmyController = Cast<ACrowdAiController>(Context.GetOwner());
 	OwnerArmy = Cast<APatrolArmy>(OwnerArmyController->GetPawn());
-	//OwnerArmy->PlayAnimMontage();
-	
+
+	if (OwnerArmy)
+	{
+		// HangingFire 애니메이션 재생
+		OwnerArmy->PlayHaningMontage();
+	}
+
 	return Super::EnterState(Context, Transition);
 }
 

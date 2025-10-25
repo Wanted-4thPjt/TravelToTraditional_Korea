@@ -63,6 +63,13 @@ bool APatrolArmy::isFinalPatrolPoint()
 	return false;
 }
 
+void APatrolArmy::PlayHaningMontage()
+{
+	bIsHangingFireAnimCompleted = false; // 플래그 리셋
+	PlayAnimMontage(HangingFireMontage);
+	bIsNight = true;
+}
+
 FPatrolPoint* APatrolArmy::GetcurrentPatrolPoint()
 {
 	if (!armyPath)

@@ -10,11 +10,16 @@
 EStateTreeRunStatus UArmyHangingFireTask::EnterState(FStateTreeExecutionContext& Context,
                                                      const FStateTreeTransitionResult& Transition)
 {
-
 	AiController = Cast<ACrowdAiController>(Context.GetOwner());
 	OwnerArmy = Cast<APatrolArmy>(AiController->GetPawn());
-	//Todo : 애니메이션 재생
-	UE_LOG(LogTemp,Warning,TEXT("불들엇따```` EnterState"));
+
+	if (OwnerArmy)
+	{
+		// HangingFire 애니메이션 재생 (PlayHaningMontage에서 플래그 초기화 포함)
+		OwnerArmy->PlayHaningMontage();
+		UE_LOG(LogTemp, Warning, TEXT("HangingFireTask: 횃불 장착 애니메이션 시작"));
+	}
+
 	return EStateTreeRunStatus::Running;
 }
 
@@ -33,16 +38,17 @@ void UArmyHangingFireTask::StateCompleted(FStateTreeExecutionContext& Context,
 
 EStateTreeRunStatus UArmyHangingFireTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime)
 {
-	//return Super::Tick(Context, DeltaTime);
-	currentTime+=DeltaTime;
-	if (currentTime>=2.0f)
+	// AnimNotifyState가 발생하여 플래그가 true로 설정되었는지 확인
+	if (OwnerArmy && OwnerArmy->GetHangingFireAnimCompleted())
 	{
-		currentTime=0.0f;
+		UE_LOG(LogTemp, Warning, TEXT("HangingFireTask: 횃불 장착 완료 감지, Patrol 전환"));
+
+		// Patrol 상태로 전환하기 위한 이벤트 발송
 		FGameplayTag patrol = FGameplayTag::RequestGameplayTag("Crowd.Event.Patrol");
 		Context.SendEvent(patrol);
-		
+
 		return EStateTreeRunStatus::Succeeded;
-		
 	}
+
 	return EStateTreeRunStatus::Running;
 }

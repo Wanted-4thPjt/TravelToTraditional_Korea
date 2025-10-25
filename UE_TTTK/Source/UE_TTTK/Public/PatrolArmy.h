@@ -19,6 +19,10 @@ public :
 	int32 idx =0; //current 인덱스
 	bool bIsNight = false;
 	bool bIsForward = true;
+	bool bIsHangingFireAnimCompleted = false; // HangingFire 애니메이션 완료 플래그
+	UPROPERTY(EditAnywhere)
+	UAnimMontage* HangingFireMontage;
+	
 	void PlayHangFireAnimation();
 	class APatrolPath* GetPatrolPath();
 	void SetPatrolPath(class APatrolPath* path);
@@ -29,4 +33,12 @@ public :
 	void UpdateIndex();
 	void SetIndex(int32 index);
 	bool isFinalPatrolPoint();
+
+	
+	bool GetHangingFireAnimCompleted() const { return bIsHangingFireAnimCompleted; }
+	void SetHangingFireAnimCompleted(bool bCompleted) { bIsHangingFireAnimCompleted = bCompleted; }
+
+public:
+	void PlayHaningMontage();
+	
 };

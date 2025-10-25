@@ -16,7 +16,6 @@ class UE_TTTK_API UArmyHangingFireTask : public UStateTreeTaskBlueprintBase
 public:
 	class ACrowdAiController* AiController;
 	class APatrolArmy* OwnerArmy;
-	float currentTime =0.f;
 
 protected:
 	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context,
