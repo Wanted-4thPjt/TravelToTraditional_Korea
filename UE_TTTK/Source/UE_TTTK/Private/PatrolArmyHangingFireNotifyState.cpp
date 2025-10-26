@@ -14,12 +14,13 @@ void UPatrolArmyHangingFireNotifyState::NotifyBegin(USkeletalMeshComponent* Mesh
 		return;
 	}
 
-	// SkeletalMesh의 Owner인 PatrolArmy Actor 가져오기
+	
 	APatrolArmy* OwnerArmy = Cast<APatrolArmy>(MeshComp->GetOwner());
 	if (OwnerArmy)
 	{
 		// 횃불 장착 (bIsNight = true로 설정)
 		OwnerArmy->bIsNight = true;
+		OwnerArmy->EqiqueFire();
 		UE_LOG(LogTemp, Warning, TEXT("HangingFireNotifyState: 횃불 장착 시작 (bIsNight = true)"));
 	}
 }

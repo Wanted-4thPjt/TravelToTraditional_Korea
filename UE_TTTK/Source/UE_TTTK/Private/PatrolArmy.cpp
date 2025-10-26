@@ -10,6 +10,11 @@ class APatrolPath* APatrolArmy::GetPatrolPath()
 	return armyPath;
 }
 
+APatrolArmy::APatrolArmy()
+{
+	
+}
+
 void APatrolArmy::SetPatrolPath(class APatrolPath* path)
 {
 	armyPath = path;
@@ -68,6 +73,34 @@ void APatrolArmy::PlayHaningMontage()
 	bIsHangingFireAnimCompleted = false; // 플래그 리셋
 	PlayAnimMontage(HangingFireMontage);
 	bIsNight = true;
+}
+
+void APatrolArmy::EqiqueFire()
+{
+	if (handFire)
+	{
+		handFire->SetActorHiddenInGame(false);
+	}
+
+}
+
+void APatrolArmy::BeginPlay()
+{
+	Super::BeginPlay();
+	if (FireActorClass)
+	{
+		FActorSpawnParameters spawnParams;
+		spawnParams.Owner = this;
+		handFire = GetWorld() -> SpawnActor<AActor>(FireActorClass,FVector::ZeroVector,FRotator::ZeroRotator,spawnParams);
+		if (handFire)
+		{
+			handFire->AttachToComponent(GetMesh(),
+				 FAttachmentTransformRules::SnapToTargetIncludingScale,
+				 TEXT("hand_r"));
+			handFire->SetActorHiddenInGame(true);
+
+		}
+	}
 }
 
 FPatrolPoint* APatrolArmy::GetcurrentPatrolPoint()

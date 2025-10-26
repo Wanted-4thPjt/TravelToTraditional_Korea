@@ -6,6 +6,7 @@
 #include "CrowdAiController.h"
 #include "PatrolArmy.h"
 #include "StateTreeExecutionContext.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 EStateTreeRunStatus UArmyHangingFireTask::EnterState(FStateTreeExecutionContext& Context,
                                                      const FStateTreeTransitionResult& Transition)
@@ -15,7 +16,7 @@ EStateTreeRunStatus UArmyHangingFireTask::EnterState(FStateTreeExecutionContext&
 
 	if (OwnerArmy)
 	{
-		// HangingFire 애니메이션 재생 (PlayHaningMontage에서 플래그 초기화 포함)
+		OwnerArmy->GetCharacterMovement()->StopMovementImmediately();
 		OwnerArmy->PlayHaningMontage();
 		UE_LOG(LogTemp, Warning, TEXT("HangingFireTask: 횃불 장착 애니메이션 시작"));
 	}

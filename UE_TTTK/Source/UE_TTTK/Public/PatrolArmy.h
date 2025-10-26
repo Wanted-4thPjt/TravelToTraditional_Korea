@@ -14,6 +14,7 @@ class UE_TTTK_API APatrolArmy : public ACrowd
 {
 	GENERATED_BODY()
 public :
+	APatrolArmy();
 	UPROPERTY(EditAnywhere)
 	class APatrolPath* armyPath;
 	int32 idx =0; //current 인덱스
@@ -33,6 +34,10 @@ public :
 	void UpdateIndex();
 	void SetIndex(int32 index);
 	bool isFinalPatrolPoint();
+	UPROPERTY()
+	class AActor* handFire;
+	UPROPERTY(EditAnywhere,Category= "Torch")
+	TSubclassOf<AActor> FireActorClass;
 
 	UFUNCTION(BlueprintCallable)
 	bool GetIsNight(){return bIsNight;};
@@ -41,5 +46,8 @@ public :
 
 public:
 	void PlayHaningMontage();
+	UFUNCTION(BlueprintCallable)
+	void EqiqueFire();
+	virtual void BeginPlay() override;
 	
 };
