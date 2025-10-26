@@ -34,6 +34,8 @@ public:
 	
 	// === Player Actions (UI/Input) ===
 	#pragma region Player Actions
+	UFUNCTION()
+	void RequestEntry(AMainPlayer* player);
 	
 	UFUNCTION(BlueprintCallable, Category = "Content Entry")
 	void RequestJoinLobby(AMainPlayer* player);
@@ -46,13 +48,11 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Content Entry")
 	void RequestCancelLobby(AMainPlayer* player);
-	#pragma endregion Player Actions
 
-	#pragma region ContentManager Callback
 	UFUNCTION(BlueprintCallable, Category = "Content Entry")
-	void OnContentFinished();
-	#pragma endregion ContentManager Callback
-
+	void RequestFinishContent();
+	#pragma endregion Player Actions
+	
 	#pragma region Getter
 	UFUNCTION(BlueprintPure, Category = "Content Entry|Getter")
 	bool IsLobbyActive() const { return bLobbyActive; }

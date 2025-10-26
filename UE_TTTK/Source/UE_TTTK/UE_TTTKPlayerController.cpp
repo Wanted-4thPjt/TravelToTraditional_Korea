@@ -69,10 +69,10 @@ void AUE_TTTKPlayerController::UpdateChat(const FText& inText)
 	playerWidgetComponent->UpdateChat(inText);
 }
 
-void AUE_TTTKPlayerController::Server_SendChat_Implementation(const FText& inText)
+void AUE_TTTKPlayerController::Server_SendChat_Implementation(const FString& inMessage)
 {
 	if (ATTTK_GameState* gs = GetWorld()->GetGameState<ATTTK_GameState>())
 	{
-		gs->ReceiveChat(inText);
+		gs->ReceiveChat(FText::FromString(inMessage));
 	}
 }

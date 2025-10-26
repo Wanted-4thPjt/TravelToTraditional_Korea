@@ -1,9 +1,5 @@
 #include "Interaction/InteractableComponent.h"
 
-#include <gsl/pointers>
-
-#include "Net/UnrealNetwork.h"
-#include "MainPlayer.h"
 #include "Components/WidgetComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
@@ -46,6 +42,9 @@ void UInteractableComponent::InitializeComponent()
 	{
 		interactionSphere->AttachToComponent(owner->GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 		interactionSphere->SetSphereRadius(interactionRadius);
+		interactionSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		interactionSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
+		interactionSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 		interactionSphere->SetGenerateOverlapEvents(true);
 		interactionSphere->RegisterComponent();
 		interactionSphere->OnComponentBeginOverlap.AddDynamic(this, &UInteractableComponent::OnInteractionSphereBeginOverlap);
@@ -68,30 +67,54 @@ void UInteractableComponent::BeginPlay()
 		interactionSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	}
 
+	if (UpdateAvailablePrimitiveComponents() && feedbackSettings.IsOutlineOn())
+	{
+		feedbackSettings.ownerMeshComponent->SetRenderCustomDepth(false);
+		feedbackSettings.ownerMeshComponent->SetCustomDepthStencilValue(0);
+		feedbackSettings.ownerMeshComponent->MarkRenderStateDirty();
+	}
+	
 	if (feedbackSettings.IsWidgetOn() && feedbackSettings.interactionGuideWidgetClass)
 	{
 		interactionGuideComponent = NewObject<UWidgetComponent>(GetOwner(), UWidgetComponent::StaticClass(), TEXT("GuideWidgetComponent"));
 		if (IsValid(interactionGuideComponent))
 		{
 			GetOwner()->AddInstanceComponent(interactionGuideComponent);
+			
 			UUserWidget* widget = CreateWidget(GetWorld(), feedbackSettings.interactionGuideWidgetClass, FName("WidgetForGuide"));
 			if (IsValid(widget))
 			{
-				interactionGuideComponent->SetWidget(widget);
-				interactionGuideComponent->SetWidgetSpace(EWidgetSpace::World);
-				interactionGuideComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 				FAttachmentTransformRules attachRules(
 				EAttachmentRule::SnapToTarget,  // Location
 				EAttachmentRule::SnapToTarget,  // Rotation
 				EAttachmentRule::SnapToTarget,  // Scale
 				false 
 				);
-				interactionGuideComponent->AttachToComponent(GetOwner()->GetRootComponent(), attachRules);
+				attachRules.bWeldSimulatedBodies = false;
+				if (feedbackSettings.widgetSocketName != NAME_None)
+				{
+					TArray<USceneComponent*> components;
+					GetOwner()->GetComponents(components);
+					for (USceneComponent* component : components)
+					{
+						if (component->DoesSocketExist(feedbackSettings.widgetSocketName))
+						{
+							interactionGuideComponent->AttachToComponent(component, attachRules, feedbackSettings.widgetSocketName);
+							break;
+						}
+					}
+				}
+				if (interactionGuideComponent->GetAttachSocketName() == NAME_None)
+				{
+					interactionGuideComponent->AttachToComponent(GetOwner()->GetRootComponent(), attachRules);	
+				}
 				// true: world / false: parent => rotation controlled by player location(world)
+				interactionGuideComponent->SetWidget(widget);
+				interactionGuideComponent->SetWidgetSpace(EWidgetSpace::World);
 				interactionGuideComponent->SetAbsolute(false, true, true);
-				interactionGuideComponent->SetRelativeLocation(feedbackSettings.widgetOffset);
 				interactionGuideComponent->RegisterComponent();
 
+				interactionGuideComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 				interactionGuideComponent->SetVisibility(false);
 				interactionGuideComponent->SetCastShadow(false);
 				interactionGuideComponent->SetReceivesDecals(false);
@@ -99,25 +122,19 @@ void UInteractableComponent::BeginPlay()
 		}
 	}
 
-	if (feedbackSettings.IsOutlineOn())
-	{
-		if (UpdateAvailablePrimitiveComponents())
-		{
-			feedbackSettings.outlinedMeshComponent->SetRenderCustomDepth(false);
-			feedbackSettings.outlinedMeshComponent->SetCustomDepthStencilValue(0);
-			feedbackSettings.outlinedMeshComponent->MarkRenderStateDirty();
-		}
-	}
-
 	if (feedbackSettings.IsNetworkOn())
 	{
-		//possessingPlayers.Reserve(feedbackSettings.availableInteractionCount);
 	}
 }
 
 void UInteractableComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	clientState = EInteractableState::Default;
+	interactionSphere->OnComponentBeginOverlap.Clear();
+	interactionSphere->OnComponentEndOverlap.Clear();
+	playerInRange = nullptr;
+	TryChangeState(GetWorld()->GetFirstPlayerController(), EInteractableState::Default);
+	OnClientInteraction.Clear();
+	OnMultiInteraction.Clear();
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -144,100 +161,93 @@ void UInteractableComponent::TickComponent(float DeltaTime, enum ELevelTick Tick
 	if (feedbackSettings.IsWidgetOn() && IsValid(interactionGuideComponent) && clientState == EInteractableState::Focused)
 	{
 		AActor* cam = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
+		if (!IsValid(cam)) {return;}
 		interactionGuideComponent->SetWorldRotation(UKismetMathLibrary::MakeRotFromXZ(-cam->GetActorForwardVector(), cam->GetActorUpVector()));
 	}
 }
 
-void UInteractableComponent::OutOfInteractableRange(APlayerController* playerController)
+void UInteractableComponent::TryChangeState(APlayerController* playerController, EInteractableState newState)
 {
 	if (!LIKELY(IsValid(playerController))) {return;}
+	if (!playerController->IsLocalController()) {return;}
+	if (clientState == EInteractableState::Default) {return;}
 	
-	playerInRange = nullptr;
-	clientState = EInteractableState::OutOfBound;
-	onChangeState.Broadcast(playerController, EInteractableState::OutOfBound);
-	UpdateVisuals(playerController);
-}
-
-void UInteractableComponent::InInteractableRange(APlayerController* playerController)
-{
-	if (!LIKELY(IsValid(playerController))) {return;}
-	
-	playerInRange = playerController->GetPawn<APawn>();
-	if (!IsValid(playerInRange)) {return;}
-	clientState = EInteractableState::InRange;
-	onChangeState.Broadcast(playerController, EInteractableState::InRange);
-	
-	if (UInteractionComponent* interactionComp = playerInRange->FindComponentByClass<UInteractionComponent>();
-		IsValid(interactionComp) && interactionComp->GetFocusedActor() == GetOwner())
+	switch (newState)
 	{
-		TryActivateInteractable(playerController);
-		return;
+	case EInteractableState::Default:
+		clientState = EInteractableState::Default;
+		break;
+		
+	case EInteractableState::UnFocused:
+	case EInteractableState::InRange:
+		{
+			if (!IsValid(playerInRange)) {return TryChangeState(playerController, EInteractableState::OutOfBound);}
+			UInteractionComponent* interactionComp = playerInRange->FindComponentByTag<UInteractionComponent>("Interaction");
+			if (IsValid(interactionComp))
+			{
+				clientState = EInteractableState::InRange;			
+			}
+			if (interactionComp->GetFocusedActor() != GetOwner()) {break;}
+		}
+
+	case EInteractableState::Focused:
+		{
+			if (!EnumHasAnyFlags(clientState, EInteractableState::InRange)) {return;}
+			clientState = EInteractableState::Focused;
+			break;
+		}
+	
+	case EInteractableState::OutOfBound:
+		{
+			playerInRange = nullptr;
+			clientState = EInteractableState::OutOfBound;
+			break;
+		}
 	}
-	UpdateVisuals(playerController);
-}
 
-void UInteractableComponent::TryDeactivateInteractable(APlayerController* playerController)
-{
-	if (!LIKELY(IsValid(playerController))) {return;}
-	if (!EnumHasAnyFlags(clientState, EInteractableState::InRange | EInteractableState::Focused)) {return;}
-	if (!playerController->IsLocalController()) {return;}
-	
-	clientState = EInteractableState::UnFocused;
-	onChangeState.Broadcast(playerController, EInteractableState::UnFocused);
 	UpdateVisuals(playerController);
-}
-
-void UInteractableComponent::TryActivateInteractable(APlayerController* playerController)
-{
-	if (!LIKELY(IsValid(playerController))) {return;}
-	if (!EnumHasAnyFlags(clientState, EInteractableState::InRange | EInteractableState::UnFocused)) {return;}
-	if (!playerController->IsLocalController()) {return;}
-	
-	clientState = EInteractableState::Focused;
-	onChangeState.Broadcast(playerController, EInteractableState::Focused);
-	UpdateVisuals(playerController);
-
-	return;
 }
 
 void UInteractableComponent::TryInteract(APlayerController* playerController)
 {
 	if (!LIKELY(IsValid(playerController))) {return;}
-	if (clientState != EInteractableState::Focused) {return;}
 	if (!playerController->IsLocalController()) {return;}
+	if (clientState != EInteractableState::Focused) {return;}
 
-	clientState = EInteractableState::Interacting;
-	onChangeState.Broadcast(playerController, EInteractableState::Interacting);
-	UpdateVisuals(playerController);
-	PlayEffects();
+	if (OnClientInteraction.IsBound())
+	{
+		OnClientInteraction.Broadcast(playerController);
+		PlayEffects(true);
+		FinishInteracting(playerController, true);
+	}
 }
 
 void UInteractableComponent::Multicast_TryInteract_Implementation(APawn* player)
 {
 	if (!IsValid(player) || !feedbackSettings.IsNetworkOn()) {return;}
-	onRequestInteraction.Broadcast(player);
-	PlayEffects();
+	if (OnMultiInteraction.IsBound())
+	{
+		OnMultiInteraction.Broadcast(player);
+		PlayEffects(true);
+		if (APlayerController* pc = player->GetController<APlayerController>())
+		{
+			FinishInteracting(pc, true);
+		}
+	}
+	
 }
 
-void UInteractableComponent::FinishInteracting(APlayerController* playerController, const EInteractableState& newState)
+void UInteractableComponent::FinishInteracting(APlayerController* playerController, bool bSuccess)
 {
 	if (!LIKELY(IsValid(playerController))) {return;}
-	if (clientState != EInteractableState::Interacting) {return;}
-	
-	switch (newState)
+	if (!playerController->IsLocalController()) {return;}
+
+	if (bSuccess)
 	{
-	case EInteractableState::InRange:
-		InInteractableRange(playerController);
-		return;
-	case EInteractableState::OutOfBound:
-		OutOfInteractableRange(playerController);
-		return;
-	default:
-		clientState = newState;
-		onChangeState.Broadcast(playerController, clientState);
-		UpdateVisuals(playerController);
+		TryChangeState(playerController, EInteractableState::OutOfBound);
 		return;
 	}
+	TryChangeState(playerController, EInteractableState::InRange);
 }
 
 void UInteractableComponent::OnInteractionSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent,
@@ -251,7 +261,8 @@ void UInteractableComponent::OnInteractionSphereBeginOverlap(UPrimitiveComponent
 	if (IsValid(pc) && pc->IsLocalController())
 	{
 		if (playerInRange == player) {return;}
-		InInteractableRange(pc);
+		playerInRange = player;
+		TryChangeState(pc, EInteractableState::InRange);
 	}
 	
 }
@@ -265,20 +276,24 @@ void UInteractableComponent::OnInteractionSphereEndOverlap(UPrimitiveComponent* 
 	APlayerController* pc = player->GetController<APlayerController>();
 	if (IsValid(pc) && pc->IsLocalController())
 	{
-		OutOfInteractableRange(pc);
+		playerInRange = nullptr;
+		TryChangeState(pc, EInteractableState::OutOfBound);
 	}
 }
 
 bool UInteractableComponent::UpdateAvailablePrimitiveComponents()
 {
+	if (feedbackSettings.ownerMeshComponent.IsValid()) {return true;}
+	
 	AActor* owner = GetOwner();
 	if (!IsValid(owner)) {return false;}
+	
 	TArray<UMeshComponent*> activeComponents;
 	owner->GetComponents<UMeshComponent>(activeComponents);
 	if (activeComponents.Num() == 0) {return false;}
-	feedbackSettings.outlinedMeshComponent = activeComponents[0];
-	//UE_LOG(LogTemp, Warning, TEXT("Init Outline : %s"), *(feedbackSettings.outlinedMeshComponent.IsValid() ? feedbackSettings.outlinedMeshComponent->GetName() : "None"));
-	return true;
+	
+	feedbackSettings.ownerMeshComponent = activeComponents[0];
+	return feedbackSettings.ownerMeshComponent.IsValid();
 }
 
 void UInteractableComponent::UpdateVisuals(APlayerController* playerController)
@@ -287,34 +302,24 @@ void UInteractableComponent::UpdateVisuals(APlayerController* playerController)
 	APlayerController* pc = GetWorld()->GetFirstPlayerController();
 	if (pc != playerController) {return;}
 	
-	UpdateOutline();
-	UpdateWidget();
+	if (feedbackSettings.IsOutlineOn() && feedbackSettings.ownerMeshComponent.IsValid())
+	{
+		feedbackSettings.ownerMeshComponent->SetRenderCustomDepth(clientState == EInteractableState::Focused);
+		feedbackSettings.ownerMeshComponent->SetCustomDepthStencilValue(
+			clientState == EInteractableState::Focused ? feedbackSettings.outlineStencilValue : 0
+		);
+	}
+	if (feedbackSettings.IsWidgetOn() && IsValid(interactionGuideComponent))
+	{
+		interactionGuideComponent->SetVisibility(clientState == EInteractableState::Focused);
+	}
 }
 
-void UInteractableComponent::PlayEffects()
+void UInteractableComponent::PlayEffects(bool bSuccess)
 {
 	if (feedbackSettings.IsSoundOn()) {PlaySound(feedbackSettings.interactedSound);}
 	if (feedbackSettings.IsNiagaraOn()) {PlayEffect(feedbackSettings.interactedNiagaraVFX);}
 	if (feedbackSettings.IsParticleOn()) {PlayEffect(feedbackSettings.interactedParticleVFX);}
-}
-
-void UInteractableComponent::UpdateOutline()
-{
-	//UE_LOG(LogTemp, Warning, TEXT("Update Outline : %s"), *(feedbackSettings.outlinedMeshComponent.IsValid() ? feedbackSettings.outlinedMeshComponent->GetName() : "None"));
-	if (!feedbackSettings.IsOutlineOn()) {return;}
-	if (!feedbackSettings.outlinedMeshComponent.IsValid()) {return;}
-	feedbackSettings.outlinedMeshComponent->SetRenderCustomDepth(clientState == EInteractableState::Focused);
-	feedbackSettings.outlinedMeshComponent->SetCustomDepthStencilValue(
-		clientState == EInteractableState::Focused ? feedbackSettings.outlineStencilValue : 0
-	);
-}
-
-void UInteractableComponent::UpdateWidget()
-{
-	if (!feedbackSettings.IsWidgetOn()) {return;}
-	if (!IsValid(interactionGuideComponent)) {return;}
-
-	interactionGuideComponent->SetVisibility(clientState == EInteractableState::Focused);
 }
 
 void UInteractableComponent::PlaySound(USoundBase* sound)

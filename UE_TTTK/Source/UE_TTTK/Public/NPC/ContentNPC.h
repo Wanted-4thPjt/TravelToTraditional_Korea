@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
+#include "GameFramework/Actor.h"
 #include "ContentNPC.generated.h"
 
 enum class EInteractableState : uint8;
@@ -11,7 +11,7 @@ class UContentEntryComponent;
 class UWidgetComponent;
 
 UCLASS()
-class UE_TTTK_API AContentNPC : public ACharacter
+class UE_TTTK_API AContentNPC : public AActor
 {
 	GENERATED_BODY()
 
@@ -29,7 +29,7 @@ public:
 
 private:
 	UFUNCTION()
-	void OnInteractablePlayerStateChanged(APlayerController* playerController, const EInteractableState& state);
+	void OnInteractablePlayerStateChanged(APlayerController* playerController);
 	
 	
 protected:

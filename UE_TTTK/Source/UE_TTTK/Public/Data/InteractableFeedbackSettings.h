@@ -40,7 +40,7 @@ public:
     uint8 effectType = 0;
     
     UPROPERTY(/*VisibleAnywhere, BlueprintReadOnly, Category = "Outline", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Outline", EditConditionHides)*/)
-    TWeakObjectPtr<UMeshComponent> outlinedMeshComponent;
+    TWeakObjectPtr<UMeshComponent> ownerMeshComponent;
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Outline", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Outline", EditConditionHides))
     int32 outlineStencilValue = 252;
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Outline", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Outline", EditConditionHides))
@@ -49,7 +49,7 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Widget", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Widget", EditConditionHides))
     TSubclassOf<UUserWidget> interactionGuideWidgetClass;
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Widget", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Widget", EditConditionHides))
-    FVector widgetOffset = FVector(0.f, 0.f, 0.f);
+    FName widgetSocketName = NAME_None;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sound", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Sound", EditConditionHides))
     TObjectPtr<USoundBase> interactedSound;
@@ -71,10 +71,9 @@ public:
     bool IsNetworkOn() const {return IsEnableEffect(effectType, EEffectType::Network);}
 
     void EnableOutline(const bool& bEnabled, UMeshComponent* inOutlineComponent, FLinearColor inOutlineColor = FLinearColor::Green);
-    void EnableWidget(const bool& bEnabled, const TSubclassOf<UUserWidget>& inInteractionGuideWidgetClass, FVector inWidgetOffset = FVector(0.f, 0.f, 100.f));
+    void EnableWidget(const bool& bEnabled, const TSubclassOf<UUserWidget>& inInteractionGuideWidgetClass, FName inWidgetSocketName = NAME_None);
     void EnableSound(const bool& bEnabled, USoundBase* inInteractedSound);
     void EnableNiagara(const bool& bEnabled, UNiagaraSystem* inInteractedNiagaraVFX);
     void EnableParticle(const bool& bEnabled, UParticleSystem* inInteractedParticleVFX);
-    void EnableNetwork(const bool& bEnabled, const int32& count);
-    
+    void EnableNetwork(const bool& bEnabled);    
 };

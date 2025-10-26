@@ -8,12 +8,12 @@ void FInteractableFeedbackSettings::EnableOutline(const bool& bEnabled, UMeshCom
 		return;
 	}
 	effectType |= static_cast<uint8>(EEffectType::Outline);
-	outlinedMeshComponent = inOutlineComponent;
+	ownerMeshComponent = inOutlineComponent;
 	outlineColor = inOutlineColor;
 }
 
 
-void FInteractableFeedbackSettings::EnableWidget(const bool& bEnabled, const TSubclassOf<UUserWidget>& inInteractionGuideWidgetClass, FVector inWidgetOffset)
+void FInteractableFeedbackSettings::EnableWidget(const bool& bEnabled, const TSubclassOf<UUserWidget>& inInteractionGuideWidgetClass, FName inWidgetSocketName)
 {
 	if (!bEnabled)
 	{
@@ -22,7 +22,7 @@ void FInteractableFeedbackSettings::EnableWidget(const bool& bEnabled, const TSu
 	}
 	effectType |= static_cast<uint8>(EEffectType::Widget);
 	interactionGuideWidgetClass = inInteractionGuideWidgetClass;
-	widgetOffset = inWidgetOffset;
+	widgetSocketName = inWidgetSocketName;
 }
 
 
@@ -59,7 +59,7 @@ void FInteractableFeedbackSettings::EnableParticle(const bool& bEnabled, UPartic
 	interactedParticleVFX = inInteractedParticleVFX;
 }
 
-void FInteractableFeedbackSettings::EnableNetwork(const bool& bEnabled, const int32& count)
+void FInteractableFeedbackSettings::EnableNetwork(const bool& bEnabled)
 {
 	if (!bEnabled)
 	{
@@ -67,6 +67,5 @@ void FInteractableFeedbackSettings::EnableNetwork(const bool& bEnabled, const in
 		return;
 	}
 	effectType |= static_cast<uint8>(EEffectType::Network);
-	//availableInteractionCount = count;
 }
 

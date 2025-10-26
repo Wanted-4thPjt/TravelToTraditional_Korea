@@ -2,7 +2,7 @@
 
 #include "Interaction/ContentEntryComponent.h"
 #include "Interaction/InteractableComponent.h"
-#include "MainPlayer.h"
+#include "UI/InteractableWidget.h"
 
 AContentNPC::AContentNPC()
 {
@@ -10,35 +10,24 @@ AContentNPC::AContentNPC()
 
 	contentEntry = CreateDefaultSubobject<UContentEntryComponent>("ContentEntryComponent");
 	interactableComponent = CreateDefaultSubobject<UInteractableComponent>("InteractableComponent");
+	interactableComponent->feedbackSettings.EnableNetwork(true);
+	interactableComponent->feedbackSettings.EnableWidget(true, UInteractableWidget::StaticClass(), "Widget");
 	
 	SetReplicates(true);
-	SetReplicateMovement(false);
+	bReplicates = true;
 }
 
 void AContentNPC::BeginPlay()
 {
 	Super::BeginPlay();
 
-	interactableComponent->onChangeState.AddDynamic(this, &AContentNPC::OnInteractablePlayerStateChanged);
+	interactableComponent->OnClientInteraction.AddDynamic(this, &AContentNPC::OnInteractablePlayerStateChanged);
 }
 
 
-void AContentNPC::OnInteractablePlayerStateChanged(APlayerController* playerController, const EInteractableState& state)
+void AContentNPC::OnInteractablePlayerStateChanged(APlayerController* playerController)
 {	
-	switch (state)
-	{
-	case EInteractableState::Default:
-	case EInteractableState::OutOfBound:
-		{
-			contentEntry->RequestLeaveLobby(playerController->GetPawn<AMainPlayer>());
-		}
-		break;
-	case EInteractableState::InRange:
-	case EInteractableState::UnFocused:
-		break;
-	case EInteractableState::Focused:
-		break;
-	case EInteractableState::Interacting:
-		break;
-	}
+	
+
+	return;
 }

@@ -1,9 +1,10 @@
 #include "Interaction/InteractionComponent.h"
 
+#include "Data/InputMappingsSettings.h"
 #include "Net/UnrealNetwork.h"
 #include "Interaction/InteractableComponent.h"
 #include "MainPlayer.h"
-#include "Jegi/Jegi.h"
+#include "Interaction/ContentEntryComponent.h"
 
 
 UInteractionComponent::UInteractionComponent()
@@ -11,13 +12,13 @@ UInteractionComponent::UInteractionComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 
 	SetIsReplicatedByDefault(true);
+	
+	FInputMappingData data = UInputMappingsSettings::Get()->inputMappings["IMC_Interaction"];
+	IMC_Interaction = data.inputMappingContext;
+	IA_Interaction = data.inputActions["IA_Interaction"];
+	
 
-	if (ConstructorHelpers::FObjectFinder<UInputMappingContext> tempIMC_Interaction(TEXT("/Game/Input/IMC_Interaction.IMC_Interaction"));
-		tempIMC_Interaction.Succeeded()
-	)
-	{
-		IMC_Interaction = tempIMC_Interaction.Object;		
-	}
+	ComponentTags.Add("Interaction");
 }
 
 void UInteractionComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -25,36 +26,61 @@ void UInteractionComponent::GetLifetimeReplicatedProps(TArray<class FLifetimePro
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
 	DOREPLIFETIME(UInteractionComponent, focusingActor);
-	DOREPLIFETIME(UInteractionComponent, possessingInteractable);
+	DOREPLIFETIME(UInteractionComponent, possessingInteractedTarget);
 }
 
 
 void UInteractionComponent::InitializeComponent()
 {
 	Super::InitializeComponent();
-
+	
+	
 }
 
 void UInteractionComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	ownerPlayerController = GetOwner<APawn>()->GetController<APlayerController>();
+	
+	if (APawn* owner = GetOwner<APawn>())
+	{
+		if (owner->GetController<APlayerController>() && owner->IsLocallyControlled())
+		{
+			ownerPlayerController = owner->GetController<APlayerController>();
+		}
+	}
+	if (IsValid(ownerPlayerController) && ownerPlayerController->IsLocalController())
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(ownerPlayerController->GetLocalPlayer()))
+		{
+			Subsystem->AddMappingContext(IMC_Interaction, 1);
+		}
+		if (UEnhancedInputComponent* eic = Cast<UEnhancedInputComponent>(ownerPlayerController->InputComponent))
+		{
+			eic->BindAction(IA_Interaction, ETriggerEvent::Triggered, this, &UInteractionComponent::InteractKeyInput);
+		}
+	}
 }
 
-void UInteractionComponent::InteractKeyInput()
+void UInteractionComponent::InteractKeyInput(const FInputActionValue& value)
 {
-	if (IsValid(possessingInteractable))
+	UE_LOG(LogTemp, Display, TEXT("InteractKeyInput"));
+	if (IsValid(possessingInteractedTarget))
 	{
-		possessingInteractable->FinishInteracting(GetOwner<AMainPlayer>()->GetController<APlayerController>(), EInteractableState::OutOfBound);
-		Server_FinishInteraction();
+		if (possessingInteractedTarget->IsContentRunning())
+		{
+			
+		}
+		else if (possessingInteractedTarget->IsLobbyActive())
+		{
+			
+		}
 		return;
 	}
-	
 	if (IsValid(focusingActor))
 	{
 		if (UInteractableComponent* interactable = focusingActor->FindComponentByClass<UInteractableComponent>())
 		{
-			if (interactable->CanPossess())
+			if (interactable->IsMultiPlayable())
 			{
 				Server_Interact(interactable);
 			}
@@ -68,12 +94,11 @@ void UInteractionComponent::FocusInteractableActor(const FHitResult& hitResult)
 	AActor* hitActor = hitResult.GetActor();
 	if (hitActor == focusingActor) {return;}
 	
-	//UE_LOG(LogTemp, Display, TEXT("===========Update Interactable actor==========="));
 	if (focusingActor)
 	{
-		if (UInteractableComponent* interactable = focusingActor->FindComponentByClass<UInteractableComponent>())
+		if (UInteractableComponent* interactable = focusingActor->FindComponentByTag<UInteractableComponent>("Interactable"))
 		{
-			interactable->TryDeactivateInteractable(GetOwner<AMainPlayer>()->GetController<APlayerController>());
+			interactable->TryChangeState(GetOwner<AMainPlayer>()->GetController<APlayerController>(), EInteractableState::UnFocused);
 		}
 	}
 	
@@ -85,16 +110,16 @@ void UInteractionComponent::FocusInteractableActor(const FHitResult& hitResult)
 		//UE_LOG(LogTemp, Warning, TEXT("Actor Name : %s"), *hitActor->GetActorNameOrLabel());
 		if (UInteractableComponent* interactable = hitActor->FindComponentByClass<UInteractableComponent>())
 		{
-			interactable->TryActivateInteractable(GetOwner<AMainPlayer>()->GetController<APlayerController>());
+			interactable->TryChangeState(GetOwner<AMainPlayer>()->GetController<APlayerController>(), EInteractableState::Focused);
 		}
 	}
 }
 
 void UInteractionComponent::Server_FinishInteraction_Implementation()
 {
-	if (!IsValid(possessingInteractable) || !IsValid(GetOwner<AMainPlayer>())) {return;}
-	//possessingInteractable->Multicast_FinishInteracting(GetOwner<AMainPlayer>());
-	//possessingInteractable = nullptr;
+	if (!IsValid(possessingInteractedTarget) || !IsValid(GetOwner<AMainPlayer>())) {return;}
+	possessingInteractedTarget->RequestFinishContent();
+	possessingInteractedTarget = nullptr;
 }
 
 void UInteractionComponent::Server_Focus_Implementation(AActor* focusedActor)
@@ -107,7 +132,8 @@ void UInteractionComponent::Server_Interact_Implementation(UInteractableComponen
 {
 	if (!IsValid(interactable) || !IsValid(GetOwner<AMainPlayer>())) {return;}
 	interactable->Multicast_TryInteract(GetOwner<AMainPlayer>());
-	possessingInteractable = interactable;
+	if (possessingInteractedTarget = interactable->GetOwner()->FindComponentByTag<UContentEntryComponent>("Entry"))
+	{
+		possessingInteractedTarget->RequestEntry(GetOwner<AMainPlayer>());
+	}
 }
-
-

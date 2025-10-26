@@ -4,6 +4,8 @@
 #include "Components/ActorComponent.h"
 #include "InteractionComponent.generated.h"
 
+struct FInputActionValue;
+class UContentEntryComponent;
 class UInputAction;
 class UInputMappingContext;
 class UInteractableComponent;
@@ -25,8 +27,8 @@ protected:
 public:	
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE AActor* GetFocusedActor() {return focusingActor;}
-	UFUNCTION(BlueprintCallable)
-	void InteractKeyInput();
+	UFUNCTION()
+	void InteractKeyInput(const FInputActionValue& value);
 	UFUNCTION()
 	void FocusInteractableActor(const FHitResult& hitResult);
 
@@ -43,12 +45,12 @@ protected:
 	UPROPERTY(Replicated)
 	TObjectPtr<AActor> focusingActor;
 	UPROPERTY(Replicated)
-	TObjectPtr<UInteractableComponent> possessingInteractable;
+	TObjectPtr<UContentEntryComponent> possessingInteractedTarget;
 	
 	UPROPERTY()
 	APlayerController* ownerPlayerController = nullptr;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Input|Context")
 	TObjectPtr<UInputMappingContext> IMC_Interaction;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Input|Action")
-	TObjectPtr<UInputAction> IA_Chat;
+	TObjectPtr<UInputAction> IA_Interaction;
 };

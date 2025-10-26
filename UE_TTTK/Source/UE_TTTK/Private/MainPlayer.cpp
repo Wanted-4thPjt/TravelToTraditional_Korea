@@ -16,23 +16,11 @@
 
 AMainPlayer::AMainPlayer()
 {
+	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 	
 	viewComponent = CreateDefaultSubobject<UViewComponent>(TEXT("View"));
 	interactionComponent = CreateDefaultSubobject<UInteractionComponent>(TEXT("Interaction"));
-}
-
-void AMainPlayer::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-	APlayerController* PC = Cast<APlayerController>(GetController());
-	if (IsLocallyControlled())
-	{
-		if (PC->WasInputKeyJustPressed(EKeys::F))
-		{
-			interactionComponent->InteractKeyInput();
-		}
-	}
 }
 
 void AMainPlayer::BeginPlay()

@@ -14,14 +14,13 @@ enum class EInteractableState : uint8
 	Default UMETA(Hidden),
 	OutOfBound = 1 << 1, // 범위에서 벗어났을때
 	InRange = 1 << 2, // 범위에 들어왔을때
-	UnFocused = 1 << 3, // 바라본 상태에서 --> 안바라보게됨.  4~6번 => inRange가 선행이어야함. 
-	Focused = 1 << 4, // 범위에 있으면서 바라보는 상태
-	Interacting = 1 << 5 // 내가 FOCUS 하면서 상호작용 키를 누른경우
+	Focused = 1 << 3, // 범위에 있으면서 바라보는 상태
+	UnFocused = 1 << 4
 };
 ENUM_CLASS_FLAGS(EInteractableState)
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnChangeState, APlayerController*, playerController, const EInteractableState&, newInteractableState);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRequestInteraction, APawn*, player);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnClientInteraction, APlayerController*, playerController);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMultiInteraction, APawn*, player);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class UE_TTTK_API UInteractableComponent : public UActorComponent
@@ -47,34 +46,24 @@ public:
 	FORCEINLINE EInteractableState GetState() const {return clientState;}
 	UFUNCTION(BlueprintPure, Category="Interactable|Each Client")
 	FORCEINLINE bool IsInteractable() const {return clientState == EInteractableState::Focused;}
-	UFUNCTION(BlueprintPure, Category="Interactable|Each Client")
-	FORCEINLINE bool IsInteracting() const {return clientState == EInteractableState::Interacting;}
 	UFUNCTION(BlueprintPure, Category="Interactable|All Client")
-	FORCEINLINE bool CanPossess() const {return feedbackSettings.IsNetworkOn();}
+	FORCEINLINE bool IsMultiPlayable() const {return feedbackSettings.IsNetworkOn();}
 
 	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
-	void TryDeactivateInteractable(APlayerController* playerController);
-	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
-	void TryActivateInteractable(APlayerController* playerController);
-	// @Param : bPossess : 상호작용 결과가 동기화되어야 한다. 
+	void TryChangeState(APlayerController* playerController, EInteractableState newState);
 	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
 	void TryInteract(APlayerController* playerController);
 	UFUNCTION(NetMulticast, Reliable, Category="Interactable|Multicast")
 	void Multicast_TryInteract(APawn* player);
-	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
-	void FinishInteracting(APlayerController* Player, const EInteractableState& newState);
-
-	UFUNCTION(BlueprintCallable, Category="Interactable|Visual")
-	void UpdateVisuals(APlayerController* playerController);
-	UFUNCTION(BlueprintCallable, Category="Interactable|Effect")
-	void PlayEffects();
 	
 
 protected:	
 	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
-	void OutOfInteractableRange(APlayerController* Player);
-	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
-	void InInteractableRange(APlayerController* Player);
+	void FinishInteracting(APlayerController* Player, bool bSuccess);
+	UFUNCTION(BlueprintCallable, Category="Interactable|Visual")
+	void UpdateVisuals(APlayerController* playerController);
+	UFUNCTION(BlueprintCallable, Category="Interactable|Effect")
+	void PlayEffects(bool bSuccess);
 	
 	#pragma region Overlap Event
 	UFUNCTION()
@@ -85,8 +74,6 @@ protected:
 
 	#pragma region Effects
 	bool UpdateAvailablePrimitiveComponents();
-	void UpdateOutline();
-	void UpdateWidget();
 	void PlaySound(USoundBase* sound);
 	void PlayEffect(UParticleSystem* effect);
 	void PlayEffect(UNiagaraSystem* effect);
@@ -98,29 +85,26 @@ protected:
 	
 public:
 	UPROPERTY(BlueprintAssignable, Category="Interactable|Event")
-	FOnChangeState onChangeState;
+	FOnClientInteraction OnClientInteraction;
 	UPROPERTY(BlueprintAssignable, Category="Interactable|Event")
-	FOnRequestInteraction onRequestInteraction;
+	FOnMultiInteraction OnMultiInteraction;
 
-protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
-	TObjectPtr<UWidgetComponent> interactionGuideComponent;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Range")
-	TObjectPtr<USphereComponent> interactionSphere;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Range")
-	float interactionRadius = 300.f;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Server")
-	TArray<APawn*> possessingPlayers;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "InteractableFeedback")
-	EInteractableState clientState = EInteractableState::Default;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractableFeedback")
 	FInteractableFeedbackSettings feedbackSettings;
 
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DynamicComponents|UI")
+	TObjectPtr<UWidgetComponent> interactionGuideComponent;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "DynamicComponents|Range")
+	TObjectPtr<USphereComponent> interactionSphere;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "DynamicComponents|Range")
+	float interactionRadius = 300.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "InteractableFeedback")
+	EInteractableState clientState = EInteractableState::Default;
+
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Client", meta=(AllowPrivateAccess=true))
-	APawn* playerInRange;
+	APawn* playerInRange = nullptr;
 	
 };

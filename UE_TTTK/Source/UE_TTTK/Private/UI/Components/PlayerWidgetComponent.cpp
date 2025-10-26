@@ -3,13 +3,11 @@
 
 #include "UI/Components/PlayerWidgetComponent.h"
 
-#include "EnhancedInputComponent.h"
-#include "EnhancedInputSubsystems.h"
-#include "InputMappingContext.h"
 #include "Engine/LocalPlayer.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/EditableTextBox.h"
 #include "Components/ScrollBox.h"
+#include "Data/InputMappingsSettings.h"
 #include "UI/ChatLineWidget.h"
 #include "UI/PlayerWidget.h"
 #include "UI/ChatWidget.h"
@@ -19,23 +17,22 @@
 UPlayerWidgetComponent::UPlayerWidgetComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
-	if (ConstructorHelpers::FObjectFinder<UInputMappingContext> tempIMC_UI(TEXT("/Game/Input/IMC_UI.IMC_UI"));
-		tempIMC_UI.Succeeded()
-	)
-	{
-		IMC_UI = tempIMC_UI.Object;
-	}
+	FInputMappingData data = UInputMappingsSettings::Get()->inputMappings["IMC_UI"];
+	IMC_UI = data.inputMappingContext;
+	IA_Chat = data.inputActions["IA_Chat"];
+	IA_Settings = data.inputActions["IA_Settings"];
+	IA_Leaderboard = data.inputActions["IA_Leaderboard"];
 	if (ConstructorHelpers::FClassFinder<UPlayerWidget> tempPlayerWidget(TEXT("/Game/UI/InContent/WBP_Player.WBP_Player_C"));
 		tempPlayerWidget.Succeeded()
 	)
 	{
 		playerWidgetFactory = tempPlayerWidget.Class;
 	}
-	if (ConstructorHelpers::FClassFinder<UPlayerWidget> tempPlayerWidget(TEXT("/Game/UI/InContent/WBP_ChatLine.WBP_ChatLine_C"));
-		tempPlayerWidget.Succeeded()
+	if (ConstructorHelpers::FClassFinder<UChatLineWidget> tempChatLineWidget(TEXT("/Game/UI/InContent/WBP_ChatLine.WBP_ChatLine_C"));
+		tempChatLineWidget.Succeeded()
 	)
 	{
-		chatLineWidgetFactory = tempPlayerWidget.Class;
+		chatLineWidgetFactory = tempChatLineWidget.Class;
 	}
 }
 
@@ -45,9 +42,12 @@ void UPlayerWidgetComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	ownerPlayerController = GetOwner<APlayerController>();
-	InitPlayerControllerWidget();
-	BindInputMappingContext();
+	if (GetOwner<APlayerController>() && GetOwner<APlayerController>()->IsLocalController())
+	{
+		ownerPlayerController = GetOwner<APlayerController>();
+		InitPlayerControllerWidget();
+		BindInputMappingContext();
+	}
 }
 
 
@@ -55,7 +55,7 @@ void UPlayerWidgetComponent::InitPlayerControllerWidget()
 {
 	if (!IsValid(ownerPlayerController)) {return;}
 	playerWidget = CreateWidget<UPlayerWidget>(ownerPlayerController, playerWidgetFactory);
-	chatWidget = playerWidget->chatWidget;
+	playerWidget->AddToViewport();
 }
 
 void UPlayerWidgetComponent::BindInputMappingContext()
@@ -69,38 +69,32 @@ void UPlayerWidgetComponent::BindInputMappingContext()
 		{
 			Subsystem->AddMappingContext(IMC_UI, 1);
 		}
-	}
-	if (UEnhancedInputComponent* eic = Cast<UEnhancedInputComponent>(ownerPlayerController->InputComponent))
-	{
-		for (auto mapping : IMC_UI->GetMappings())
+		if (UEnhancedInputComponent* eic = Cast<UEnhancedInputComponent>(ownerPlayerController->InputComponent))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("FKey Name == %s"), *(mapping.Key.ToString()));
-			if (mapping.Key == "Enter")
-			{
-				eic->BindAction(IA_Chat, ETriggerEvent::Triggered, this, &UPlayerWidgetComponent::OnInputChatKey);
+			eic->BindAction(IA_Chat, ETriggerEvent::Triggered, this, &UPlayerWidgetComponent::OnInputChatKey);
+			eic->BindAction(IA_Settings, ETriggerEvent::Triggered, this, &UPlayerWidgetComponent::OnInputSettingKey);
+			eic->BindAction(IA_Leaderboard, ETriggerEvent::Triggered, this, &UPlayerWidgetComponent::OnInputLeaderboardKey);
 				
-			}
 		}
-		eic->BindAction(IA_Setting, ETriggerEvent::Triggered, this, &UPlayerWidgetComponent::OnInputSettingKey);
 	}
 }
 
 void UPlayerWidgetComponent::UpdateChat(const FText& newText)
 {
 	if (!IsValid(ownerPlayerController)) {return;}
-	float scrollOffset = chatWidget->chatScrollBox->GetScrollOffset();
-	float scrollOffsetOfEnd = chatWidget->chatScrollBox->GetScrollOffsetOfEnd();
+	float scrollOffset = playerWidget->chatWidget->chatScrollBox->GetScrollOffset();
+	float scrollOffsetOfEnd = playerWidget->chatWidget->chatScrollBox->GetScrollOffsetOfEnd();
 	
-	UChatLineWidget* chatLine = CreateWidget<UChatLineWidget>(chatWidget->chatScrollBox, chatLineWidgetFactory);
+	UChatLineWidget* chatLine = CreateWidget<UChatLineWidget>(playerWidget->chatWidget->chatScrollBox, chatLineWidgetFactory);
 	chatLine->SetChatText(newText);
-	chatWidget->chatScrollBox->AddChild(chatLine);
+	playerWidget->chatWidget->chatScrollBox->AddChild(chatLine);
 
 	if (scrollOffset == scrollOffsetOfEnd)
 	{
 		GetWorld()->GetTimerManager().SetTimerForNextTick(
 			[this]() -> void
 			{
-				chatWidget->chatScrollBox->ScrollToEnd();
+				playerWidget->chatWidget->chatScrollBox->ScrollToEnd();
 			}
 		);
 	}
@@ -109,9 +103,10 @@ void UPlayerWidgetComponent::UpdateChat(const FText& newText)
 void UPlayerWidgetComponent::OnInputChatKey(const FInputActionValue& inputActionValue)
 {
 	if (!IsValid(ownerPlayerController)) {return;}
+	if (ownerPlayerController == GetWorld()->GetFirstPlayerController())
 
 	// Keyboard Focus가 자동으로 Player Key Input을 Consume하기 때문에, UI Mode가 유지되는 동안 추가적으로 Input을 제어할 필요 X
-	uiInputMode.SetWidgetToFocus(chatWidget->inputChatBox->TakeWidget());
+	uiInputMode.SetWidgetToFocus(playerWidget->chatWidget->inputChatBox->TakeWidget());
 	uiInputMode.SetLockMouseToViewportBehavior(EMouseLockMode::LockAlways);
 	
 	ownerPlayerController->SetShowMouseCursor(true);
@@ -124,5 +119,9 @@ void UPlayerWidgetComponent::OnInputSettingKey(const FInputActionValue& inputAct
 
 	//uiInputMode.SetWidgetToFocus();
 	
+}
+
+void UPlayerWidgetComponent::OnInputLeaderboardKey(const FInputActionValue& inputActionValue)
+{
 }
 

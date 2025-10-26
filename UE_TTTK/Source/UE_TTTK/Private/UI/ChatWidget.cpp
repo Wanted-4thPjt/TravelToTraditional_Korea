@@ -25,8 +25,8 @@ void UChatWidget::OnChatCommitted(const FText& inputText, ETextCommit::Type comm
 
 	if (AUE_TTTKPlayerController* pc = Cast<AUE_TTTKPlayerController>(GetWorld()->GetFirstPlayerController()))
 	{
-		pc->Server_SendChat(inputText);
-		chatScrollBox->ScrollToEnd();
+		pc->Server_SendChat(GetOwningLocalPlayer()->GetNickname() + " : " + inputText.ToString());
+		inputChatBox->SetText(FText::GetEmpty());
 	}
 }
 

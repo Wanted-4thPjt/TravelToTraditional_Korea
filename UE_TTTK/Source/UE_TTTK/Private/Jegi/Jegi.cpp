@@ -19,32 +19,27 @@ AJegi::AJegi()
 	bReplicates  = true;
 
 
-	meshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> tempMesh(TEXT("/Engine/EngineMeshes/Cylinder.Cylinder"));
-	if (meshComponent && tempMesh.Succeeded())
-	{
-		meshComponent->SetStaticMesh(tempMesh.Object);
-		meshComponent->SetCollisionObjectType(ECC_WorldDynamic);
-		meshComponent->SetCollisionResponseToAllChannels(ECR_Ignore);
-		meshComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
-		meshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-		
-		SetRootComponent(meshComponent);
-	}
-	
 	sphereCollider = CreateDefaultSubobject<USphereComponent>(TEXT("Collider"));
-	if (sphereCollider)
+	sphereCollider->SetCollisionResponseToAllChannels(ECR_Ignore);
+	sphereCollider->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	sphereCollider->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	if (!sphereCollider->ComponentHasTag("Jegi"))
 	{
-		sphereCollider->SetCollisionResponseToAllChannels(ECR_Ignore);
-		sphereCollider->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
-		sphereCollider->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-		if (!sphereCollider->ComponentHasTag("Jegi"))
-		{
-			sphereCollider->ComponentTags.Add("Jegi");
-		}
-		if (meshComponent) {sphereCollider->SetupAttachment(meshComponent);}
+		sphereCollider->ComponentTags.Add("Jegi");
 	}
+	SetRootComponent(sphereCollider);
+		
+	meshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
+	meshComponent->SetupAttachment(sphereCollider);
+	meshComponent->SetCollisionObjectType(ECC_WorldDynamic);
+	meshComponent->SetCollisionResponseToAllChannels(ECR_Ignore);
+	meshComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
+	meshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
+	sphereCollider->SetSphereRadius(10.f);
+	meshComponent->SetRelativeLocation(FVector(0.f, 0.f, 32.f));
+	SetActorRelativeScale3D(FVector(1.f));
+	
 	movementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("Movement"));
 	if (movementComponent)
 	{
@@ -57,8 +52,6 @@ AJegi::AJegi()
 		movementComponent->Bounciness = 0.f;
 		movementComponent->bSweepCollision = true;
 	}
-
-	interactable = CreateDefaultSubobject<UInteractableComponent>(TEXT("Interactable"));
 }
 
 // Called when the game starts or when spawned
@@ -73,15 +66,10 @@ void AJegi::BeginPlay()
 		if (UStaticMesh* mesh = meshComponent->GetStaticMesh();
 			IsValid(sphereCollider) && mesh)
 		{
-			sphereCollider->SetSphereRadius(AJegi::FindCylinderMeshRadius(mesh->GetBoundingBox().GetExtent()), true);
+			
 		}
 	}
 	
-	if (IsValid(interactable))
-	{
-		interactable->onRequestInteraction.AddDynamic(this, &AJegi::TempInteract);
-		//interactable->onRequestFinishInteraction.AddDynamic(this, &AJegi::OnEnd);
-	}
 
 	UGameplayStatics::GetAllActorsWithTag(GetWorld(), "Camera", tempCameraActor);
 	//sphereCollider->OnComponentBeginOverlap.AddDynamic()

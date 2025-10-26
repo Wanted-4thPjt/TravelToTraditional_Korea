@@ -152,11 +152,6 @@ void UBaseContentManager::EndContent_Implementation()
 
 	// TODO: 결과창 종료 누르면 이동하게 변경
 	ReturnPlayersToLobby();
-	
-	if (ownerEntryComponent)
-	{
-		ownerEntryComponent->OnContentFinished();
-	}
 }
 
 void UBaseContentManager::ClearContent_Implementation()

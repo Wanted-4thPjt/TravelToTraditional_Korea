@@ -40,23 +40,26 @@ private:
 	UFUNCTION()
 	void OnInputSettingKey(const FInputActionValue& inputActionValue);
 
+	UFUNCTION()
+	void OnInputLeaderboardKey(const FInputActionValue& inputActionValue);
+
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Input|Context")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input|Context")
 	TObjectPtr<UInputMappingContext> IMC_UI;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Input|Action")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input|Action")
 	TObjectPtr<UInputAction> IA_Chat;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Input|Action")
-	TObjectPtr<UInputAction> IA_Setting;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input|Action")
+	TObjectPtr<UInputAction> IA_Settings;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input|Action")
+	TObjectPtr<UInputAction> IA_Leaderboard;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Widget")
 	TSubclassOf<UPlayerWidget> playerWidgetFactory;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Widget")
 	TSubclassOf<UChatLineWidget> chatLineWidgetFactory;
 	
-	UPROPERTY()
+	UPROPERTY(EditDefaultsOnly, Category="Widget")
 	TObjectPtr<UPlayerWidget> playerWidget;
-	UPROPERTY()
-	TObjectPtr<UChatWidget> chatWidget;
 
 private:
 	UPROPERTY()

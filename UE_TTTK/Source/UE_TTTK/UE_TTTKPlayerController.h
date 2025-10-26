@@ -52,7 +52,7 @@ protected:
 public:
 	
 	UFUNCTION(Server, Reliable)
-	void Server_SendChat(const FText& inText);
+	void Server_SendChat(const FString& inMessage);
 
 	UFUNCTION()
 	void UpdateChat(const FText& inText);

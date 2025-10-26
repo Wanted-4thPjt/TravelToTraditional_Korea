@@ -14,13 +14,23 @@ UContentEntryComponent::UContentEntryComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	SetIsReplicatedByDefault(true);
+	ComponentTags.Add("Entry");
 	
+	hostPlayer = nullptr;
 	bLobbyActive = false;
 	bContentRunning = false;
-	hostPlayer = nullptr;
-	contentManager = nullptr;
 	
-	ComponentTags.Add("Entry");
+	contentManager = nullptr;
+}
+
+void UContentEntryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UContentEntryComponent, readyPlayers);
+	DOREPLIFETIME(UContentEntryComponent, hostPlayer);
+	DOREPLIFETIME(UContentEntryComponent, bLobbyActive);
+	DOREPLIFETIME(UContentEntryComponent, bContentRunning);
 }
 
 void UContentEntryComponent::InitializeComponent()
@@ -49,18 +59,8 @@ void UContentEntryComponent::BeginPlay()
 	
 }
 
-void UContentEntryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(UContentEntryComponent, readyPlayers);
-	DOREPLIFETIME(UContentEntryComponent, hostPlayer);
-	DOREPLIFETIME(UContentEntryComponent, bLobbyActive);
-	DOREPLIFETIME(UContentEntryComponent, bContentRunning);
-}
-
 void UContentEntryComponent::TickComponent(float DeltaTime, enum ELevelTick TickType,
-	FActorComponentTickFunction* ThisTickFunction)
+                                           FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	
@@ -70,8 +70,16 @@ void UContentEntryComponent::TickComponent(float DeltaTime, enum ELevelTick Tick
 	}
 }
 
-
 #pragma region Player Actions
+void UContentEntryComponent::RequestEntry(AMainPlayer* player)
+{
+	if (settings.startCondition == EStartCondition::Auto)
+	{
+		RequestStartContent(player);
+		return;
+	}
+	RequestJoinLobby(player);
+}
 
 void UContentEntryComponent::RequestJoinLobby(AMainPlayer* player)
 {
@@ -97,7 +105,6 @@ void UContentEntryComponent::RequestLeaveLobby(AMainPlayer* player)
 
 void UContentEntryComponent::RequestStartContent(AMainPlayer* player)
 {
-	if (!IsServer()) return;
 	if (!ValidateStartRequest(player))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Start request validation failed"));
@@ -127,7 +134,7 @@ void UContentEntryComponent::RequestCancelLobby(AMainPlayer* player)
 
 #pragma region ContentManager Callback
 
-void UContentEntryComponent::OnContentFinished()
+void UContentEntryComponent::RequestFinishContent()
 {
 	if (!IsServer()) return;
 

@@ -67,8 +67,6 @@ protected:
 	TObjectPtr<UStaticMeshComponent> meshComponent = nullptr;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UProjectileMovementComponent> movementComponent = nullptr;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInteractableComponent> interactable = nullptr;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TArray<AActor*> tempCameraActor;
