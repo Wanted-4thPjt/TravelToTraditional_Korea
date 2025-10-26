@@ -24,7 +24,7 @@ void UCrowdOuchTask::ExitState(FStateTreeExecutionContext& Context, const FState
 	
 	Super::ExitState(Context, Transition);
 	UE_LOG(LogTemp,Error,TEXT("===EXIT Ouch스테이트"));
-	if (Transition.SourceState.IsValid()) // 이전 스텡이트 정보 가져오기
+	if (Transition.SourceState.IsValid() && !OwnerCrowd->GetMesh()->GetAnimInstance()->IsAnyMontagePlaying()) // 이전 스텡이트 정보 가져오기
 	{
 		
 		FGameplayTag PrevieousTag = FGameplayTag::RequestGameplayTag(OwnerCrowd->GetCrowdCurrentState());

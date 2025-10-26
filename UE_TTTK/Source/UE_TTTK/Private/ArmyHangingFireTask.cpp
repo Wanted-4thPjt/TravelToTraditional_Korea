@@ -40,7 +40,7 @@ void UArmyHangingFireTask::StateCompleted(FStateTreeExecutionContext& Context,
 EStateTreeRunStatus UArmyHangingFireTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime)
 {
 	
-	if (OwnerArmy && OwnerArmy->GetHangingFireAnimCompleted())
+	if (OwnerArmy && OwnerArmy->GetHangingFireAnimCompleted() && !OwnerArmy->GetMesh()->GetAnimInstance()->IsAnyMontagePlaying())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("HangingFireTask: 횃불 장착 완료 감지, Patrol 전환"));
 

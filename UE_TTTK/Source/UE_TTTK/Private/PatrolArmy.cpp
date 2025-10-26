@@ -96,7 +96,10 @@ void APatrolArmy::BeginPlay()
 		{
 			handFire->AttachToComponent(GetMesh(),
 				 FAttachmentTransformRules::SnapToTargetIncludingScale,
-				 TEXT("hand_r"));
+				 TEXT("ThumbFinger1_L"));
+			handFire->SetActorRelativeLocation(FVector(1.206142,17.199912,22.080450));
+			handFire->SetActorRelativeRotation(FRotator(135.000000,81.113777,13.051345));
+				
 			handFire->SetActorHiddenInGame(true);
 
 		}
