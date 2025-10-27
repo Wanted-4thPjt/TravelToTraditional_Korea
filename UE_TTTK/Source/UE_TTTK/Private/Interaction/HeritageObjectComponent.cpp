@@ -39,21 +39,36 @@ void UHeritageObjectComponent::BeginPlay()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[Heritage] ID가 설정되지 않음: %s"), *GetOwner()->GetName());
 	}
+
+	// 상태 체크 타이머 시작 (0.1초마다 체크)
+	// 커스텀 아웃라인과 UI 닫기 감지를 위해 필요
+	if (CachedInteractableComponent)
+	{
+		GetWorld()->GetTimerManager().SetTimer(
+			StateCheckTimerHandle,
+			this,
+			&UHeritageObjectComponent::CheckInteractableState,
+			0.1f,
+			true
+		);
+	}
 }
 
 void UHeritageObjectComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	// 타이머 정리
+	if (StateCheckTimerHandle.IsValid())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(StateCheckTimerHandle);
+	}
+
 	// InteractableComponent 연결 해제
 	if (CachedInteractableComponent)
 	{
-		CachedInteractableComponent->onRequestInteraction.RemoveDynamic(
-			this, &UHeritageObjectComponent::OnInteraction);
-		/*CachedInteractableComponent->onMultiInteraction.RemoveDynamic(
-			this, &UHeritageObjectComponent::OnInteraction);*/
-		CachedInteractableComponent->onChangeState.RemoveDynamic(
-			this, &UHeritageObjectComponent::OnStateChanged);
-		/*CachedInteractableComponent->onClientInteraction.RemoveDynamic(
-			this, &UHeritageObjectComponent::OnStateChanged);*/
+		CachedInteractableComponent->OnClientInteraction.RemoveDynamic(
+			this, &UHeritageObjectComponent::OnClientInteraction);
+		CachedInteractableComponent->OnMultiInteraction.RemoveDynamic(
+			this, &UHeritageObjectComponent::OnMultiInteraction);
 	}
 
 	// Discovery Manager에서 제거
@@ -76,16 +91,11 @@ void UHeritageObjectComponent::BindToInteractableComponent()
 
 		if (CachedInteractableComponent)
 		{
-			// 상호작용 이벤트에 연결 
-			CachedInteractableComponent->onRequestInteraction.AddDynamic(
-				this, &UHeritageObjectComponent::OnInteraction);
-			/*CachedInteractableComponent->onMultiInteraction.AddDynamic(
-				this, &UHeritageObjectComponent::OnInteraction);*/
-			// 상태 변경 이벤트에 연결 (거리 체크용)
-			CachedInteractableComponent->onChangeState.AddDynamic(
-				this, &UHeritageObjectComponent::OnStateChanged);
-			/*CachedInteractableComponent->onClientInteraction.AddDynamic(
-				this, &UHeritageObjectComponent::OnStateChanged);*/
+			// 상호작용 이벤트에 연결
+			CachedInteractableComponent->OnClientInteraction.AddDynamic(
+				this, &UHeritageObjectComponent::OnClientInteraction);
+			CachedInteractableComponent->OnMultiInteraction.AddDynamic(
+				this, &UHeritageObjectComponent::OnMultiInteraction);
 		}
 		else
 		{
@@ -94,55 +104,109 @@ void UHeritageObjectComponent::BindToInteractableComponent()
 	}
 }
 
-void UHeritageObjectComponent::OnInteraction(APawn* InteractingPlayer)
+void UHeritageObjectComponent::OnClientInteraction(APlayerController* PlayerController)
+{
+	if (!PlayerController)
+	{
+		return;
+	}
+
+	// 로컬 클라이언트에서만 호출됨
+	// 서버에 발견 처리 요청
+	if (PlayerController->IsLocalController())
+	{
+		Server_ProcessDiscovery(PlayerController, HeritageObjectID);
+	}
+}
+
+void UHeritageObjectComponent::OnMultiInteraction(APawn* InteractingPlayer)
 {
 	if (!InteractingPlayer)
 	{
 		return;
 	}
 
-	// 발견 처리
-	ProcessDiscovery(InteractingPlayer);
+	APlayerController* PlayerController = InteractingPlayer->GetController<APlayerController>();
+	if (!PlayerController)
+	{
+		return;
+	}
+
+	// 모든 클라이언트에서 호출됨
+	// 로컬 클라이언트에서만 서버에 요청
+	if (PlayerController->IsLocalController())
+	{
+		Server_ProcessDiscovery(PlayerController, HeritageObjectID);
+	}
 }
 
-void UHeritageObjectComponent::OnStateChanged(APlayerController* PlayerController, const EInteractableState& NewState)
+void UHeritageObjectComponent::Server_ProcessDiscovery_Implementation(APlayerController* PlayerController, const FString& HeritageID)
 {
-	// 커스텀 아웃라인 업데이트
-	if (bUseCustomOutline)
+	if (!PlayerController || !DiscoveryManager || HeritageID.IsEmpty())
 	{
-		UpdateCustomOutline(NewState == EInteractableState::Focused);
+		return;
 	}
 
-	// Interacting 상태가 되면 플레이어를 ViewingPlayers에 추가하고 발견 처리
-	if (NewState == EInteractableState::Interacting)
+	// 서버에서만 실행
+	APawn* PlayerPawn = PlayerController->GetPawn();
+	if (!PlayerPawn)
 	{
-		if (PlayerController && !ViewingPlayers.Contains(PlayerController))
-		{
-			ViewingPlayers.Add(PlayerController);
-			bIsInteracting = true;
-
-			// F키를 눌러 상호작용 시작 -> 발견 처리 실행
-			APawn* PlayerPawn = PlayerController->GetPawn();
-			if (PlayerPawn)
-			{
-				ProcessDiscovery(PlayerPawn);
-			}
-		}
+		return;
 	}
 
-	// OutOfBound 상태가 되면 (범위를 벗어나면)
-	if (NewState == EInteractableState::OutOfBound)
+	// ViewingPlayers에 추가 (서버)
+	if (!ViewingPlayers.Contains(PlayerController))
 	{
-		// 해당 플레이어가 UI를 보고 있었다면 UI 닫기 요청
-		if (ViewingPlayers.Contains(PlayerController) && DiscoveryManager)
-		{
-			ViewingPlayers.Remove(PlayerController);
-			bIsInteracting = false;
-
-			// Discovery Manager에 UI 닫기 요청
-			DiscoveryManager->RequestCloseHeritageUI(PlayerController, HeritageObjectID);
-		}
+		ViewingPlayers.Add(PlayerController);
+		bIsInteracting = true;
 	}
+
+	// 이미 발견했는지 확인
+	bool bAlreadyDiscovered = DiscoveryManager->HasPlayerDiscovered(PlayerController, HeritageID);
+
+	// Heritage 데이터 가져오기
+	FHeritageObjectData HeritageData = DiscoveryManager->GetHeritageDataByID(HeritageID);
+	if (HeritageData.ObjectID.IsEmpty())
+	{
+		UE_LOG(LogTemp, Error, TEXT("[Heritage] 데이터 없음: %s"), *HeritageID);
+		return;
+	}
+
+	// 첫 발견인 경우에만 점수 및 카운트 추가
+	bool bIsFirstDiscovery = false;
+	if (!bAlreadyDiscovered)
+	{
+		// Discovery Manager에게 발견 처리 위임
+		DiscoveryManager->ProcessHeritageDiscovery(PlayerPawn, HeritageID);
+		bIsFirstDiscovery = true;
+
+		UE_LOG(LogTemp, Warning, TEXT("[Heritage] 첫 발견: %s (점수: %d, 플레이어: %s)"),
+			*HeritageID, HeritageData.DiscoveryScore, *PlayerController->GetName());
+	}
+
+	// 클라이언트에게 UI 표시 요청
+	Client_ShowHeritageUI(PlayerController, HeritageID, HeritageData, bIsFirstDiscovery);
+}
+
+void UHeritageObjectComponent::Client_ShowHeritageUI_Implementation(APlayerController* PlayerController, const FString& HeritageID, const FHeritageObjectData& HeritageData, bool bIsFirstDiscovery)
+{
+	if (!PlayerController || !DiscoveryManager)
+	{
+		return;
+	}
+
+	// ViewingPlayers에 추가 (클라이언트)
+	if (!ViewingPlayers.Contains(PlayerController))
+	{
+		ViewingPlayers.Add(PlayerController);
+		bIsInteracting = true;
+	}
+
+	// 클라이언트에서 UI 표시 (델리게이트 브로드캐스트)
+	DiscoveryManager->OnHeritageDiscovered.Broadcast(PlayerController, HeritageID, HeritageData, bIsFirstDiscovery);
+
+	UE_LOG(LogTemp, Log, TEXT("[Heritage Client] UI 표시: %s (첫발견: %s)"),
+		*HeritageID, bIsFirstDiscovery ? TEXT("예") : TEXT("아니오"));
 }
 
 void UHeritageObjectComponent::ProcessDiscovery(APawn* Player)
@@ -152,6 +216,7 @@ void UHeritageObjectComponent::ProcessDiscovery(APawn* Player)
 		return;
 	}
 
+	// 이 함수는 이제 사용하지 않음 (RPC로 대체됨)
 	// Discovery Manager에게 발견 처리 위임
 	DiscoveryManager->ProcessHeritageDiscovery(Player, HeritageObjectID);
 }
@@ -300,9 +365,40 @@ void UHeritageObjectComponent::OnUICloseRequested(APlayerController* Player, con
 
 void UHeritageObjectComponent::Server_FinishInteraction_Implementation(APlayerController* Player)
 {
-	// 서버에서 모든 클라이언트에게 상호작용 종료 브로드캐스트
-	if (CachedInteractableComponent && Player && Player->GetPawn())
+	// 상호작용은 InteractableComponent에서 자동으로 종료됨
+	// 여기서는 추가 처리가 필요한 경우에만 사용
+}
+
+void UHeritageObjectComponent::CheckInteractableState()
+{
+	if (!CachedInteractableComponent)
 	{
-		CachedInteractableComponent->Multicast_FinishInteracting(Player->GetPawn());
+		return;
+	}
+
+	EInteractableState CurrentState = CachedInteractableComponent->GetState();
+
+	// 상태가 변경된 경우에만 업데이트
+	if (CurrentState != LastState)
+	{
+		// 커스텀 아웃라인: Focused 상태일 때 아웃라인 표시
+		if (bUseCustomOutline)
+		{
+			UpdateCustomOutline(CurrentState == EInteractableState::Focused);
+		}
+
+		LastState = CurrentState;
+
+		// OutOfBound 상태가 되면 UI 닫기 처리
+		// 단, UI를 보고 있는 중이 아닐 때만 (bIsInteracting이 false일 때)
+		if (CurrentState == EInteractableState::OutOfBound && !bIsInteracting)
+		{
+			APlayerController* LocalPC = GetWorld()->GetFirstPlayerController();
+			if (LocalPC && ViewingPlayers.Contains(LocalPC) && DiscoveryManager)
+			{
+				ViewingPlayers.Remove(LocalPC);
+				DiscoveryManager->RequestCloseHeritageUI(LocalPC, HeritageObjectID);
+			}
+		}
 	}
 }

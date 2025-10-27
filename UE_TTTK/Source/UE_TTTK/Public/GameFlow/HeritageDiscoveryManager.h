@@ -94,7 +94,7 @@ public:
 protected:
 	// 데이터 테이블 로딩
 	void LoadHeritageDataTable();
-
+	
 	// 플레이어별 발견 목록 업데이트
 	void UpdatePlayerProgress(APlayerController* Player, const FString& HeritageID, int32 Score);
 

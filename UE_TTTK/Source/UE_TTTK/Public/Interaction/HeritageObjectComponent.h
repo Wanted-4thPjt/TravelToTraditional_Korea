@@ -3,9 +3,9 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "Data/HeritageObjectData.h"
+#include "Interaction/InteractableComponent.h"
 #include "HeritageObjectComponent.generated.h"
 
-class UInteractableComponent;
 class UHeritageDiscoveryManager;
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -46,13 +46,21 @@ public:
 	bool HasPlayerDiscovered(APlayerController* Player) const;
 
 protected:
-	// InteractableComponent의 상호작용 이벤트 수신
+	// InteractableComponent의 상호작용 이벤트 수신 (클라이언트)
 	UFUNCTION()
-	void OnInteraction(APawn* InteractingPlayer);
+	void OnClientInteraction(APlayerController* PlayerController);
 
-	// InteractableComponent의 상태 변경 이벤트 수신 (거리 체크용)
+	// InteractableComponent의 상호작용 이벤트 수신 (멀티캐스트)
 	UFUNCTION()
-	void OnStateChanged(APlayerController* PlayerController, const EInteractableState& NewState);
+	void OnMultiInteraction(APawn* InteractingPlayer);
+
+	// 서버에서 발견 처리
+	UFUNCTION(Server, Reliable)
+	void Server_ProcessDiscovery(APlayerController* PlayerController, const FString& HeritageID);
+
+	// 클라이언트에서 UI 표시
+	UFUNCTION(Client, Reliable)
+	void Client_ShowHeritageUI(APlayerController* PlayerController, const FString& HeritageID, const FHeritageObjectData& HeritageData, bool bIsFirstDiscovery);
 
 	// UI 닫기 이벤트 수신 (재확인 가능하도록 상호작용 종료)
 	UFUNCTION()
@@ -70,6 +78,9 @@ protected:
 
 	// 커스텀 아웃라인 업데이트
 	void UpdateCustomOutline(bool bShowOutline);
+
+	// Timer로 상태 체크 (커스텀 아웃라인용)
+	void CheckInteractableState();
 
 private:
 	// 원본 머티리얼 백업 (커스텀 아웃라인 사용 시)
@@ -89,4 +100,10 @@ private:
 
 	// 현재 상호작용 중인지 여부
 	bool bIsInteracting = false;
+
+	// 이전 상태 추적 (커스텀 아웃라인용)
+	EInteractableState LastState = EInteractableState::Default;
+
+	// 상태 체크 타이머
+	FTimerHandle StateCheckTimerHandle;
 };
