@@ -78,3 +78,21 @@ void ATargetPointManager::ScatterTargetPoints()
 	}
 }
 
+FVector ATargetPointManager::GetRandomTargetLocation()
+{
+	
+	if (HomeTargetPoints.Num() == 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("====HomeTargetPoints가 비어있음! 포인트를 배치하세요!"));
+		return FVector::ZeroVector;
+	}
+
+	int32 randomIndex = FMath::RandRange(0, HomeTargetPoints.Num() - 1); // rand() 대신 FMath 사용
+	FVector randomLoc = HomeTargetPoints[randomIndex]->GetActorLocation();
+
+	UE_LOG(LogTemp, Warning, TEXT("====랜덤 타겟 선택: Index %d, 위치: %s"), randomIndex, *randomLoc.ToString());
+
+	return randomLoc;
+
+}
+

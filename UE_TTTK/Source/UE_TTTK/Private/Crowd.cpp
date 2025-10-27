@@ -34,7 +34,7 @@ void ACrowd::BeginPlay()
 	}
 	CollectingTargetPoints();
 	ATTTK_GameState* GameState = Cast<ATTTK_GameState>(GetWorld()->GetGameState());
-	
+	GetCharacterMovement()->MaxWalkSpeed = CrowdData->GetWalkSpeed();
 	
 	
 	
@@ -241,6 +241,8 @@ void ACrowd::SetCrowdCurrentState(FName NewState)
 {
 	currentState = NewState;
 }
+
+
 
 
 
