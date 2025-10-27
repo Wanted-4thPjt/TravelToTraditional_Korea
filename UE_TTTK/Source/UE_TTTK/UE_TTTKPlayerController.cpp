@@ -19,7 +19,7 @@ AUE_TTTKPlayerController::AUE_TTTKPlayerController()
 void AUE_TTTKPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
-
+	SetInputMode(FInputModeGameOnly());
 	// only spawn touch controls on local player controllers
 	if (SVirtualJoystick::ShouldDisplayTouchInterface() && IsLocalPlayerController())
 	{
@@ -40,7 +40,7 @@ void AUE_TTTKPlayerController::BeginPlay()
 void AUE_TTTKPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
-
+	
 	// only add IMCs for local player controllers
 	if (IsLocalPlayerController())
 	{
@@ -49,6 +49,7 @@ void AUE_TTTKPlayerController::SetupInputComponent()
 		{
 			for (UInputMappingContext* CurrentContext : DefaultMappingContexts)
 			{
+				UE_LOG(LogTemp, Warning, TEXT("Add MappingContext"));
 				Subsystem->AddMappingContext(CurrentContext, 0);
 			}
 
@@ -64,7 +65,7 @@ void AUE_TTTKPlayerController::SetupInputComponent()
 	}
 }
 
-void AUE_TTTKPlayerController::UpdateChat(const FText& inText)
+void AUE_TTTKPlayerController::Client_UpdateChat_Implementation(const FText& inText)
 {
 	playerWidgetComponent->UpdateChat(inText);
 }

@@ -20,8 +20,9 @@ public class UE_TTTK : ModuleRules
 		});
 		PublicDependencyModuleNames.AddRange(new string[] 
 		{ 
-			"GameplayTags",        // ✅ 이 줄 추가
-			      // State Tree 사용 중이라면
+			"GameplayTags",
+			"NavigationSystem"
+			    
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

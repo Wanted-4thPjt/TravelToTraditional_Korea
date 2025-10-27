@@ -54,7 +54,7 @@ void AUE_TTTKCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 {
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
-		
+		UE_LOG(LogTemp, Warning, TEXT("BindAction"));
 		// Jumping
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);

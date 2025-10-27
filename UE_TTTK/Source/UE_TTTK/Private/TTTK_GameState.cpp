@@ -108,7 +108,7 @@ void ATTTK_GameState::ReceiveChat(const FText& inputText)
 	{
 		if (AUE_TTTKPlayerController* pc = Cast<AUE_TTTKPlayerController>(ps->GetPlayerController()))
 		{
-			pc->UpdateChat(inputText);
+			pc->Client_UpdateChat(inputText);
 		}
 	}
 }

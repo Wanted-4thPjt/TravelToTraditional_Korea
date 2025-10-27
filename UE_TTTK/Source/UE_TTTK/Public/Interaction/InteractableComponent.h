@@ -21,6 +21,7 @@ ENUM_CLASS_FLAGS(EInteractableState)
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnClientInteraction, APlayerController*, playerController);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMultiInteraction, APawn*, player);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnStateChanged, APlayerController*, playerController, EInteractableState, newState);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class UE_TTTK_API UInteractableComponent : public UActorComponent
@@ -55,9 +56,9 @@ public:
 	void TryInteract(APlayerController* playerController);
 	UFUNCTION(NetMulticast, Reliable, Category="Interactable|Multicast")
 	void Multicast_TryInteract(APawn* player);
-	
 
-protected:	
+
+protected:
 	UFUNCTION(BlueprintCallable, Category="Interactable|Each Client")
 	void FinishInteracting(APlayerController* Player, bool bSuccess);
 	UFUNCTION(BlueprintCallable, Category="Interactable|Visual")
@@ -79,6 +80,10 @@ protected:
 	void PlayEffect(UNiagaraSystem* effect);
 	#pragma endregion Effects
 
+	#pragma region Custom Outline
+	void UpdateCustomOutline(bool bShowOutline);
+	#pragma endregion Custom Outline
+
 	UFUNCTION(BlueprintPure)
 	bool IsServer() const {AActor* owner = GetOwner();
 		return IsValid(owner) && owner->HasAuthority();}
@@ -88,6 +93,8 @@ public:
 	FOnClientInteraction OnClientInteraction;
 	UPROPERTY(BlueprintAssignable, Category="Interactable|Event")
 	FOnMultiInteraction OnMultiInteraction;
+	UPROPERTY(BlueprintAssignable, Category="Interactable|Event")
+	FOnStateChanged OnStateChanged;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InteractableFeedback")
 	FInteractableFeedbackSettings feedbackSettings;
@@ -106,5 +113,9 @@ protected:
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Client", meta=(AllowPrivateAccess=true))
 	APawn* playerInRange = nullptr;
-	
+
+	// 커스텀 아웃라인용 원본 머티리얼 백업
+	UPROPERTY()
+	TArray<TObjectPtr<UMaterialInterface>> originalMaterials;
+
 };
