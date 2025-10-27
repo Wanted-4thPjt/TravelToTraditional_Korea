@@ -67,12 +67,8 @@ void UInteractableComponent::BeginPlay()
 		interactionSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	}
 
-	if (UpdateAvailablePrimitiveComponents() && feedbackSettings.IsOutlineOn())
-	{
-		feedbackSettings.ownerMeshComponent->SetRenderCustomDepth(false);
-		feedbackSettings.ownerMeshComponent->SetCustomDepthStencilValue(0);
-		feedbackSettings.ownerMeshComponent->MarkRenderStateDirty();
-	}
+	// MeshComponent 확인만 수행 (아웃라인 초기화 제거)
+	UpdateAvailablePrimitiveComponents();
 	
 	if (feedbackSettings.IsWidgetOn() && feedbackSettings.interactionGuideWidgetClass)
 	{
@@ -205,6 +201,12 @@ void UInteractableComponent::TryChangeState(APlayerController* playerController,
 		}
 	}
 
+	// 상태 변경 이벤트 브로드캐스트
+	if (OnStateChanged.IsBound())
+	{
+		OnStateChanged.Broadcast(playerController, clientState);
+	}
+
 	UpdateVisuals(playerController);
 }
 
@@ -218,7 +220,6 @@ void UInteractableComponent::TryInteract(APlayerController* playerController)
 	{
 		OnClientInteraction.Broadcast(playerController);
 		PlayEffects(true);
-		FinishInteracting(playerController, true);
 	}
 }
 
@@ -241,7 +242,7 @@ void UInteractableComponent::FinishInteracting(APlayerController* playerControll
 {
 	if (!LIKELY(IsValid(playerController))) {return;}
 	if (!playerController->IsLocalController()) {return;}
-
+	
 	if (bSuccess)
 	{
 		TryChangeState(playerController, EInteractableState::OutOfBound);
@@ -301,17 +302,19 @@ void UInteractableComponent::UpdateVisuals(APlayerController* playerController)
 	if (!LIKELY(IsValid(playerController))) {return;}
 	APlayerController* pc = GetWorld()->GetFirstPlayerController();
 	if (pc != playerController) {return;}
-	
-	if (feedbackSettings.IsOutlineOn() && feedbackSettings.ownerMeshComponent.IsValid())
+
+	bool bShouldShowOutline = (clientState == EInteractableState::Focused);
+
+	// 커스텀 머티리얼 아웃라인
+	if (feedbackSettings.IsOutlineOn())
 	{
-		feedbackSettings.ownerMeshComponent->SetRenderCustomDepth(clientState == EInteractableState::Focused);
-		feedbackSettings.ownerMeshComponent->SetCustomDepthStencilValue(
-			clientState == EInteractableState::Focused ? feedbackSettings.outlineStencilValue : 0
-		);
+		UpdateCustomOutline(bShouldShowOutline);
 	}
+
+	// Widget
 	if (feedbackSettings.IsWidgetOn() && IsValid(interactionGuideComponent))
 	{
-		interactionGuideComponent->SetVisibility(clientState == EInteractableState::Focused);
+		interactionGuideComponent->SetVisibility(bShouldShowOutline);
 	}
 }
 
@@ -344,5 +347,101 @@ void UInteractableComponent::PlayEffect(UNiagaraSystem* effect)
 	if (!IsValid(effect)) {return;}
 
 	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), effect, GetOwner()->GetActorLocation());
+}
+
+void UInteractableComponent::UpdateCustomOutline(bool bShowOutline)
+{
+	if (!feedbackSettings.customOutlineMaterial)
+	{
+		return;
+	}
+
+	AActor* owner = GetOwner();
+	if (!owner)
+	{
+		return;
+	}
+
+	// 모든 MeshComponent 가져오기
+	TArray<UMeshComponent*> meshComponents;
+	owner->GetComponents<UMeshComponent>(meshComponents);
+
+	if (meshComponents.Num() == 0)
+	{
+		return;
+	}
+
+	if (bShowOutline)
+	{
+		if (feedbackSettings.bUseOverlayMaterial)
+		{
+			// Overlay Material 방식 (기존 머티리얼 유지, 위에 오버레이)
+			for (UMeshComponent* meshComp : meshComponents)
+			{
+				if (meshComp)
+				{
+					meshComp->SetOverlayMaterial(feedbackSettings.customOutlineMaterial);
+				}
+			}
+		}
+		else
+		{
+			// 머티리얼 교체 방식 (기존 방식)
+			originalMaterials.Empty();
+
+			for (UMeshComponent* meshComp : meshComponents)
+			{
+				if (!meshComp) continue;
+
+				// 원본 머티리얼 백업
+				int32 numMaterials = meshComp->GetNumMaterials();
+				for (int32 i = 0; i < numMaterials; i++)
+				{
+					originalMaterials.Add(meshComp->GetMaterial(i));
+				}
+
+				// 커스텀 아웃라인 머티리얼로 교체
+				for (int32 i = 0; i < numMaterials; i++)
+				{
+					meshComp->SetMaterial(i, feedbackSettings.customOutlineMaterial);
+				}
+			}
+		}
+	}
+	else
+	{
+		if (feedbackSettings.bUseOverlayMaterial)
+		{
+			// Overlay Material 제거
+			for (UMeshComponent* meshComp : meshComponents)
+			{
+				if (meshComp)
+				{
+					meshComp->SetOverlayMaterial(nullptr);
+				}
+			}
+		}
+		else
+		{
+			// 원본 머티리얼 복원
+			if (originalMaterials.Num() > 0)
+			{
+				int32 materialIndex = 0;
+				for (UMeshComponent* meshComp : meshComponents)
+				{
+					if (!meshComp) continue;
+
+					int32 numMaterials = meshComp->GetNumMaterials();
+					for (int32 i = 0; i < numMaterials && materialIndex < originalMaterials.Num(); i++)
+					{
+						meshComp->SetMaterial(i, originalMaterials[materialIndex]);
+						materialIndex++;
+					}
+				}
+
+				originalMaterials.Empty();
+			}
+		}
+	}
 }
 

@@ -31,7 +31,7 @@ void UHeritageObjectComponent::BeginPlay()
 	{
 		DiscoveryManager->RegisterHeritageObject(this);
 
-		// UI 닫기 이벤트에 바인딩 (재확인 가능하도록)
+		// UI 닫기 이벤트에 바인딩
 		DiscoveryManager->OnHeritageUIClose.AddDynamic(
 			this, &UHeritageObjectComponent::OnUICloseRequested);
 	}
@@ -40,28 +40,11 @@ void UHeritageObjectComponent::BeginPlay()
 		UE_LOG(LogTemp, Warning, TEXT("[Heritage] ID가 설정되지 않음: %s"), *GetOwner()->GetName());
 	}
 
-	// 상태 체크 타이머 시작 (0.1초마다 체크)
-	// 커스텀 아웃라인과 UI 닫기 감지를 위해 필요
-	if (CachedInteractableComponent)
-	{
-		GetWorld()->GetTimerManager().SetTimer(
-			StateCheckTimerHandle,
-			this,
-			&UHeritageObjectComponent::CheckInteractableState,
-			0.1f,
-			true
-		);
-	}
+	// Timer 제거 - ShouldFinishInteraction 델리게이트로 대체
 }
 
 void UHeritageObjectComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	// 타이머 정리
-	if (StateCheckTimerHandle.IsValid())
-	{
-		GetWorld()->GetTimerManager().ClearTimer(StateCheckTimerHandle);
-	}
-
 	// InteractableComponent 연결 해제
 	if (CachedInteractableComponent)
 	{
@@ -69,6 +52,8 @@ void UHeritageObjectComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 			this, &UHeritageObjectComponent::OnClientInteraction);
 		CachedInteractableComponent->OnMultiInteraction.RemoveDynamic(
 			this, &UHeritageObjectComponent::OnMultiInteraction);
+		CachedInteractableComponent->OnStateChanged.RemoveDynamic(
+			this, &UHeritageObjectComponent::OnInteractableStateChanged);
 	}
 
 	// Discovery Manager에서 제거
@@ -87,7 +72,7 @@ void UHeritageObjectComponent::BindToInteractableComponent()
 	// 같은 액터에서 InteractableComponent 찾기
 	if (AActor* Owner = GetOwner())
 	{
-		CachedInteractableComponent = Owner->FindComponentByClass<UInteractableComponent>();
+		CachedInteractableComponent = Owner->FindComponentByTag<UInteractableComponent>("Interactable");
 
 		if (CachedInteractableComponent)
 		{
@@ -96,6 +81,8 @@ void UHeritageObjectComponent::BindToInteractableComponent()
 				this, &UHeritageObjectComponent::OnClientInteraction);
 			CachedInteractableComponent->OnMultiInteraction.AddDynamic(
 				this, &UHeritageObjectComponent::OnMultiInteraction);
+			CachedInteractableComponent->OnStateChanged.AddDynamic(
+				this, &UHeritageObjectComponent::OnInteractableStateChanged);
 		}
 		else
 		{
@@ -112,9 +99,16 @@ void UHeritageObjectComponent::OnClientInteraction(APlayerController* PlayerCont
 	}
 
 	// 로컬 클라이언트에서만 호출됨
-	// 서버에 발견 처리 요청
 	if (PlayerController->IsLocalController())
 	{
+		// 즉시 ViewingPlayers에 추가하여 상호작용 유지 (ShouldFinishedInteraction이 false 반환하도록)
+		if (!ViewingPlayers.Contains(PlayerController))
+		{
+			ViewingPlayers.Add(PlayerController);
+			bIsInteracting = true;
+		}
+
+		// 서버에 발견 처리 요청
 		Server_ProcessDiscovery(PlayerController, HeritageObjectID);
 	}
 }
@@ -136,7 +130,34 @@ void UHeritageObjectComponent::OnMultiInteraction(APawn* InteractingPlayer)
 	// 로컬 클라이언트에서만 서버에 요청
 	if (PlayerController->IsLocalController())
 	{
+		// 즉시 ViewingPlayers에 추가하여 상호작용 유지 (ShouldFinishedInteraction이 false 반환하도록)
+		if (!ViewingPlayers.Contains(PlayerController))
+		{
+			ViewingPlayers.Add(PlayerController);
+			bIsInteracting = true;
+		}
+
+		// 서버에 발견 처리 요청
 		Server_ProcessDiscovery(PlayerController, HeritageObjectID);
+	}
+}
+
+void UHeritageObjectComponent::OnInteractableStateChanged(APlayerController* PlayerController, EInteractableState NewState)
+{
+	if (!PlayerController || !PlayerController->IsLocalController())
+	{
+		return;
+	}
+
+	// OutOfBound 상태가 되면 UI 자동 닫기
+	if (NewState == EInteractableState::OutOfBound && bIsInteracting)
+	{
+		if (ViewingPlayers.Contains(PlayerController) && DiscoveryManager)
+		{
+			ViewingPlayers.Remove(PlayerController);
+			bIsInteracting = false;
+			DiscoveryManager->RequestCloseHeritageUI(PlayerController, HeritageObjectID);
+		}
 	}
 }
 
@@ -209,18 +230,6 @@ void UHeritageObjectComponent::Client_ShowHeritageUI_Implementation(APlayerContr
 		*HeritageID, bIsFirstDiscovery ? TEXT("예") : TEXT("아니오"));
 }
 
-void UHeritageObjectComponent::ProcessDiscovery(APawn* Player)
-{
-	if (!DiscoveryManager || HeritageObjectID.IsEmpty())
-	{
-		return;
-	}
-
-	// 이 함수는 이제 사용하지 않음 (RPC로 대체됨)
-	// Discovery Manager에게 발견 처리 위임
-	DiscoveryManager->ProcessHeritageDiscovery(Player, HeritageObjectID);
-}
-
 FHeritageObjectData UHeritageObjectComponent::GetHeritageData() const
 {
 	if (DiscoveryManager)
@@ -239,108 +248,6 @@ bool UHeritageObjectComponent::HasPlayerDiscovered(APlayerController* Player) co
 	return false;
 }
 
-void UHeritageObjectComponent::UpdateCustomOutline(bool bShowOutline)
-{
-	if (!bUseCustomOutline || !CustomOutlineMaterial)
-	{
-		return;
-	}
-
-	AActor* Owner = GetOwner();
-	if (!Owner)
-	{
-		return;
-	}
-
-	// 모든 MeshComponent 가져오기
-	TArray<UMeshComponent*> MeshComponents;
-	Owner->GetComponents<UMeshComponent>(MeshComponents);
-
-	if (MeshComponents.Num() == 0)
-	{
-		return;
-	}
-
-	if (bShowOutline)
-	{
-		if (bUseOverlayMaterial)
-		{
-			// Overlay Material 방식 (기존 머티리얼 유지, 위에 오버레이)
-			for (UMeshComponent* MeshComp : MeshComponents)
-			{
-				if (MeshComp)
-				{
-					MeshComp->SetOverlayMaterial(CustomOutlineMaterial);
-				}
-			}
-		}
-		else
-		{
-			// 머티리얼 교체 방식 (기존 방식)
-			OriginalMaterials.Empty();
-
-			for (UMeshComponent* MeshComp : MeshComponents)
-			{
-				if (!MeshComp)
-				{
-					continue;
-				}
-
-				// 원본 머티리얼 백업
-				int32 NumMaterials = MeshComp->GetNumMaterials();
-				for (int32 i = 0; i < NumMaterials; i++)
-				{
-					OriginalMaterials.Add(MeshComp->GetMaterial(i));
-				}
-
-				// 커스텀 아웃라인 머티리얼로 오버라이드
-				for (int32 i = 0; i < NumMaterials; i++)
-				{
-					MeshComp->SetMaterial(i, CustomOutlineMaterial);
-				}
-			}
-		}
-	}
-	else
-	{
-		if (bUseOverlayMaterial)
-		{
-			// Overlay Material 제거
-			for (UMeshComponent* MeshComp : MeshComponents)
-			{
-				if (MeshComp)
-				{
-					MeshComp->SetOverlayMaterial(nullptr);
-				}
-			}
-		}
-		else
-		{
-			// 원본 머티리얼 복원
-			if (OriginalMaterials.Num() > 0)
-			{
-				int32 MaterialIndex = 0;
-				for (UMeshComponent* MeshComp : MeshComponents)
-				{
-					if (!MeshComp)
-					{
-						continue;
-					}
-
-					int32 NumMaterials = MeshComp->GetNumMaterials();
-					for (int32 i = 0; i < NumMaterials && MaterialIndex < OriginalMaterials.Num(); i++)
-					{
-						MeshComp->SetMaterial(i, OriginalMaterials[MaterialIndex]);
-						MaterialIndex++;
-					}
-				}
-
-				OriginalMaterials.Empty();
-			}
-		}
-	}
-}
-
 void UHeritageObjectComponent::OnUICloseRequested(APlayerController* Player, const FString& HeritageID)
 {
 	// 이 Heritage의 UI가 닫힌 경우에만 처리
@@ -356,49 +263,10 @@ void UHeritageObjectComponent::OnUICloseRequested(APlayerController* Player, con
 		bIsInteracting = false;
 	}
 
-	// 로컬 플레이어만 서버에 종료 요청
-	if (Player->IsLocalController())
+	// 로컬 플레이어만 상호작용 종료 (OutOfBound로 상태 전환)
+	if (Player->IsLocalController() && CachedInteractableComponent)
 	{
-		Server_FinishInteraction(Player);
+		CachedInteractableComponent->TryChangeState(Player, EInteractableState::OutOfBound);
 	}
 }
 
-void UHeritageObjectComponent::Server_FinishInteraction_Implementation(APlayerController* Player)
-{
-	// 상호작용은 InteractableComponent에서 자동으로 종료됨
-	// 여기서는 추가 처리가 필요한 경우에만 사용
-}
-
-void UHeritageObjectComponent::CheckInteractableState()
-{
-	if (!CachedInteractableComponent)
-	{
-		return;
-	}
-
-	EInteractableState CurrentState = CachedInteractableComponent->GetState();
-
-	// 상태가 변경된 경우에만 업데이트
-	if (CurrentState != LastState)
-	{
-		// 커스텀 아웃라인: Focused 상태일 때 아웃라인 표시
-		if (bUseCustomOutline)
-		{
-			UpdateCustomOutline(CurrentState == EInteractableState::Focused);
-		}
-
-		LastState = CurrentState;
-
-		// OutOfBound 상태가 되면 UI 닫기 처리
-		// 단, UI를 보고 있는 중이 아닐 때만 (bIsInteracting이 false일 때)
-		if (CurrentState == EInteractableState::OutOfBound && !bIsInteracting)
-		{
-			APlayerController* LocalPC = GetWorld()->GetFirstPlayerController();
-			if (LocalPC && ViewingPlayers.Contains(LocalPC) && DiscoveryManager)
-			{
-				ViewingPlayers.Remove(LocalPC);
-				DiscoveryManager->RequestCloseHeritageUI(LocalPC, HeritageObjectID);
-			}
-		}
-	}
-}

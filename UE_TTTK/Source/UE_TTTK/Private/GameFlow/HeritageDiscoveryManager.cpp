@@ -85,6 +85,7 @@ void UHeritageDiscoveryManager::ProcessHeritageDiscovery(APawn* DiscoveringPlaye
 
 	// 이벤트 방송 (첫 발견이든 재확인이든 UI는 표시)
 	OnHeritageDiscovered.Broadcast(PlayerController, HeritageID, HeritageData, !bAlreadyDiscovered);
+
 }
 
 void UHeritageDiscoveryManager::UpdatePlayerProgress(APlayerController* Player, const FString& HeritageID, int32 Score)

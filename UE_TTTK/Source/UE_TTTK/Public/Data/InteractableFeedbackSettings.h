@@ -36,15 +36,26 @@ protected:
     {return (bitmask & static_cast<uint8>(bitflag)) > 0;}
 
 public:
+    FInteractableFeedbackSettings();
+    
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (Bitmask, BitmaskEnum = "/Script/UE_TTTK.EEffectType"))
     uint8 effectType = 0;
     
     UPROPERTY(/*VisibleAnywhere, BlueprintReadOnly, Category = "Outline", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Outline", EditConditionHides)*/)
     TWeakObjectPtr<UMeshComponent> ownerMeshComponent;
+
+    // CustomDepth Stencil 방식 (사용 안 함 - 커스텀 머티리얼 방식으로 대체)
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Outline", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Outline", EditConditionHides))
     int32 outlineStencilValue = 252;
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Outline", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Outline", EditConditionHides))
     FLinearColor outlineColor = FLinearColor::Green;
+
+    // 커스텀 머티리얼 아웃라인 (Heritage에서 사용)
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Outline", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Outline", EditConditionHides))
+    bool bUseOverlayMaterial = true;  // true: Overlay, false: Replace
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Outline", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Outline", EditConditionHides))
+    TObjectPtr<UMaterialInterface> customOutlineMaterial;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Widget", meta=(EditCondition="effectType & \"/Script/UE_TTTK.EEffectType::Widget", EditConditionHides))
     TSubclassOf<UUserWidget> interactionGuideWidgetClass;
@@ -70,7 +81,7 @@ public:
     bool IsParticleOn() const {return IsEnableEffect(effectType, EEffectType::Particle);}
     bool IsNetworkOn() const {return IsEnableEffect(effectType, EEffectType::Network);}
 
-    void EnableOutline(const bool& bEnabled, UMeshComponent* inOutlineComponent, FLinearColor inOutlineColor = FLinearColor::Green);
+    void EnableOutline(const bool& bEnabled, UMeshComponent* inOutlineComponent = nullptr, FLinearColor inOutlineColor = FLinearColor::Green);
     void EnableWidget(const bool& bEnabled, const TSubclassOf<UUserWidget>& inInteractionGuideWidgetClass, FName inWidgetSocketName = NAME_None);
     void EnableSound(const bool& bEnabled, USoundBase* inInteractedSound);
     void EnableNiagara(const bool& bEnabled, UNiagaraSystem* inInteractedNiagaraVFX);

@@ -1,5 +1,20 @@
 #include "Data/InteractableFeedbackSettings.h"
 
+FInteractableFeedbackSettings::FInteractableFeedbackSettings()
+{
+	UMaterialInterface* LoadedMaterial = Cast<UMaterialInterface>(StaticLoadObject(
+		UMaterialInterface::StaticClass(), 
+		nullptr, 
+		TEXT("/Game/Huxley/M_Outline.M_Outline")
+	));
+
+	if (LoadedMaterial)
+	{
+		customOutlineMaterial = LoadedMaterial;
+	}
+	
+}
+
 void FInteractableFeedbackSettings::EnableOutline(const bool& bEnabled, UMeshComponent* inOutlineComponent, FLinearColor inOutlineColor)
 {
 	if (!bEnabled)
@@ -8,8 +23,10 @@ void FInteractableFeedbackSettings::EnableOutline(const bool& bEnabled, UMeshCom
 		return;
 	}
 	effectType |= static_cast<uint8>(EEffectType::Outline);
-	ownerMeshComponent = inOutlineComponent;
 	outlineColor = inOutlineColor;
+	
+	if (ownerMeshComponent != nullptr && inOutlineComponent == nullptr) {return;}
+	ownerMeshComponent = inOutlineComponent;
 }
 
 
