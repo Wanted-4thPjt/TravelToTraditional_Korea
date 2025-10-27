@@ -83,6 +83,9 @@ public:
 	void CheckTime(FTimeOfDayData TimeData);
 	UFUNCTION()
 	void SetCrowdCurrentState(FName NewState);
+
+	
+	
 	FName GetCrowdCurrentState(){return currentState;};
 
 	// Ouch 애니메이션 완료 플래그 관리

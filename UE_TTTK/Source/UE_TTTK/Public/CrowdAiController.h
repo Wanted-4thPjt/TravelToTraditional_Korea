@@ -19,8 +19,11 @@ public:
 	class UStateTreeAIComponent* StateTreeComp;
 	UPROPERTY()
 	class ACrowd* OwnerCrowd;
+	UPROPERTY()
+	class ATargetPointManager* TargetPointManager;
 public:
 	virtual void OnPossess(APawn* InPawn) override;
+	virtual void BeginPlay() override;
 	void WalkToPoint(AActor* TargetActor);
 	void WalkToLocation(FVector targetLocation);
 	void NotifyArrived();
@@ -32,6 +35,7 @@ public:
 	void Greeting();
 	void Waiting();
 	void Ouch();
+	FVector FindRandomDestination();
 	
 };
 

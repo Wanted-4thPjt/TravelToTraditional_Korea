@@ -46,5 +46,7 @@ public:
 	FVector2D GetGoWorkTime(){return GoWorkTime;}
 	UFUNCTION()
 	FVector2D GetGoHomeTime(){return GoHomeTime;}
+	UFUNCTION()
+	float GetWalkSpeed(){return WalkSpeed;}
 	
 };

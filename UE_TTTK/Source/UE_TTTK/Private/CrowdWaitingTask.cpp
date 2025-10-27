@@ -38,12 +38,16 @@ EStateTreeRunStatus UCrowdWaitingTask::Tick(FStateTreeExecutionContext& Context,
 	UE_LOG(LogTemp,Warning,TEXT("Waiting Tick 호출"));
 	if (OwnerCrowd->CheckGoWorkTime())
 	{
-		FStateTreeEvent GoWorkEvent;
-		GoWorkEvent.Tag = FGameplayTag::RequestGameplayTag("Crowd.Event.GoWork");
-		OwnerAiController->StateTreeComp->SendStateTreeEvent(GoWorkEvent.Tag );
-		UE_LOG(LogTemp,Warning,TEXT("기다림을 끝내겟어"));
-		FinishTask(true);
-		return EStateTreeRunStatus::Succeeded;
+		if (OwnerCrowd->CrowdData->GetCrowdType() == ECrowdType::Marketeer)
+		{
+			FStateTreeEvent GoWorkEvent;
+			GoWorkEvent.Tag = FGameplayTag::RequestGameplayTag("Crowd.Event.GoWork");
+			OwnerAiController->StateTreeComp->SendStateTreeEvent(GoWorkEvent.Tag );
+			UE_LOG(LogTemp,Warning,TEXT("기다림을 끝내겟어"));
+			FinishTask(true);
+			return EStateTreeRunStatus::Succeeded;
+		}
+		
 	}
 	if (OwnerCrowd->CheckGoHomeTime())
 	{

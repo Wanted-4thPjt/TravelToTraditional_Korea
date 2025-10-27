@@ -24,5 +24,5 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	void CollectHomeTargetPoints();
 	void ScatterTargetPoints();
-
+	FVector GetRandomTargetLocation();
 };
