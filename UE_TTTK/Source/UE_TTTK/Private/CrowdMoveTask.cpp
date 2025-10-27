@@ -3,6 +3,8 @@
 
 #include "CrowdMoveTask.h"
 
+#include <gsl/pointers>
+
 #include "AIController.h"
 #include "Crowd.h"
 #include "CrowdAiController.h"
@@ -20,9 +22,9 @@ EStateTreeRunStatus UCrowdMoveTask::EnterState(FStateTreeExecutionContext& Conte
                                                const FStateTreeTransitionResult& Transition)
 {
 	Super::EnterState(Context, Transition);
-	UE_LOG(LogTemp, Warning, TEXT("=== CrowdMoveTask EnterState 시작 ==="));
+	
 
-	// StateTreeAIComponent는 AIController에 붙어있으므로, Owner는 AIController입니다!
+
 	AIController = Cast<ACrowdAiController>(Context.GetOwner());
 	UE_LOG(LogTemp, Warning, TEXT("AIController (from Context.GetOwner()): %s"), AIController ? TEXT("OK") : TEXT("NULL"));
 
@@ -41,32 +43,42 @@ EStateTreeRunStatus UCrowdMoveTask::EnterState(FStateTreeExecutionContext& Conte
 		UE_LOG(LogTemp, Error, TEXT("OwnerCrowd가 nullptr!"));
 		return EStateTreeRunStatus::Failed;
 	}
-
+	UE_LOG(LogTemp, Error, TEXT("=== CrowdMoveTask EnterState 시작 ==="));
+	UE_LOG(LogTemp,Error,TEXT("===이전 스테이트 -> Walk스테이트 %s"), *(OwnerCrowd->GetCrowdCurrentState().ToString()));
 	//타겟 정보 가져오기
 	TargetPoint = OwnerCrowd->GetTargetByEnum();
-	UE_LOG(LogTemp, Warning, TEXT("TargetPoint: %s"), TargetPoint ? TEXT("OK") : TEXT("NULL"));
+	OwnerCrowd->SetGoWorkTargetPoint(TargetPoint);
+	if (OwnerCrowd->GetCurrentTargetLocation() != FVector::ZeroVector)
+	{
+		TargetLocation = OwnerCrowd->GetCurrentTargetLocation();
+	}
+	else
+	{
+		TargetLocation = TargetPoint->FindEmptySubTarget();
+		OwnerCrowd->currentTargetLocation = TargetLocation;
+	}
+	
+	
 
 	if (!TargetPoint)
 	{
 		UE_LOG(LogTemp, Error, TEXT("TargetPoint가 nullptr! GetTargetByEnum() 실패"));
 		return EStateTreeRunStatus::Failed;
 	}
-
-	TargetLocation = TargetPoint->FindEmptySubTarget();
+	
+	
 	UE_LOG(LogTemp, Warning, TEXT("TargetLocation: %s"), *TargetLocation.ToString());
+	
 
-	if (TargetLocation == FVector::ZeroVector)
-	{
-		UE_LOG(LogTemp, Error, TEXT("TargetLocation이 ZeroVector! SubTarget 없음"));
-		return EStateTreeRunStatus::Failed;
-	}
-
+	OwnerCrowd -> SetGoWorkTargetPoint(TargetPoint);
+	OwnerCrowd -> SetCurrentTargetLocation(TargetLocation);
+	
 	AIController->WalkToLocation(TargetLocation);
 	UE_LOG(LogTemp, Warning, TEXT("WalkToLocation 호출 완료"));
 
 	TargetPoint->ProcessSubTargetIn(OwnerCrowd, TargetLocation);
 	PathFollowingComponent = AIController->GetPathFollowingComponent();
-
+	OwnerCrowd->SetCrowdCurrentState("Crowd.Event.GoWork");
 	UE_LOG(LogTemp, Warning, TEXT("움직여야지 - EnterState 성공! Running 반환"));
 	return EStateTreeRunStatus::Running;
 }
@@ -102,9 +114,10 @@ EStateTreeRunStatus UCrowdMoveTask::Tick(FStateTreeExecutionContext& Context, co
 	if (PathFollowingComponent)
 	{
 		EPathFollowingStatus::Type Status = PathFollowingComponent->GetStatus();
+		float dist = FVector::Dist(OwnerCrowd->GetActorLocation(),OwnerCrowd->GetTargetLocation());
 		UE_LOG(LogTemp, Log, TEXT("PathFollowing Status: %d (Idle=1)"), (int32)Status);
 
-		if (Status == EPathFollowingStatus::Idle && OwnerCrowd->GetVelocity().Length() <= 0.f)
+		if (OwnerCrowd->GetVelocity().Length() <= 0.f && dist<0.2f)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("=== 목적지 도착! ==="));
 

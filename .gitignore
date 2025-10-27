@@ -252,3 +252,4 @@
 **/*.streamlit/secrets.toml
 UE_TTTK/Content/HwaseongForteressGate/Textures/T_DryGrass_N.uasset
 UE_TTTK/Content/HwaseongForteressGate/Textures/T_DryGrass_BC.uasset
+UE_TTTK/Content/YKD/TTTK_kdTest.umap

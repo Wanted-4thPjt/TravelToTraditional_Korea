@@ -4,7 +4,13 @@
 #include "CrowdAiController.h"
 
 #include "Crowd.h"
+#include "NavigationSystem.h"
+#include "PatrolArmy.h"
+#include "PatrolPath.h"
+#include "TargetPointManager.h"
 #include "Components/StateTreeAIComponent.h"
+#include "NavMesh/NavMeshBoundsVolume.h"
+#include "Kismet/GameplayStatics.h"
 
 ACrowdAiController::ACrowdAiController()
 {
@@ -33,6 +39,14 @@ void ACrowdAiController::OnPossess(APawn* InPawn)
 	}
 }
 
+void ACrowdAiController::BeginPlay()
+{
+	Super::BeginPlay();
+	TargetPointManager = Cast<ATargetPointManager>(
+		UGameplayStatics::GetActorOfClass(GetWorld(), ATargetPointManager::StaticClass())
+	);
+}
+
 void ACrowdAiController::WalkToPoint(AActor* TargetActor)
 {
 	MoveToActor(TargetActor);
@@ -50,6 +64,35 @@ void ACrowdAiController::NotifyArrived()
 	
 }
 
+void ACrowdAiController::Patrol()
+{
+	UE_LOG(LogTemp, Warning, TEXT("===== Patrol 호출됨 ====="));
+
+	if (!OwnerCrowd)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Patrol: OwnerCrowd is null!"));
+		return;
+	}
+
+	if (APatrolArmy* army = Cast<APatrolArmy>(OwnerCrowd))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Patrol: PatrolArmy 캐스팅 성공 - %s"), *army->GetName());
+
+		FPatrolPoint* nextPoint = army->GetcurrentPatrolPoint();
+		if (nextPoint)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Patrol: 다음 목적지로 이동 명령 - %s"), *nextPoint->PatrolLocation.ToString());
+			WalkToLocation(nextPoint->PatrolLocation);
+		}
+		
+		return;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Patrol: OwnerCrowd는 PatrolArmy가 아님!"));
+	}
+}
+
 
 void ACrowdAiController::Talk(ACrowd* crowd)
 {
@@ -63,6 +106,7 @@ void ACrowdAiController::GoMarket()
 
 void ACrowdAiController::GoHome()
 {
+	
 }
 
 void ACrowdAiController::Greeting()
@@ -79,3 +123,30 @@ void ACrowdAiController::Ouch()
 {
 	OwnerCrowd->PlayOuch();
 }
+
+FVector ACrowdAiController::FindRandomDestination()
+{
+	
+	// nullptr 체크!
+	if (!TargetPointManager)
+	{
+		UE_LOG(LogTemp, Error, TEXT("====TargetPointManager가 nullptr! 다시 찾기 시도"));
+
+		TargetPointManager = Cast<ATargetPointManager>(
+			UGameplayStatics::GetActorOfClass(GetWorld(), ATargetPointManager::StaticClass())
+		);
+
+		if (!TargetPointManager)
+		{
+			UE_LOG(LogTemp, Error, TEXT("====TargetPointManager를 찾을 수 없음! 맵에 배치되어 있나요?"));
+			return FVector::ZeroVector;
+		}
+	}
+
+	FVector RandomLocation = TargetPointManager->GetRandomTargetLocation();
+	UE_LOG(LogTemp, Error, TEXT("====랜덤 위치: %s"), *RandomLocation.ToString());
+	return RandomLocation;
+
+	
+}
+

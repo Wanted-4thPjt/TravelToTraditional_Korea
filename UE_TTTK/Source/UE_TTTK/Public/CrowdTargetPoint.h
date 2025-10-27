@@ -25,6 +25,14 @@ struct FCrowdPoint
 	FCrowdPoint(FVector InLocation, bool bInCrowd, ACrowd* InCrowd)
 		: location(InLocation), inCrowd(bInCrowd), currentCrowd(InCrowd) {}
 };
+
+USTRUCT()
+struct FCrowdHome
+{
+	GENERATED_BODY()
+	ACrowd* HomeOwner = nullptr;
+	
+};
 UCLASS()
 class UE_TTTK_API ACrowdTargetPoint : public ATargetPoint
 {
@@ -43,6 +51,10 @@ public:
 	int32 NumPoints;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float radius;
+	UPROPERTY(EditAnywhere)
+	bool bisHome = false;
+	UPROPERTY()
+	FCrowdHome Homevar;
 		
 	UFUNCTION()
 	void InitializeCrowdPoint_circle();
@@ -60,6 +72,11 @@ public:
 	int32 FindIndexByLocation(FVector location);
 	UFUNCTION()
 	void DrawDebugPoint();
-	
-	
+	UFUNCTION()
+	FVector FindLocationByCrowd(class ACrowd* crowd);
+	UFUNCTION()
+	bool IsHome();
+	UFUNCTION()
+	void SetHomeOwner(ACrowd* HomeOwner);
+	ACrowd* GetHomeOwner();
 };

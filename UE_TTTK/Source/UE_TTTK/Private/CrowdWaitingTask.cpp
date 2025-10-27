@@ -13,7 +13,10 @@ EStateTreeRunStatus UCrowdWaitingTask::EnterState(FStateTreeExecutionContext& Co
 {
 	OwnerAiController = Cast<ACrowdAiController>(Context.GetOwner());
 	OwnerCrowd = Cast<ACrowd>(OwnerAiController->GetPawn());
-	UE_LOG(LogTemp,Warning,TEXT("기다리자"));
+	UE_LOG(LogTemp,Warning,TEXT("===Waiting EnterState"));
+	OwnerCrowd->SetCrowdCurrentState(TEXT("Crowd.Event.Waiting"));
+	UE_LOG(LogTemp,Error,TEXT("===Waiting EnterState"));
+	UE_LOG(LogTemp,Error,TEXT("===이전 스테이트  %s"),*(OwnerCrowd->GetCrowdCurrentState().ToString()));
 	return EStateTreeRunStatus::Running;
 	
 }
@@ -32,15 +35,29 @@ void UCrowdWaitingTask::StateCompleted(FStateTreeExecutionContext& Context, cons
 EStateTreeRunStatus UCrowdWaitingTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime)
 {
 	Super::Tick(Context, DeltaTime);
-	UE_LOG(LogTemp,Warning,TEXT("Tick이다~"));
+	UE_LOG(LogTemp,Warning,TEXT("Waiting Tick 호출"));
 	if (OwnerCrowd->CheckGoWorkTime())
 	{
-		FStateTreeEvent GoWorkEvent;
-		GoWorkEvent.Tag = FGameplayTag::RequestGameplayTag("Crowd.Event.GoWork");
-		OwnerAiController->StateTreeComp->SendStateTreeEvent(GoWorkEvent.Tag );
-		UE_LOG(LogTemp,Warning,TEXT("기다림을 끝내겟어"));
+		if (OwnerCrowd->CrowdData->GetCrowdType() == ECrowdType::Marketeer)
+		{
+			FStateTreeEvent GoWorkEvent;
+			GoWorkEvent.Tag = FGameplayTag::RequestGameplayTag("Crowd.Event.GoWork");
+			OwnerAiController->StateTreeComp->SendStateTreeEvent(GoWorkEvent.Tag );
+			UE_LOG(LogTemp,Warning,TEXT("기다림을 끝내겟어"));
+			FinishTask(true);
+			return EStateTreeRunStatus::Succeeded;
+		}
+		
+	}
+	if (OwnerCrowd->CheckGoHomeTime())
+	{
+		FStateTreeEvent GoHomeEvent;
+		GoHomeEvent.Tag = FGameplayTag::RequestGameplayTag("Crowd.Event.GoHome");
+		UE_LOG(LogTemp,Warning,TEXT("집갈 시간이다"));
+		OwnerAiController->StateTreeComp->SendStateTreeEvent(GoHomeEvent.Tag);
 		FinishTask(true);
 		return EStateTreeRunStatus::Succeeded;
+		
 	}
 	return EStateTreeRunStatus::Running;
 		
