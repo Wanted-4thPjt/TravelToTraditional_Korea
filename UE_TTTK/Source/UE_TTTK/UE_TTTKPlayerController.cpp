@@ -40,7 +40,7 @@ void AUE_TTTKPlayerController::BeginPlay()
 void AUE_TTTKPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
-
+	
 	// only add IMCs for local player controllers
 	if (IsLocalPlayerController())
 	{
@@ -49,6 +49,7 @@ void AUE_TTTKPlayerController::SetupInputComponent()
 		{
 			for (UInputMappingContext* CurrentContext : DefaultMappingContexts)
 			{
+				UE_LOG(LogTemp, Warning, TEXT("Add MappingContext"));
 				Subsystem->AddMappingContext(CurrentContext, 0);
 			}
 
