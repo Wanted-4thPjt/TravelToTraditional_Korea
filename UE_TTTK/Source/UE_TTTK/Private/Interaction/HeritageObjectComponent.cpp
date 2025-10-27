@@ -48,8 +48,12 @@ void UHeritageObjectComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	{
 		CachedInteractableComponent->onRequestInteraction.RemoveDynamic(
 			this, &UHeritageObjectComponent::OnInteraction);
+		/*CachedInteractableComponent->onMultiInteraction.RemoveDynamic(
+			this, &UHeritageObjectComponent::OnInteraction);*/
 		CachedInteractableComponent->onChangeState.RemoveDynamic(
 			this, &UHeritageObjectComponent::OnStateChanged);
+		/*CachedInteractableComponent->onClientInteraction.RemoveDynamic(
+			this, &UHeritageObjectComponent::OnStateChanged);*/
 	}
 
 	// Discovery Manager에서 제거
@@ -72,13 +76,16 @@ void UHeritageObjectComponent::BindToInteractableComponent()
 
 		if (CachedInteractableComponent)
 		{
-			// 상호작용 이벤트에 연결
+			// 상호작용 이벤트에 연결 
 			CachedInteractableComponent->onRequestInteraction.AddDynamic(
 				this, &UHeritageObjectComponent::OnInteraction);
-
+			/*CachedInteractableComponent->onMultiInteraction.AddDynamic(
+				this, &UHeritageObjectComponent::OnInteraction);*/
 			// 상태 변경 이벤트에 연결 (거리 체크용)
 			CachedInteractableComponent->onChangeState.AddDynamic(
 				this, &UHeritageObjectComponent::OnStateChanged);
+			/*CachedInteractableComponent->onClientInteraction.AddDynamic(
+				this, &UHeritageObjectComponent::OnStateChanged);*/
 		}
 		else
 		{
