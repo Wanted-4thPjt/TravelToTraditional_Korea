@@ -4,6 +4,10 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/PlayerController.h"
+#include "Content/BaseContentComponent.h"  // Content Input Component
+#include "MainPlayer.h"
+#include "EnhancedInputSubsystems.h"
+#include "InputMappingContext.h"
 
 
 UBaseContentManager::UBaseContentManager()
@@ -21,7 +25,11 @@ void UBaseContentManager::GetLifetimeReplicatedProps(TArray<class FLifetimePrope
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	DOREPLIFETIME(UBaseContentManager, contentConfig);
 	DOREPLIFETIME(UBaseContentManager, contentState);
+	DOREPLIFETIME(UBaseContentManager, currentRound);
+	DOREPLIFETIME(UBaseContentManager, totalRounds);
+	DOREPLIFETIME(UBaseContentManager, currentPlayerIndex);
 	DOREPLIFETIME(UBaseContentManager, remainingTime);
 	DOREPLIFETIME(UBaseContentManager, contentPlayersData);
 	DOREPLIFETIME(UBaseContentManager, finishedPlayersCount);
@@ -42,15 +50,18 @@ void UBaseContentManager::InitializeConfig_Implementation()
 			{
 				contentConfig.playerSpawnPoints.Add(pointByActor->GetActorTransform());
 			}
-			else if (contentConfig.bChangeCameraView)
+			else if (contentConfig.IsContentTyped(EContentFlags::ChangeCameraView))
 			{
 				contentConfig.cameraTransform.Add(pointByActor->GetActorTransform());
 			}
 		}
-		
 	}
 
-	//ownerEntryComponent = ->FindComponentByClass<UContentEntryComponent>();
+	/*
+	currentRound = contentConfig.IsContentTyped(EContentFlags::HasRound);
+	contentConfig.IsContentTyped(EContentFlags::RecordScore);
+	*/
+
 }
 
 void UBaseContentManager::InitializeContent_Implementation(const TArray<APlayerController*>& inPlayers)
@@ -59,10 +70,11 @@ void UBaseContentManager::InitializeContent_Implementation(const TArray<APlayerC
 	{
 		FContentParticipatingPlayerData data;
 		data.playerController = playerController;
+		data.prevTransform = playerController->GetLevelTransform();
 		contentPlayersData.Add(data);
 	}
 
-	if (contentConfig.bChangeCameraView && contentConfig.cameraTransform.Num() > 0)
+	if (contentConfig.IsContentTyped(EContentFlags::ChangeCameraView) && contentConfig.cameraTransform.Num() > 0)
 	{
 		for (const FTransform& cameraTransform : contentConfig.cameraTransform)
 		{
@@ -129,11 +141,11 @@ void UBaseContentManager::EndContent_Implementation()
 		if (IsValid(result.playerController))
 		{
 			// replace logs into UI on client hud
-			if (contentConfig.bRecordingScore)
+			if (contentConfig.IsContentTyped(EContentFlags::RecordScore))
 			{
 				UE_LOG(LogTemp, Log, TEXT("  Score: %d"), result.recordedScore);
 			}
-			if (contentConfig.bRecordingTime)
+			if (contentConfig.IsContentTyped(EContentFlags::RecordTime))
 			{
 				UE_LOG(LogTemp, Log, TEXT("  Time: %.2f"), result.recordedTime);
 			}
@@ -157,6 +169,9 @@ void UBaseContentManager::EndContent_Implementation()
 void UBaseContentManager::ClearContent_Implementation()
 {
 	contentState = EContentState::Ready;
+	currentRound = -1;
+	totalRounds = 0;
+	currentPlayerIndex = -1;
 	contentPlayersData.Empty();
 }
 
@@ -199,23 +214,12 @@ void UBaseContentManager::ReturnPlayersToLobby()
 {
 	if (!GetWorld()->GetAuthGameMode()) {return;}
 
-	if (!ownerEntryComponent) return;
-
-	AActor* lobbyActor = ownerEntryComponent->GetOwner();
-	if (!IsValid(lobbyActor)) return;
-
-	FVector lobbyLocation = lobbyActor->GetActorLocation();
-	FRotator lobbyRotation = lobbyActor->GetActorRotation();
-
 	for (const FContentParticipatingPlayerData& data  : contentPlayersData)
 	{
 		if (data.playerController && data.playerController->GetPawn())
 		{
-			FVector offset = FVector(FMath::RandRange(-200.f, 200.f),
-									 FMath::RandRange(-200.f, 200.f),
-									 0.f);
-			data.playerController->GetPawn()->SetActorLocation(lobbyLocation + offset);
-			data.playerController->GetPawn()->SetActorRotation(lobbyRotation);
+			data.playerController->GetPawn()->SetActorLocation(data.prevTransform.GetLocation());
+			data.playerController->GetPawn()->SetActorRotation(data.prevTransform.GetRotation());
 		}
 	}
 
@@ -228,7 +232,7 @@ void UBaseContentManager::OnPlayerAction(APlayerController* actionPlayer, FName 
 void UBaseContentManager::ContentFinished(const FContentParticipatingPlayerData& result)
 {
 	if (!GetWorld()->GetAuthGameMode() || !IsValid(result.playerController)) {return;}
-	
+
 	finishedPlayersCount++;
 	for (FContentParticipatingPlayerData& data  : contentPlayersData)
 	{
@@ -242,3 +246,78 @@ void UBaseContentManager::ContentFinished(const FContentParticipatingPlayerData&
 	}
 }
 
+// ========== Content Input 관리 (새로 추가) ==========
+
+void UBaseContentManager::ActivateInputForPlayer(APlayerController* player)
+{
+	if (!player || !HasCustomInput()) return;
+
+	AMainPlayer* mainPlayer = Cast<AMainPlayer>(player->GetPawn());
+	if (!mainPlayer)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BaseContentManager: Player pawn is not AMainPlayer"));
+		return;
+	}
+
+	// 1. Content Input Component 활성화 (Lazy Creation)
+	mainPlayer->ActivateContentInput(this);
+
+	// 2. Component의 InputMappingContext 추가
+	UBaseContentComponent* contentComp = mainPlayer->GetActiveContentInput();
+	if (contentComp && contentComp->GetInputMappingContext())
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
+			ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(player->GetLocalPlayer()))
+		{
+			Subsystem->AddMappingContext(contentComp->GetInputMappingContext(), inputContextPriority);
+			UE_LOG(LogTemp, Log, TEXT("BaseContentManager: Added InputContext '%s' for player %s"),
+			       *contentComp->GetInputMappingContext()->GetName(), *player->GetName());
+		}
+	}
+}
+
+void UBaseContentManager::DeactivateInputForPlayer(APlayerController* player)
+{
+	if (!player || !HasCustomInput()) return;
+
+	AMainPlayer* mainPlayer = Cast<AMainPlayer>(player->GetPawn());
+	if (!mainPlayer) return;
+
+	// 1. Component의 InputMappingContext 제거
+	UBaseContentComponent* contentComp = mainPlayer->GetActiveContentInput();
+	if (contentComp && contentComp->GetInputMappingContext())
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
+			ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(player->GetLocalPlayer()))
+		{
+			Subsystem->RemoveMappingContext(contentComp->GetInputMappingContext());
+			UE_LOG(LogTemp, Log, TEXT("BaseContentManager: Removed InputContext '%s' for player %s"),
+			       *contentComp->GetInputMappingContext()->GetName(), *player->GetName());
+		}
+	}
+
+	// 2. Content Input Component 비활성화
+	mainPlayer->DeactivateContentInput();
+}
+
+void UBaseContentManager::ActivateInputForAllPlayers()
+{
+	for (FContentParticipatingPlayerData& data : contentPlayersData)
+	{
+		if (data.playerController)
+		{
+			ActivateInputForPlayer(data.playerController);
+		}
+	}
+}
+
+void UBaseContentManager::DeactivateInputForAllPlayers()
+{
+	for (FContentParticipatingPlayerData& data : contentPlayersData)
+	{
+		if (data.playerController)
+		{
+			DeactivateInputForPlayer(data.playerController);
+		}
+	}
+}

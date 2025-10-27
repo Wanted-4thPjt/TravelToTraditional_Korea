@@ -21,7 +21,7 @@ void UInputMappingsSettings::PostEditChangeChainProperty(struct FPropertyChanged
 			prevMappings.GetKeys(keys);
 			for (FName& key : keys)
 			{
-				FName newKey = key == NAME_None ? prevMappings[key].inputMappingContext->GetFName() : key;
+				FName newKey = key == NAME_None ? inputMappings[key].inputMappingContext->GetFName() : key;
 				if (key != newKey)
 				{
 					FInputMappingData data = inputMappings.FindAndRemoveChecked(key);

@@ -37,41 +37,44 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	UFUNCTION()
-	void TempInteract(APawn* player);
+	// ========== 땅 충돌 감지 ==========
 
-	UFUNCTION()
-	void OnStart();
-	UFUNCTION()
-	void OnEnd(APawn* player);
-	
-	UFUNCTION(BlueprintCallable)
-	void OnKick(EKickTiming inTiming);
-	void TempKick();
-
+	/** 땅과 충돌 시 호출 (Component에서 감지) */
 	UFUNCTION(BlueprintCallable)
 	void OnReachToGround(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
 
 private:
-	UFUNCTION(NetMulticast, Reliable)
-	void NetMulticast_OnKicked(EKickTiming inTiming);
+	/** 땅 충돌 시 물리 정지 (Multicast) */
 	UFUNCTION(NetMulticast, Reliable)
 	void NetMulticast_OnReachToGround();
+
+	// ========== 제거됨 - Component로 이동 ==========
+	// void TempInteract(APawn* player);
+	// void OnStart();
+	// void OnEnd(APawn* player);
+	// void OnKick(EKickTiming inTiming);
+	// void TempKick();
+	// void NetMulticast_OnKicked(EKickTiming inTiming);
 
 	static float FindCylinderMeshRadius(const FVector& meshBoxExtent);
 
 protected:
+	// ========== Components ==========
+
+	/** 충돌 감지 Collider */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USphereComponent> sphereCollider = nullptr;
+
+	/** 제기 Mesh */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> meshComponent = nullptr;
+
+	/** 물리 Movement Component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UProjectileMovementComponent> movementComponent = nullptr;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TArray<AActor*> tempCameraActor;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	AActor* originalCameraActor;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	float groundHeight = 0.f;
+
+	// ========== 제거됨 - Content Manager 역할 ==========
+	// TArray<AActor*> tempCameraActor;
+	// AActor* originalCameraActor;
+	// float groundHeight;
 };

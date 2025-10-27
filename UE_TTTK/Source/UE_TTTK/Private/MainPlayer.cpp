@@ -13,6 +13,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "Interaction/InteractionComponent.h"
 #include "Interaction/ViewComponent.h"
+#include "GameFlow/BaseContentManager.h"
+#include "Content/BaseContentComponent.h"
+#include "EnhancedInputComponent.h"
 
 AMainPlayer::AMainPlayer()
 {
@@ -219,6 +222,108 @@ AActor* AMainPlayer::GetFocusedActor() const
 void AMainPlayer::OnViewInteractableActor(const FHitResult& hitResult)
 {
 	interactionComponent->FocusInteractableActor(hitResult);
+}
+
+// ========================================
+// Content Input 관리 구현
+// ========================================
+
+void AMainPlayer::ActivateContentInput(UBaseContentManager* manager)
+{
+	if (!manager || !manager->contentInputComponentClass)
+	{
+		UE_LOG(LogTemp, Error, TEXT("MainPlayer: Invalid manager or component class"));
+		return;
+	}
+
+	// 1. 기존 활성화된 Component 비활성화
+	if (activeContentInput)
+	{
+		DeactivateContentInput();
+	}
+
+	// 2. Component 생성 또는 캐시에서 가져오기 (Lazy Initialization)
+	UBaseContentComponent* contentComponent = GetOrCreateContentInput(manager->contentInputComponentClass);
+	if (!contentComponent)
+	{
+		UE_LOG(LogTemp, Error, TEXT("MainPlayer: Failed to create content input component"));
+		return;
+	}
+
+	// 3. Enhanced Input Binding 설정 (최초 1회만, 이후 재사용)
+	if (UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(myInputComponent))
+	{
+		contentComponent->SetupInputBindings(EnhancedInput);
+	}
+
+	// 4. Component 활성화
+	contentComponent->ActivateContentInput(manager);
+	activeContentInput = contentComponent;
+
+	UE_LOG(LogTemp, Log, TEXT("MainPlayer: Content input activated - %s"),
+	       *manager->contentInputComponentClass->GetName());
+}
+
+void AMainPlayer::DeactivateContentInput()
+{
+	if (!activeContentInput)
+	{
+		return;
+	}
+
+	// Component 비활성화 (제거하지 않고 캐시에 보관)
+	activeContentInput->DeactivateContentInput();
+
+	UE_LOG(LogTemp, Log, TEXT("MainPlayer: Content input deactivated - %s"),
+	       *activeContentInput->GetClass()->GetName());
+
+	activeContentInput = nullptr;
+}
+
+UBaseContentComponent* AMainPlayer::GetOrCreateContentInput(TSubclassOf<UBaseContentComponent> componentClass)
+{
+	if (!componentClass)
+	{
+		UE_LOG(LogTemp, Error, TEXT("MainPlayer: componentClass is null"));
+		return nullptr;
+	}
+
+	// 1. 캐시에 이미 존재하는지 확인
+	if (UBaseContentComponent** CachedComponent = cachedContentInputs.Find(componentClass))
+	{
+		if (IsValid(*CachedComponent))
+		{
+			UE_LOG(LogTemp, Verbose, TEXT("MainPlayer: Reusing cached component - %s"),
+			       *componentClass->GetName());
+			return *CachedComponent;
+		}
+	}
+
+	// 2. 캐시에 없으면 새로 생성
+	UBaseContentComponent* NewComponent = NewObject<UBaseContentComponent>(
+		this,
+		componentClass,
+		NAME_None,
+		RF_Transient
+	);
+
+	if (!NewComponent)
+	{
+		UE_LOG(LogTemp, Error, TEXT("MainPlayer: Failed to create component - %s"),
+		       *componentClass->GetName());
+		return nullptr;
+	}
+
+	// 3. Component 초기화
+	NewComponent->RegisterComponent();
+
+	// 4. 캐시에 저장
+	cachedContentInputs.Add(componentClass, NewComponent);
+
+	UE_LOG(LogTemp, Log, TEXT("MainPlayer: Created new content component - %s"),
+	       *componentClass->GetName());
+
+	return NewComponent;
 }
 
 

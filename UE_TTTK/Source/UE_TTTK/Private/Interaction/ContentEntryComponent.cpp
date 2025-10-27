@@ -47,7 +47,7 @@ void UContentEntryComponent::BeginPlay()
 	
 	if (settings.contentManagerClass)
 	{
-		contentManager = NewObject<UBaseContentManager>(GetOwner(),
+		contentManager = NewObject<UBaseContentManager>(this,
 			settings.contentManagerClass, settings.contentName,
 			EObjectFlags::RF_Transient | EObjectFlags::RF_Transactional
 		);
@@ -91,7 +91,7 @@ void UContentEntryComponent::RequestJoinLobby(AMainPlayer* player)
 	}
 
 	AddPlayerToLobby(player);
-	Multicast_UpdateLobbyState();
+	Server_UpdateLobbyState();
 }
 
 void UContentEntryComponent::RequestLeaveLobby(AMainPlayer* player)
@@ -100,7 +100,7 @@ void UContentEntryComponent::RequestLeaveLobby(AMainPlayer* player)
 	if (!IsValid(player)) return;
 
 	RemovePlayerFromLobby(player);
-	Multicast_UpdateLobbyState();
+	Server_UpdateLobbyState();
 }
 
 void UContentEntryComponent::RequestStartContent(AMainPlayer* player)
@@ -112,7 +112,7 @@ void UContentEntryComponent::RequestStartContent(AMainPlayer* player)
 	}
 
 	StartContentInternal();
-	Multicast_OnContentStarted();
+	Server_OnContentStarted();
 }
 
 void UContentEntryComponent::RequestCancelLobby(AMainPlayer* player)
@@ -127,7 +127,7 @@ void UContentEntryComponent::RequestCancelLobby(AMainPlayer* player)
 	}
 
 	ResetLobby();
-	Multicast_OnLobbyCancelled();
+	Server_OnLobbyCancelled();
 }
 #pragma endregion Player Actions
 
@@ -147,30 +147,36 @@ void UContentEntryComponent::RequestFinishContent()
 	}
 
 	ResetLobby();
-	Multicast_OnContentFinished();
+	Server_OnContentFinished();
 }
 #pragma endregion ContentManager Callback
 
 #pragma region Multicast RPC
 
-void UContentEntryComponent::Multicast_UpdateLobbyState_Implementation()
+void UContentEntryComponent::Server_UpdateLobbyState_Implementation()
 {
 	UE_LOG(LogTemp, Log, TEXT("Lobby state updated: %d/%d"), readyPlayers.Num(), settings.maxPlayers);
 }
 
-void UContentEntryComponent::Multicast_OnContentStarted_Implementation()
+void UContentEntryComponent::Server_OnContentStarted_Implementation()
 {
 	UE_LOG(LogTemp, Log, TEXT("Content started - Playing start effects"));
+	TArray<APlayerController*> playerControllers;
+	for (AMainPlayer* player : readyPlayers)
+	{
+		playerControllers.Add(player->GetController<APlayerController>());
+	}
+	contentManager->InitializeContent(playerControllers);
 	// TODO: 시작 연출, UI 변경 등
 }
 
-void UContentEntryComponent::Multicast_OnContentFinished_Implementation()
+void UContentEntryComponent::Server_OnContentFinished_Implementation()
 {
 	UE_LOG(LogTemp, Log, TEXT("Content finished - Showing results"));
-	// TODO: 결과 UI 표시, 보상 연출 등
+	
 }
 
-void UContentEntryComponent::Multicast_OnLobbyCancelled_Implementation()
+void UContentEntryComponent::Server_OnLobbyCancelled_Implementation()
 {
 	OnLobbyStateChanged.Broadcast(0, settings.maxPlayers);
 	UE_LOG(LogTemp, Log, TEXT("Lobby cancelled"));
@@ -291,7 +297,7 @@ void UContentEntryComponent::AddPlayerToLobby(AMainPlayer* player)
 	{
 		UE_LOG(LogTemp, Log, TEXT("Auto-starting content (Auto mode)"));
 		StartContentInternal();
-		Multicast_OnContentStarted();
+		Server_OnContentStarted();
 	}
 }
 
@@ -352,7 +358,7 @@ void UContentEntryComponent::OnLobbyTimeout()
 	if (!IsServer()) return;
 
 	ResetLobby();
-	Multicast_OnLobbyCancelled();
+	Server_OnLobbyCancelled();
 }
 
 void UContentEntryComponent::ReassignHost()

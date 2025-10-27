@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Jegi/Jegi.h"
+#include "Content/Jegi/Jegi.h"
 
 #include "MainPlayer.h"
 #include "Camera/CameraComponent.h"
@@ -59,70 +59,15 @@ void AJegi::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (IsValid(meshComponent))
-	{
-		//meshComponent->OnComponentHit.AddDynamic(this, &AJegi::OnReachToGround);
-
-		if (UStaticMesh* mesh = meshComponent->GetStaticMesh();
-			IsValid(sphereCollider) && mesh)
-		{
-			
-		}
-	}
-	
-
-	UGameplayStatics::GetAllActorsWithTag(GetWorld(), "Camera", tempCameraActor);
-	//sphereCollider->OnComponentBeginOverlap.AddDynamic()
+	// 순수 물리 Actor - 별도 초기화 없음
 }
 
-void AJegi::TempInteract(APawn* player)
-{
-	if (!player->GetController<APlayerController>()) {return;}
-	originalCameraActor = player->GetController<APlayerController>()->GetViewTarget();
-	player->GetController<APlayerController>()->SetViewTargetWithBlend(tempCameraActor[0], 1, VTBlend_EaseInOut);
-	FTimerHandle timer;
-	GetWorld()->GetTimerManager().SetTimer(timer, this, &AJegi::OnStart, 3.f, false);
-}
-
-void AJegi::OnStart()
-{
-	FVector pos = GetActorLocation() + FVector(0.f, 0.f, 500.f);
-	SetActorLocation(pos);
-}
-
-void AJegi::OnEnd(APawn* player)
-{
-	if (!player->GetController<APlayerController>()) {return;}
-	player->GetController<APlayerController>()->SetViewTargetWithBlend(originalCameraActor, 1, VTBlend_EaseInOut);
-}
-
-void AJegi::OnKick(EKickTiming inTiming)
-{
-	if (movementComponent->Velocity.Z > 0.f) {return;}
-	NetMulticast_OnKicked(inTiming);
-}
-
-void AJegi::TempKick()
-{
-	if (movementComponent->Velocity.Z > 0.f) {return;}
-	if (GetActorLocation().Z > static_cast<int32>(EKickTiming::End) * 10.f)
-	{
-		return NetMulticast_OnKicked(EKickTiming::Missed);
-	}
-	else if (GetActorLocation().Z > static_cast<int32>(EKickTiming::Perfect) * 10.f)
-	{
-		return NetMulticast_OnKicked(EKickTiming::Perfect);
-	}
-	else if (GetActorLocation().Z > static_cast<int32>(EKickTiming::Great) * 10.f)
-	{
-		return NetMulticast_OnKicked(EKickTiming::Great);
-	}
-	else if (GetActorLocation().Z > static_cast<int32>(EKickTiming::Good) * 10.f)
-	{
-		return NetMulticast_OnKicked(EKickTiming::Good);
-	}
-	NetMulticast_OnKicked(EKickTiming::Missed);
-}
+// ========== 제거됨 - Component로 이동 ==========
+// void AJegi::TempInteract(APawn* player) { }
+// void AJegi::OnStart() { }
+// void AJegi::OnEnd(APawn* player) { }
+// void AJegi::OnKick(EKickTiming inTiming) { }
+// void AJegi::TempKick() { }
 
 void AJegi::OnReachToGround(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                             UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -154,37 +99,15 @@ float AJegi::FindCylinderMeshRadius(const FVector& meshBoxExtent)
 
 void AJegi::NetMulticast_OnReachToGround_Implementation()
 {
+	// 땅 충돌 시 물리 정지
 	movementComponent->bSimulationEnabled = false;
 	movementComponent->ProjectileGravityScale = 0.f;
 	movementComponent->MaxSpeed = 0.f;
 	movementComponent->Bounciness = 0.f;
+
+	UE_LOG(LogTemp, Log, TEXT("AJegi: Reached ground - Physics stopped"));
 }
 
-void AJegi::NetMulticast_OnKicked_Implementation(EKickTiming inTiming)
-{
-	FVector kickPower = movementComponent->Velocity;
-	
-	switch (inTiming)
-	{
-	case EKickTiming::End:
-	case EKickTiming::Default:
-		return;
-	case EKickTiming::Missed:
-		kickPower.X = FMath::RandRange(100.f, 200.f);
-		kickPower.Y = FMath::RandRange(100.f, 200.f);
-		kickPower.Z = FMath::RandRange(10.f, 20.f);
-		break;
-	case EKickTiming::Good:
-		kickPower.Z = 200.f;
-		break;
-	case EKickTiming::Great:
-		kickPower.Z = 300.f;
-		break;
-	case EKickTiming::Perfect:
-		kickPower.Z = 400.f;
-		break;
-	}
-	
-	movementComponent->Velocity = kickPower;
-}
+// ========== 제거됨 - Component가 로컬로 물리 처리 ==========
+// void AJegi::NetMulticast_OnKicked_Implementation(EKickTiming inTiming) { }
 

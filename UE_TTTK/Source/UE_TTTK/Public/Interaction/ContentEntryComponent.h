@@ -76,19 +76,19 @@ protected:
 		return IsValid(owner) && owner->HasAuthority();}
 private:
 	// === Multicast RPC ===
-	#pragma region Multicast RPC
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_UpdateLobbyState();
+	#pragma region Server RPC
+	UFUNCTION(Server, Reliable)
+	void Server_UpdateLobbyState();
 
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_OnContentStarted();
+	UFUNCTION(Server, Reliable)
+	void Server_OnContentStarted();
 
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_OnContentFinished();
+	UFUNCTION(Server, Reliable)
+	void Server_OnContentFinished();
 
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_OnLobbyCancelled();
-	#pragma endregion Multicast RPC
+	UFUNCTION(Server, Reliable)
+	void Server_OnLobbyCancelled();
+	#pragma endregion Server RPC
 
 	// === Internal Logic ===
 	#pragma region Internal
@@ -112,7 +112,7 @@ protected:
 	
 	FTimerHandle lobbyTimer;
 	
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Players")
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Players|Members")
 	TArray<AMainPlayer*> readyPlayers;
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Players|Host")
 	AMainPlayer* hostPlayer;

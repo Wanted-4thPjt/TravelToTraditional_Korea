@@ -87,7 +87,7 @@ void UInteractableComponent::BeginPlay()
 				FAttachmentTransformRules attachRules(
 				EAttachmentRule::SnapToTarget,  // Location
 				EAttachmentRule::SnapToTarget,  // Rotation
-				EAttachmentRule::SnapToTarget,  // Scale
+				EAttachmentRule::KeepRelative,  // Scale
 				false 
 				);
 				attachRules.bWeldSimulatedBodies = false;

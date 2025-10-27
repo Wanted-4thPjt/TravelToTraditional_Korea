@@ -11,6 +11,8 @@ enum class EMappingMode : uint8;
 
 class UViewComponent;
 class UInteractionComponent;
+class UBaseContentManager;
+class UBaseContentComponent;
 /**
  * 
  */
@@ -67,7 +69,33 @@ public:
 	// Camera Functions (called from CarriageVehicle Multicast)
 	void SwitchToFirstPersonCamera();
 	void SwitchToThirdPersonCamera();
-	//void RequestChangeInputMapping(EMappingMode mode);
+
+	// ========== Content Input 관리 ==========
+
+	/** Content가 활성화될 때 호출 (Lazy Initialization) */
+	UFUNCTION(BlueprintCallable, Category="ContentInput")
+	void ActivateContentInput(UBaseContentManager* manager);
+
+	/** Content가 비활성화될 때 호출 */
+	UFUNCTION(BlueprintCallable, Category="ContentInput")
+	void DeactivateContentInput();
+
+	/** 현재 활성화된 Content Input Component */
+	UFUNCTION(BlueprintPure, Category="ContentInput")
+	UBaseContentComponent* GetActiveContentInput() const { return activeContentInput; }
+
+protected:
+	/** 현재 활성화된 Content Input Component */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="ContentInput")
+	UBaseContentComponent* activeContentInput = nullptr;
+
+	/** Cached Content Input Components (재사용) */
+	UPROPERTY()
+	TMap<TSubclassOf<UBaseContentComponent>, UBaseContentComponent*> cachedContentInputs;
+
+private:
+	/** Content Input Component Lazy Initialization */
+	UBaseContentComponent* GetOrCreateContentInput(TSubclassOf<UBaseContentComponent> componentClass);
 
 #pragma region VaVamVa
 public:
