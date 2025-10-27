@@ -65,7 +65,7 @@ void AUE_TTTKPlayerController::SetupInputComponent()
 	}
 }
 
-void AUE_TTTKPlayerController::UpdateChat(const FText& inText)
+void AUE_TTTKPlayerController::Client_UpdateChat_Implementation(const FText& inText)
 {
 	playerWidgetComponent->UpdateChat(inText);
 }

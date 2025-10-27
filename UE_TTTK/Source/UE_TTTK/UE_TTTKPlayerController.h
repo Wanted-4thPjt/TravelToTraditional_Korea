@@ -54,6 +54,6 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_SendChat(const FString& inMessage);
 
-	UFUNCTION()
-	void UpdateChat(const FText& inText);
+	UFUNCTION(Client, Reliable)
+	void Client_UpdateChat(const FText& inText);
 };
