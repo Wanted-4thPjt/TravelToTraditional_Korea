@@ -19,7 +19,7 @@ AUE_TTTKPlayerController::AUE_TTTKPlayerController()
 void AUE_TTTKPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
-
+	SetInputMode(FInputModeGameOnly());
 	// only spawn touch controls on local player controllers
 	if (SVirtualJoystick::ShouldDisplayTouchInterface() && IsLocalPlayerController())
 	{
