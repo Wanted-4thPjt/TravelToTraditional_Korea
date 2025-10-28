@@ -106,10 +106,8 @@ void UHeritageObjectComponent::OnClientInteraction(APlayerController* PlayerCont
 		{
 			ViewingPlayers.Add(PlayerController);
 			bIsInteracting = true;
+			ProcessDiscovery(PlayerController->GetPawn(), HeritageObjectID);
 		}
-
-		// 서버에 발견 처리 요청
-		Server_ProcessDiscovery(PlayerController, HeritageObjectID);
 	}
 }
 
@@ -126,20 +124,7 @@ void UHeritageObjectComponent::OnMultiInteraction(APawn* InteractingPlayer)
 		return;
 	}
 
-	// 모든 클라이언트에서 호출됨
-	// 로컬 클라이언트에서만 서버에 요청
-	if (PlayerController->IsLocalController())
-	{
-		// 즉시 ViewingPlayers에 추가하여 상호작용 유지 (ShouldFinishedInteraction이 false 반환하도록)
-		if (!ViewingPlayers.Contains(PlayerController))
-		{
-			ViewingPlayers.Add(PlayerController);
-			bIsInteracting = true;
-		}
-
-		// 서버에 발견 처리 요청
-		Server_ProcessDiscovery(PlayerController, HeritageObjectID);
-	}
+	ProcessDiscovery(InteractingPlayer, HeritageObjectID);
 }
 
 void UHeritageObjectComponent::OnInteractableStateChanged(APlayerController* PlayerController, EInteractableState NewState)
@@ -161,73 +146,15 @@ void UHeritageObjectComponent::OnInteractableStateChanged(APlayerController* Pla
 	}
 }
 
-void UHeritageObjectComponent::Server_ProcessDiscovery_Implementation(APlayerController* PlayerController, const FString& HeritageID)
+void UHeritageObjectComponent::ProcessDiscovery(APawn* Player, const FString& HeritageID)
 {
-	if (!PlayerController || !DiscoveryManager || HeritageID.IsEmpty())
+	if (!Player || !DiscoveryManager || HeritageID.IsEmpty())
 	{
 		return;
 	}
 
-	// 서버에서만 실행
-	APawn* PlayerPawn = PlayerController->GetPawn();
-	if (!PlayerPawn)
-	{
-		return;
-	}
+	DiscoveryManager->ProcessHeritageDiscovery(Player, HeritageID);
 
-	// ViewingPlayers에 추가 (서버)
-	if (!ViewingPlayers.Contains(PlayerController))
-	{
-		ViewingPlayers.Add(PlayerController);
-		bIsInteracting = true;
-	}
-
-	// 이미 발견했는지 확인
-	bool bAlreadyDiscovered = DiscoveryManager->HasPlayerDiscovered(PlayerController, HeritageID);
-
-	// Heritage 데이터 가져오기
-	FHeritageObjectData HeritageData = DiscoveryManager->GetHeritageDataByID(HeritageID);
-	if (HeritageData.ObjectID.IsEmpty())
-	{
-		UE_LOG(LogTemp, Error, TEXT("[Heritage] 데이터 없음: %s"), *HeritageID);
-		return;
-	}
-
-	// 첫 발견인 경우에만 점수 및 카운트 추가
-	bool bIsFirstDiscovery = false;
-	if (!bAlreadyDiscovered)
-	{
-		// Discovery Manager에게 발견 처리 위임
-		DiscoveryManager->ProcessHeritageDiscovery(PlayerPawn, HeritageID);
-		bIsFirstDiscovery = true;
-
-		UE_LOG(LogTemp, Warning, TEXT("[Heritage] 첫 발견: %s (점수: %d, 플레이어: %s)"),
-			*HeritageID, HeritageData.DiscoveryScore, *PlayerController->GetName());
-	}
-
-	// 클라이언트에게 UI 표시 요청
-	Client_ShowHeritageUI(PlayerController, HeritageID, HeritageData, bIsFirstDiscovery);
-}
-
-void UHeritageObjectComponent::Client_ShowHeritageUI_Implementation(APlayerController* PlayerController, const FString& HeritageID, const FHeritageObjectData& HeritageData, bool bIsFirstDiscovery)
-{
-	if (!PlayerController || !DiscoveryManager)
-	{
-		return;
-	}
-
-	// ViewingPlayers에 추가 (클라이언트)
-	if (!ViewingPlayers.Contains(PlayerController))
-	{
-		ViewingPlayers.Add(PlayerController);
-		bIsInteracting = true;
-	}
-
-	// 클라이언트에서 UI 표시 (델리게이트 브로드캐스트)
-	DiscoveryManager->OnHeritageDiscovered.Broadcast(PlayerController, HeritageID, HeritageData, bIsFirstDiscovery);
-
-	UE_LOG(LogTemp, Log, TEXT("[Heritage Client] UI 표시: %s (첫발견: %s)"),
-		*HeritageID, bIsFirstDiscovery ? TEXT("예") : TEXT("아니오"));
 }
 
 FHeritageObjectData UHeritageObjectComponent::GetHeritageData() const

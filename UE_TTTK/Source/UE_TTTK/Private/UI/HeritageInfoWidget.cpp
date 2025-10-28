@@ -45,6 +45,7 @@ void UHeritageInfoWidget::SetHeritageData(const FHeritageObjectData& HeritageDat
 	// 텍스트 설정
 	if (ObjectNameText)
 	{
+		if (ObjectNameText->GetText().EqualTo(HeritageData.ObjectName) && GetVisibility() == ESlateVisibility::Visible) {return;}
 		ObjectNameText->SetText(HeritageData.ObjectName);
 	}
 
