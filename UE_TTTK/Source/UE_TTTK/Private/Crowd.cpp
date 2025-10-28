@@ -20,7 +20,15 @@ ACrowd::ACrowd()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+
+	// AudioComponent 생성 및 RootComponent에 부착
 	AudioComp = CreateDefaultSubobject<UAudioComponent>(TEXT("AudioComponent"));
+	if (AudioComp)
+	{
+		AudioComp->SetupAttachment(RootComponent);
+		AudioComp->bAutoActivate = false; // 자동 재생 비활성화
+	}
+
 	// 플래그 초기화
 	bIsOuchAnimCompleted = false;
 }
@@ -246,13 +254,31 @@ void ACrowd::SetCrowdCurrentState(FName NewState)
 
 void ACrowd::Talk(int32 index)
 {
-	AudioComp = UGameplayStatics::SpawnSoundAtLocation(
-	GetWorld(),
-	talkSounds[index],
-	GetActorLocation());
+	if (!AudioComp)
+	{
+		UE_LOG(LogDialogue, Error, TEXT("[Crowd::Talk] AudioComp가 nullptr!"));
+		return;
+	}
+
+	if (!talkSounds.IsValidIndex(index))
+	{
+		UE_LOG(LogDialogue, Error, TEXT("[Crowd::Talk] 유효하지 않은 사운드 인덱스: %d"), index);
+		return;
+	}
+
+	// 기존에 재생 중이던 사운드 정지
+	if (AudioComp->IsPlaying())
+	{
+		AudioComp->Stop();
+	}
+
+	// 새 사운드 설정 및 재생
+	AudioComp->SetSound(talkSounds[index]);
+	AudioComp->Play();
+
+	UE_LOG(LogDialogue, Display, TEXT("[Crowd::Talk] 사운드 재생 시작 - Index: %d, Actor: %s"), index, *GetName());
+
 	OnTalkStarted(this);
-	
-	
 }
 
 void ACrowd::OnTalkStarted(ACrowd* lastTalker)

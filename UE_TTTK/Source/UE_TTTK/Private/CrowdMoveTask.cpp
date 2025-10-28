@@ -120,17 +120,19 @@ EStateTreeRunStatus UCrowdMoveTask::Tick(FStateTreeExecutionContext& Context, co
 		if (OwnerCrowd->GetVelocity().Length() <= 0.f && dist<0.2f)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("=== 목적지 도착! ==="));
-
+			TargetPoint->ArrivedCount++;
 			AIController->StopMovement();
 			FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(OwnerCrowd->GetActorLocation(), TargetPoint->GetActorLocation());
 			TargetRotation = FRotator(0,TargetRotation.Yaw,0);
 			OwnerCrowd->SetActorRotation(TargetRotation);
-			//TargetPoint->ProcessSubTargetOut(OwnerCrowd);
-			
 			UE_LOG(LogTemp, Warning, TEXT("FinishTask 호출 - 상태 전환"));
-			
+			if (TargetPoint->IsAllArrived())
+			{
+				FStateTreeEvent TalkEvent;
+				TalkEvent.Tag = FGameplayTag::RequestGameplayTag("Crowd.Event.Talk");
+				SendEvent(TalkEvent);
+			}
 			FinishTask(true);
-			
 			return EStateTreeRunStatus::Succeeded;
 		}
 	}

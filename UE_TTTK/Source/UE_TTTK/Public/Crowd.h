@@ -34,6 +34,8 @@ public:
 	UPROPERTY()
 	class ACrowdTargetPoint* GoWorkTargetPoint;
 	UPROPERTY()
+	class ACrowdTargetPoint* CurrentCrowdTargetPoint;
+	UPROPERTY()
 	FVector currentTargetLocation = FVector::ZeroVector;
 	
 
@@ -75,9 +77,11 @@ public:
 	void SetGoHomeTargetPoint(class ACrowdTargetPoint* TargetPoint){GoHomeTargetPoint = TargetPoint;};
 	void SetGoWorkTargetPoint(class ACrowdTargetPoint* TargetPoint){GoWorkTargetPoint = TargetPoint;};
 	void SetCurrentTargetLocation(FVector loc){currentTargetLocation = loc;};
+	void SetCurrentCrowdTargetPoint(class ACrowdTargetPoint* TargetPoint){CurrentCrowdTargetPoint = TargetPoint;};
 	UAudioComponent* AudioComp;
 	ACrowdTargetPoint* GetGoHomeTargetPoint(){return GoHomeTargetPoint;};
 	ACrowdTargetPoint* GetGoWorkTargetPoint(){return GoWorkTargetPoint;};
+	ACrowdTargetPoint* GetCurrentCrowdTargetPoint(){return CurrentCrowdTargetPoint;};
 	FVector GetCurrentTargetLocation(){return currentTargetLocation;};
 	
 	UFUNCTION()
