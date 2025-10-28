@@ -2,10 +2,13 @@
 
 
 #include "CrowdTargetPoint.h"
+
+#include "Crowd.h"
+#include "CrowdAiController.h"
 #include "DrawDebugHelpers.h"
-
-
-
+#include "GameplayTagsManager.h"
+#include "Components/AudioComponent.h"
+#include "Components/StateTreeAIComponent.h"
 
 
 ACrowdTargetPoint::ACrowdTargetPoint()
@@ -19,6 +22,7 @@ void ACrowdTargetPoint::BeginPlay()
 	if (!bisHome)
 	{
 		InitializeCrowdPoint_circle();
+		
 	}
 	
 }
@@ -81,7 +85,17 @@ void ACrowdTargetPoint::ProcessSubTargetIn(class ACrowd* InCrowd,FVector locatio
 	if (index!=-1)
 	{
 		subTargets[index]->inCrowd = true;
-		subTargets[index]->currentCrowd =InCrowd;
+		subTargets[index]->currentCrowd = InCrowd;
+
+		// 현재 말하는 Crowd 정보 저장
+		CurrentTalker = InCrowd;
+		CurrentTalkNumber = index;
+
+		// 파라미터 없는 중간 콜백 바인딩
+		if (InCrowd->AudioComp)
+		{
+			InCrowd->AudioComp->OnAudioFinished.AddDynamic(this, &ACrowdTargetPoint::OnVoiceEnd);
+		}
 	}
 }
 
@@ -167,3 +181,50 @@ ACrowd* ACrowdTargetPoint::GetHomeOwner()
 {
 	return Homevar.HomeOwner;
 }
+
+void ACrowdTargetPoint::SetCurrentTalkerCrowd(class ACrowd* CurrentTalkerCrowd)
+{
+	CurrentTalker = CurrentTalkerCrowd;
+}
+
+
+
+void ACrowdTargetPoint::OnVoiceEnd()
+{
+	int32 number = FindIndexByCrowd(CurrentTalker);
+	if (CurrentTalker->bIsMarketeer /*시장 상인의 첫번째 대답이라면*/)
+	{
+		//1,2,3번이 랜덤한 순서로 대화를 실행
+		ACrowdAiController* aicontroller = Cast<ACrowdAiController>(subTargets[1]->currentCrowd->GetController());
+		if (aicontroller)
+		{
+			FStateTreeEvent TalkEvent;
+			TalkEvent.Tag = FGameplayTag::RequestGameplayTag("Crowd.Event.Talk");
+			aicontroller->StateTreeComp->SendStateTreeEvent(TalkEvent.Tag);
+		}
+		
+	}
+	if (number==1)
+	{
+		ACrowdAiController* aicontroller = Cast<ACrowdAiController>(subTargets[1]->currentCrowd->GetController());
+		if (aicontroller)
+		{
+			FStateTreeEvent TalkEvent;
+			TalkEvent.Tag = FGameplayTag::RequestGameplayTag("Crowd.Event.Talk");
+			aicontroller->StateTreeComp->SendStateTreeEvent(TalkEvent.Tag);
+		}
+	}
+	if (number==2)
+	{
+		ACrowdAiController* aicontroller = Cast<ACrowdAiController>(subTargets[1]->currentCrowd->GetController());
+		if (aicontroller)
+		{
+			FStateTreeEvent TalkEvent;
+			TalkEvent.Tag = FGameplayTag::RequestGameplayTag("Crowd.Event.Talk");
+			aicontroller->StateTreeComp->SendStateTreeEvent(TalkEvent.Tag);
+		}
+	}
+}
+
+
+

@@ -6,6 +6,8 @@
 #include "CrowdAiController.h"
 #include "CrowdTargetPoint.h"
 #include "TTTK_GameState.h"
+#include "AssetTypeActions/AssetDefinition_SoundBase.h"
+#include "Components/AudioComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/StateTreeAIComponent.h"
 #include "Components/StateTreeComponent.h"
@@ -18,7 +20,7 @@ ACrowd::ACrowd()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
-
+	AudioComp = CreateDefaultSubobject<UAudioComponent>(TEXT("AudioComponent"));
 	// 플래그 초기화
 	bIsOuchAnimCompleted = false;
 }
@@ -241,6 +243,27 @@ void ACrowd::SetCrowdCurrentState(FName NewState)
 {
 	currentState = NewState;
 }
+
+void ACrowd::Talk(int32 index)
+{
+	AudioComp = UGameplayStatics::SpawnSoundAtLocation(
+	GetWorld(),
+	talkSounds[index],
+	GetActorLocation());
+	OnTalkStarted(this);
+	
+	
+}
+
+void ACrowd::OnTalkStarted(ACrowd* lastTalker)
+{
+	if (CrowdData->GetCrowdType() == ECrowdType::Marketeer)
+	{
+		GoWorkTargetPoint -> SetCurrentTalkerCrowd(lastTalker);
+	}
+}
+
+
 
 
 

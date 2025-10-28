@@ -25,7 +25,7 @@ struct FCrowdPoint
 	FCrowdPoint(FVector InLocation, bool bInCrowd, ACrowd* InCrowd)
 		: location(InLocation), inCrowd(bInCrowd), currentCrowd(InCrowd) {}
 };
-
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnVoiceEnd, ACrowd*, int32);
 USTRUCT()
 struct FCrowdHome
 {
@@ -79,4 +79,21 @@ public:
 	UFUNCTION()
 	void SetHomeOwner(ACrowd* HomeOwner);
 	ACrowd* GetHomeOwner();
+	void SetCurrentTalkerCrowd(class ACrowd* CurrentTalkerCrowd);
+
+	// 오디오 종료 콜백을 위한 멤버 변수
+	UPROPERTY()
+	ACrowd* CurrentTalker;
+
+	int32 CurrentTalkNumber;
+
+	// OnAudioFinished 델리게이트용 중간 콜백 (파라미터 없음)
+	
+
+	// 실제 음성 종료 처리 함수
+	UFUNCTION()
+	void OnVoiceEnd();
+	
+	
+	
 };

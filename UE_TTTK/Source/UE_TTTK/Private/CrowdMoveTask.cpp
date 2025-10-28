@@ -125,8 +125,10 @@ EStateTreeRunStatus UCrowdMoveTask::Tick(FStateTreeExecutionContext& Context, co
 			FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(OwnerCrowd->GetActorLocation(), TargetPoint->GetActorLocation());
 			TargetRotation = FRotator(0,TargetRotation.Yaw,0);
 			OwnerCrowd->SetActorRotation(TargetRotation);
-
+			//TargetPoint->ProcessSubTargetOut(OwnerCrowd);
+			
 			UE_LOG(LogTemp, Warning, TEXT("FinishTask 호출 - 상태 전환"));
+			
 			FinishTask(true);
 			
 			return EStateTreeRunStatus::Succeeded;

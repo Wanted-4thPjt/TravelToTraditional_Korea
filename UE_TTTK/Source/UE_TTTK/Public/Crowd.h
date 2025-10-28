@@ -9,6 +9,7 @@
 #include "Crowd.generated.h"
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FCheckTimeDelegate,ACrowd*,bool);
+DECLARE_DELEGATE_TwoParams(FTalkStartDelegates,ACrowd*, int32 )
 UCLASS()
 class UE_TTTK_API ACrowd : public ACharacter
 {
@@ -74,7 +75,7 @@ public:
 	void SetGoHomeTargetPoint(class ACrowdTargetPoint* TargetPoint){GoHomeTargetPoint = TargetPoint;};
 	void SetGoWorkTargetPoint(class ACrowdTargetPoint* TargetPoint){GoWorkTargetPoint = TargetPoint;};
 	void SetCurrentTargetLocation(FVector loc){currentTargetLocation = loc;};
-
+	UAudioComponent* AudioComp;
 	ACrowdTargetPoint* GetGoHomeTargetPoint(){return GoHomeTargetPoint;};
 	ACrowdTargetPoint* GetGoWorkTargetPoint(){return GoWorkTargetPoint;};
 	FVector GetCurrentTargetLocation(){return currentTargetLocation;};
@@ -84,19 +85,23 @@ public:
 	UFUNCTION()
 	void SetCrowdCurrentState(FName NewState);
 
-	
+	bool bIsMarketeer = false;
 	
 	FName GetCrowdCurrentState(){return currentState;};
 
-	// Ouch 애니메이션 완료 플래그 관리
+	
 	bool GetOuchAnimCompleted() const { return bIsOuchAnimCompleted; }
 	void SetOuchAnimCompleted(bool bCompleted) { bIsOuchAnimCompleted = bCompleted; }
 
 	UFUNCTION(BlueprintCallable, Category = "Time")
 	void ResetTimeFlags() { bShouldGoWork = false; bShouldGoHome = false; }
-	
-	
-	
+
+	UPROPERTY(EditAnywhere, Category="TalkSound")
+	TArray<USoundBase*> talkSounds;
+	UFUNCTION(BlueprintCallable)
+	void Talk(int32 index);
+	void OnTalkStarted(ACrowd* lastTalker);
+	FTalkStartDelegates OnTalkStartedDelegate;
 	
 
 };
