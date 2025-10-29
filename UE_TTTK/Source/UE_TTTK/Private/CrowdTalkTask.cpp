@@ -34,13 +34,44 @@ EStateTreeRunStatus UCrowdTalkTask::EnterState(FStateTreeExecutionContext& Conte
 		return EStateTreeRunStatus::Succeeded;
 	}
 
-	// 랜덤 사운드 선택 (0 ~ talkSounds.Num()-1)
-	int32 RandomIndex = FMath::RandRange(0, OwnerCrowd->talkSounds.Num() - 1);
+	// 사운드 인덱스 선택 로직
+	int32 SoundIndex = 0;
+	ACrowdTargetPoint* TargetPoint = OwnerCrowd->GetCurrentCrowdTargetPoint();
 
-	UE_LOG(LogDialogue, Display, TEXT("[TalkTask] 대화 시작 - 사운드 인덱스: %d"), RandomIndex);
+	if (TargetPoint)
+	{
+		int32 MyIndex = TargetPoint->FindIndexByCrowd(OwnerCrowd);
+		int32 CurrentRound = TargetPoint->DialogueRound;
+
+		// 0번 상인 (질문: Round 0, 답변: Round 4) → 무조건 사운드 [0]
+		if (MyIndex == 0 && (CurrentRound == 0 || CurrentRound == 4))
+		{
+			SoundIndex = 0;
+			UE_LOG(LogDialogue, Display, TEXT("[TalkTask] 상인 대사 - 사운드 인덱스: 0 (고정)"));
+		}
+		// 1, 2, 3번 손님 → 사운드 [1] ~ [끝] 랜덤
+		else
+		{
+			if (OwnerCrowd->talkSounds.Num() > 1)
+			{
+				SoundIndex = FMath::RandRange(1, OwnerCrowd->talkSounds.Num() - 1);
+			}
+			else
+			{
+				SoundIndex = 0;  // 사운드가 1개뿐이면 그거 재생
+			}
+			UE_LOG(LogDialogue, Display, TEXT("[TalkTask] 손님 대사 (Index %d) - 사운드 인덱스: %d (랜덤)"), MyIndex, SoundIndex);
+		}
+	}
+	else
+	{
+		// TargetPoint 없으면 랜덤
+		SoundIndex = FMath::RandRange(0, OwnerCrowd->talkSounds.Num() - 1);
+		UE_LOG(LogDialogue, Warning, TEXT("[TalkTask] TargetPoint 없음 - 랜덤 사운드: %d"), SoundIndex);
+	}
 
 	// Talk 함수 호출
-	OwnerCrowd->Talk(RandomIndex);
+	OwnerCrowd->Talk(SoundIndex);
 
 	// Running 상태로 반환 - 오디오가 끝나면 델리게이트에서 다음으로 진행
 	return EStateTreeRunStatus::Running;

@@ -38,11 +38,15 @@ void ACrowdTargetPoint::Tick(float DeltaTime)
 
 bool ACrowdTargetPoint::IsAllArrived()
 {
-	if (ArrivedCount == NumPoints )
+	// isArrived 플래그 기반으로 체크
+	for (int i = 0; i < subTargets.Num(); i++)
 	{
-		return true;
+		if (subTargets[i] && !subTargets[i]->isArrived)
+		{
+			return false;  // 하나라도 도착 안했으면 false
+		}
 	}
-	return false;
+	return true;  // 모두 도착
 }
 
 void ACrowdTargetPoint::InitializeCrowdPoint_circle()
@@ -98,14 +102,33 @@ void ACrowdTargetPoint::ProcessSubTargetIn(class ACrowd* InCrowd,FVector locatio
 	{
 		subTargets[index]->inCrowd = true;
 		subTargets[index]->currentCrowd = InCrowd;
+		subTargets[index]->isArrived = false;  // 자리 예약만, 아직 도착 안함
 
 		// Crowd에 현재 TargetPoint 설정
 		InCrowd->SetCurrentCrowdTargetPoint(this);
 
-		UE_LOG(LogDialogue, Log, TEXT("[입장] Crowd 입장 - Index %d"), index);
+		UE_LOG(LogDialogue, Log, TEXT("[예약] Crowd 자리 예약 - Index %d"), index);
+	}
+}
 
-		// 모든 자리가 다 찼는지 확인
-		
+void ACrowdTargetPoint::SetSubTargetArrived(class ACrowd* InCrowd)
+{
+	int32 index = FindIndexByCrowd(InCrowd);
+	if (index != -1)
+	{
+		subTargets[index]->isArrived = true;
+		UE_LOG(LogDialogue, Log, TEXT("[도착] Crowd 도착 완료 - Index %d"), index);
+
+		// 모든 인원이 도착했는지 확인
+		if (IsAllArrived())
+		{
+			UE_LOG(LogDialogue, Display, TEXT("[도착] 모든 인원 도착 완료! Wait state에서 대화 시작 예정"));
+			// Wait state에서 Talk 이벤트 전송하도록 WaitingTask에게 맡김
+		}
+	}
+	else
+	{
+		UE_LOG(LogDialogue, Error, TEXT("[도착] Crowd를 찾을 수 없음!"));
 	}
 }
 
@@ -199,6 +222,12 @@ void ACrowdTargetPoint::SetCurrentTalkerCrowd(class ACrowd* CurrentTalkerCrowd)
 
 
 
+void ACrowdTargetPoint::RestartDialogueAfterDelay()
+{
+	UE_LOG(LogDialogue, Display, TEXT("[타이머] 3초 대기 완료! 대화 다시 시작"));
+	StartDialogue();  // 직접 대화 시작
+}
+
 void ACrowdTargetPoint::StartDialogue()
 {
 	UE_LOG(LogDialogue, Display, TEXT("[대화 시작] =========="));
@@ -257,51 +286,71 @@ void ACrowdTargetPoint::StartDialogue()
 
 void ACrowdTargetPoint::OnVoiceEnd()
 {
-	int32 number = FindIndexByCrowd(CurrentTalker);
+	// 이전 화자 저장 (언바인딩을 위해)
+	ACrowd* PreviousTalker = CurrentTalker;
+	int32 PreviousNumber = FindIndexByCrowd(PreviousTalker);
 
-	UE_LOG(LogDialogue, Log, TEXT("[음성 종료] Speaker Index: %d, Round: %d"), number, DialogueRound);
+	UE_LOG(LogDialogue, Log, TEXT("[음성 종료] Speaker Index: %d, Round: %d"), PreviousNumber, DialogueRound);
 
 	// 다음 말할 사람의 인덱스
 	int32 NextSpeakerIndex = -1;
 
 	// 대화 순서: 0(상인질문) → 1 → 2 → 3 → 0(상인답변) → 다시 1부터 반복
-	if (DialogueRound == 0 && number == 0)  // 0번 상인 질문 끝
+	if (DialogueRound == 0 && PreviousNumber == 0)  // 0번 상인 질문 끝
 	{
 		NextSpeakerIndex = 1;
 		DialogueRound = 1;
 		UE_LOG(LogDialogue, Display, TEXT("[대화 흐름] 상인 질문 끝 → 다음: 손님1 (index 1)"));
 	}
-	else if (DialogueRound == 1 && number == 1)  // 1번 손님 반응 끝
+	else if (DialogueRound == 1 && PreviousNumber == 1)  // 1번 손님 반응 끝
 	{
 		NextSpeakerIndex = 2;
 		DialogueRound = 2;
 		UE_LOG(LogDialogue, Display, TEXT("[대화 흐름] 손님1 반응 끝 → 다음: 손님2 (index 2)"));
 	}
-	else if (DialogueRound == 2 && number == 2)  // 2번 손님 반응 끝
+	else if (DialogueRound == 2 && PreviousNumber == 2)  // 2번 손님 반응 끝
 	{
 		NextSpeakerIndex = 3;
 		DialogueRound = 3;
 		UE_LOG(LogDialogue, Display, TEXT("[대화 흐름] 손님2 반응 끝 → 다음: 손님3 (index 3)"));
 	}
-	else if (DialogueRound == 3 && number == 3)  // 3번 손님 반응 끝
+	else if (DialogueRound == 3 && PreviousNumber == 3)  // 3번 손님 반응 끝
 	{
 		NextSpeakerIndex = 0;
 		DialogueRound = 4;
 		UE_LOG(LogDialogue, Display, TEXT("[대화 흐름] 손님3 반응 끝 → 다음: 상인 답변 (index 0)"));
 	}
-	else if (DialogueRound == 4 && number == 0)  // 0번 상인 답변 끝
+	else if (DialogueRound == 4 && PreviousNumber == 0)  // 0번 상인 답변 끝
 	{
-		NextSpeakerIndex = 1;
-		DialogueRound = 1;  // 다시 손님1부터 반복
-		UE_LOG(LogDialogue, Display, TEXT("[대화 흐름] 상인 답변 끝 → 다시 손님1부터 반복 (index 1)"));
+		// 한 사이클 종료 - 3초 대기 후 다시 시작
+		DialogueRound = -1;  // 대기 중 상태
+		UE_LOG(LogDialogue, Display, TEXT("[대화 흐름] 상인 답변 끝 → 한 사이클 완료! 3초 후 재시작"));
+
+		// 3초 타이머 시작
+		GetWorld()->GetTimerManager().SetTimer(
+			DialogueRestartTimerHandle,
+			this,
+			&ACrowdTargetPoint::RestartDialogueAfterDelay,
+			3.0f,
+			false
+		);
+
+		// 이전 화자의 델리게이트 언바인딩
+		if (PreviousTalker && PreviousTalker->AudioComp)
+		{
+			PreviousTalker->AudioComp->OnAudioFinished.RemoveDynamic(this, &ACrowdTargetPoint::OnVoiceEnd);
+			UE_LOG(LogDialogue, Log, TEXT("[델리게이트] 언바인딩 완료 - Index %d"), PreviousNumber);
+		}
+
+		return;  // 다음 화자에게 이벤트 전송하지 않음
 	}
 	else
 	{
-		UE_LOG(LogDialogue, Error, TEXT("[오류] 예상하지 못한 대화 상태! number: %d, Round: %d"), number, DialogueRound);
+		UE_LOG(LogDialogue, Error, TEXT("[오류] 예상하지 못한 대화 상태! number: %d, Round: %d"), PreviousNumber, DialogueRound);
 		return;
 	}
 
-	// 다음 화자에게 Talk 이벤트 전송
+	// 다음 화자에게 Talk 이벤트 전송 (0.1초 딜레이)
 	if (NextSpeakerIndex >= 0 && subTargets.IsValidIndex(NextSpeakerIndex) && subTargets[NextSpeakerIndex])
 	{
 		ACrowd* NextCrowd = subTargets[NextSpeakerIndex]->currentCrowd;
@@ -313,26 +362,32 @@ void ACrowdTargetPoint::OnVoiceEnd()
 				NextCrowd->AudioComp->OnAudioFinished.RemoveDynamic(this, &ACrowdTargetPoint::OnVoiceEnd);
 				NextCrowd->AudioComp->OnAudioFinished.AddDynamic(this, &ACrowdTargetPoint::OnVoiceEnd);
 
-				// CurrentTalker 업데이트
-				CurrentTalker = NextCrowd;
-				CurrentTalkNumber = NextSpeakerIndex;
-
 				UE_LOG(LogDialogue, Log, TEXT("[델리게이트] 다음 화자 바인딩 완료 - Index %d"), NextSpeakerIndex);
 			}
 
-			ACrowdAiController* NextController = Cast<ACrowdAiController>(NextCrowd->GetController());
-			if (NextController && NextController->StateTreeComp)
-			{
-				FStateTreeEvent TalkEvent;
-				TalkEvent.Tag = FGameplayTag::RequestGameplayTag("Crowd.Event.Talk");
-				NextController->StateTreeComp->SendStateTreeEvent(TalkEvent.Tag);
+			// CurrentTalker 업데이트 (이전 화자 저장 후 업데이트)
+			CurrentTalker = NextCrowd;
+			CurrentTalkNumber = NextSpeakerIndex;
 
-				UE_LOG(LogDialogue, Display, TEXT("[이벤트 전송] Talk 이벤트 전송 성공 → Index %d"), NextSpeakerIndex);
-			}
-			else
-			{
-				UE_LOG(LogDialogue, Error, TEXT("[오류] NextController 또는 StateTreeComp가 nullptr! Index: %d"), NextSpeakerIndex);
-			}
+			// 0.1초 후 이벤트 전송 (StateTree 업데이트 대기)
+			FTimerHandle TempTimerHandle;
+			GetWorld()->GetTimerManager().SetTimer(
+				TempTimerHandle,
+				[this, NextCrowd, NextSpeakerIndex]()
+				{
+					ACrowdAiController* NextController = Cast<ACrowdAiController>(NextCrowd->GetController());
+					if (NextController && NextController->StateTreeComp)
+					{
+						FStateTreeEvent TalkEvent;
+						TalkEvent.Tag = FGameplayTag::RequestGameplayTag("Crowd.Event.Talk");
+						NextController->StateTreeComp->SendStateTreeEvent(TalkEvent.Tag);
+
+						UE_LOG(LogDialogue, Display, TEXT("[이벤트 전송] Talk 이벤트 전송 성공 (0.1초 후) → Index %d"), NextSpeakerIndex);
+					}
+				},
+				0.1f,
+				false
+			);
 		}
 		else
 		{
@@ -344,11 +399,11 @@ void ACrowdTargetPoint::OnVoiceEnd()
 		UE_LOG(LogDialogue, Error, TEXT("[오류] 유효하지 않은 NextSpeakerIndex: %d"), NextSpeakerIndex);
 	}
 
-	// 현재 화자의 델리게이트 언바인딩
-	if (CurrentTalker && CurrentTalker->AudioComp)
+	// 이전 화자의 델리게이트 언바인딩
+	if (PreviousTalker && PreviousTalker->AudioComp)
 	{
-		CurrentTalker->AudioComp->OnAudioFinished.RemoveDynamic(this, &ACrowdTargetPoint::OnVoiceEnd);
-		UE_LOG(LogDialogue, Log, TEXT("[델리게이트] 언바인딩 완료 - Index %d"), number);
+		PreviousTalker->AudioComp->OnAudioFinished.RemoveDynamic(this, &ACrowdTargetPoint::OnVoiceEnd);
+		UE_LOG(LogDialogue, Log, TEXT("[델리게이트] 언바인딩 완료 - Index %d"), PreviousNumber);
 	}
 }
 

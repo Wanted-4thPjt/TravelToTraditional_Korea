@@ -71,6 +71,8 @@ public:
 	UFUNCTION()
 	void ProcessSubTargetIn(class ACrowd* InCrowd,FVector location);
 	UFUNCTION()
+	void SetSubTargetArrived(class ACrowd* InCrowd);
+	UFUNCTION()
 	void ProcessSubTargetOut(class ACrowd* OutCrowd);
 	UFUNCTION()
 	int32 FindIndexByCrowd(class ACrowd* crowd);
@@ -93,8 +95,15 @@ public:
 
 	int32 CurrentTalkNumber;
 
-	// 대화 라운드 추적 (0:상인질문, 1-3:손님반응, 4:상인답변)
+	// 대화 라운드 추적 (0:상인질문, 1-3:손님반응, 4:상인답변, -1:대기중)
 	int32 DialogueRound = 0;
+
+	// 타이머 핸들
+	FTimerHandle DialogueRestartTimerHandle;
+
+	// 대화 재시작 함수 (3초 후 호출)
+	UFUNCTION()
+	void RestartDialogueAfterDelay();
 
 	// 실제 음성 종료 처리 함수
 	UFUNCTION()
