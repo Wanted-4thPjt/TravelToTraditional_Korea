@@ -111,8 +111,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category="TalkSound")
 	TArray<USoundBase*> talkSounds;
-	UFUNCTION(BlueprintCallable)
-	void Talk(int32 index);
+	 
+	UFUNCTION(NetMulticast,Reliable,BlueprintCallable)
+	void MulitCast_Talk(int32 index);
 	void OnTalkStarted(ACrowd* lastTalker);
 	FTalkStartDelegates OnTalkStartedDelegate;
 

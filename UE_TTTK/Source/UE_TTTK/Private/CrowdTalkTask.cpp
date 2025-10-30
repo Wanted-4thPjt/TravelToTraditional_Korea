@@ -70,8 +70,8 @@ EStateTreeRunStatus UCrowdTalkTask::EnterState(FStateTreeExecutionContext& Conte
 		UE_LOG(LogDialogue, Warning, TEXT("[TalkTask] TargetPoint 없음 - 랜덤 사운드: %d"), SoundIndex);
 	}
 
-	// Talk 함수 호출
-	OwnerCrowd->Talk(SoundIndex);
+	// MulitCast_Talk 함수 호출 (멀티플레이 사운드 동기화)
+	OwnerCrowd->MulitCast_Talk(SoundIndex);
 
 	// Running 상태로 반환 - 오디오가 끝나면 델리게이트에서 다음으로 진행
 	return EStateTreeRunStatus::Running;
@@ -86,7 +86,7 @@ void UCrowdTalkTask::ExitState(FStateTreeExecutionContext& Context, const FState
 EStateTreeRunStatus UCrowdTalkTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime)
 {
 	UE_LOG(LogTemp, Warning, TEXT("[TalkTask] Tick 시작"));
-	// AudioComp가 재생 중인지 확인
+	
 	if (OwnerCrowd && OwnerCrowd->AudioComp)
 	{
 		if (OwnerCrowd->AudioComp->IsPlaying())
@@ -101,6 +101,6 @@ EStateTreeRunStatus UCrowdTalkTask::Tick(FStateTreeExecutionContext& Context, co
 		}
 	}
 
-	// AudioComp가 없으면 바로 완료
+	
 	return EStateTreeRunStatus::Succeeded;
 }

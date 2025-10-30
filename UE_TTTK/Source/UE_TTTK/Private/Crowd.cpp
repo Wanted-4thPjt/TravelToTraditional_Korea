@@ -167,7 +167,7 @@ void ACrowd::PlayGreeting()
 void ACrowd::PlayOuch()
 {
 	UE_LOG(LogTemp,Warning,TEXT("Ouch재생"));
-	bIsOuchAnimCompleted = false; // 플래그 리셋
+	bIsOuchAnimCompleted = false; 
 	PlayAnimMontage(OuchAnimMontage);
 }
 void ACrowd::PlayCheck()
@@ -187,11 +187,11 @@ bool ACrowd::CheckGoHomeTime()
 		int32 goHomeHour = CrowdData->GetGoHomeTime().X;
 		int32 goHomeMinute = CrowdData->GetGoHomeTime().Y;
 
-		// 시간을 분 단위로 변환하여 비교
+		
 		int32 currentTimeInMinutes = currentHour * 60 + currentMinute;
 		int32 goHomeTimeInMinutes = goHomeHour * 60 + goHomeMinute;
 
-		// 현재 시간이 집갈 시간보다 크거나 같으면 true
+		
 		if (currentTimeInMinutes >= goHomeTimeInMinutes)
 		{
 			return true;
@@ -262,7 +262,9 @@ void ACrowd::SetCrowdCurrentState(FName NewState)
 	currentState = NewState;
 }
 
-void ACrowd::Talk(int32 index)
+
+
+void ACrowd::MulitCast_Talk_Implementation(int32 index)
 {
 	if (!AudioComp)
 	{
@@ -276,28 +278,32 @@ void ACrowd::Talk(int32 index)
 		return;
 	}
 
-	// 기존에 재생 중이던 사운드 정지
+	
 	if (AudioComp->IsPlaying())
 	{
 		AudioComp->Stop();
 	}
 
-	// 말하는 상태로 전환 (듣는 상태 해제)
+	
 	bIsTalking = true;
 	bIsListening = false;
 	UE_LOG(LogDialogue, Display, TEXT("[Crowd::Talk] 상태 변경 - bIsTalking: true, bIsListening: false"));
 
-	// OnAudioFinished 델리게이트 바인딩 (중복 방지)
+	
 	AudioComp->OnAudioFinished.RemoveDynamic(this, &ACrowd::OnAudioFinishedCallback);
 	AudioComp->OnAudioFinished.AddDynamic(this, &ACrowd::OnAudioFinishedCallback);
 
-	// 새 사운드 설정 및 재생
+	
 	AudioComp->SetSound(talkSounds[index]);
 	AudioComp->Play();
 
 	UE_LOG(LogDialogue, Display, TEXT("[Crowd::Talk] 사운드 재생 시작 - Index: %d, Actor: %s"), index, *GetName());
 
-	OnTalkStarted(this);
+	
+	if (HasAuthority())
+	{
+		OnTalkStarted(this);
+	}
 }
 
 void ACrowd::OnTalkStarted(ACrowd* lastTalker)
