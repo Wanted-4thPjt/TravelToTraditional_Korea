@@ -13,6 +13,7 @@
 #include "Components/StateTreeComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 ACrowd::ACrowd()
@@ -272,6 +273,15 @@ void ACrowd::Talk(int32 index)
 		AudioComp->Stop();
 	}
 
+	// 말하는 상태로 전환 (듣는 상태 해제)
+	bIsTalking = true;
+	bIsListening = false;
+	UE_LOG(LogDialogue, Display, TEXT("[Crowd::Talk] 상태 변경 - bIsTalking: true, bIsListening: false"));
+
+	// OnAudioFinished 델리게이트 바인딩 (중복 방지)
+	AudioComp->OnAudioFinished.RemoveDynamic(this, &ACrowd::OnAudioFinishedCallback);
+	AudioComp->OnAudioFinished.AddDynamic(this, &ACrowd::OnAudioFinishedCallback);
+
 	// 새 사운드 설정 및 재생
 	AudioComp->SetSound(talkSounds[index]);
 	AudioComp->Play();
@@ -287,6 +297,21 @@ void ACrowd::OnTalkStarted(ACrowd* lastTalker)
 	{
 		GoWorkTargetPoint -> SetCurrentTalkerCrowd(lastTalker);
 	}
+}
+
+void ACrowd::OnAudioFinishedCallback()
+{
+	// 말하기 종료
+	bIsTalking = false;
+	UE_LOG(LogDialogue, Display, TEXT("[Crowd::OnAudioFinishedCallback] 음성 종료 - bIsTalking: false, Actor: %s"), *GetName());
+}
+
+void ACrowd::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ACrowd, bIsTalking);
+	DOREPLIFETIME(ACrowd, bIsListening);
+
 }
 
 

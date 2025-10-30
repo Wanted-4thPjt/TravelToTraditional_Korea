@@ -112,7 +112,14 @@ public:
 	// 대화 시작 함수 (0번 상인부터)
 	UFUNCTION(BlueprintCallable, Category = "Dialogue")
 	void StartDialogue();
-	
-	
-	
+
+	// 듣는 상태 관리 함수
+	UFUNCTION()
+	void SetListeningStateForOthers(int32 CurrentSpeakerIndex);
+
+	// 모든 Crowd의 듣는 상태 초기화
+	UFUNCTION()
+	void ResetAllListeningState();
+
+
 };

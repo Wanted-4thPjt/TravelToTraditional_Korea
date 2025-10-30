@@ -222,6 +222,41 @@ void ACrowdTargetPoint::SetCurrentTalkerCrowd(class ACrowd* CurrentTalkerCrowd)
 
 
 
+void ACrowdTargetPoint::SetListeningStateForOthers(int32 CurrentSpeakerIndex)
+{
+	// 현재 말하는 사람을 제외한 나머지는 듣는 상태로 설정
+	for (int32 i = 0; i < subTargets.Num(); i++)
+	{
+		if (subTargets[i] && subTargets[i]->currentCrowd)
+		{
+			if (i == CurrentSpeakerIndex)
+			{
+				// 현재 화자는 듣지 않음
+				subTargets[i]->currentCrowd->SetIsListening(false);
+			}
+			else
+			{
+				// 나머지는 듣는 중
+				subTargets[i]->currentCrowd->SetIsListening(true);
+			}
+		}
+	}
+	UE_LOG(LogDialogue, Display, TEXT("[듣기 상태] 화자(Index %d) 제외한 나머지 Listening 설정"), CurrentSpeakerIndex);
+}
+
+void ACrowdTargetPoint::ResetAllListeningState()
+{
+	// 모든 Crowd의 듣는 상태 초기화
+	for (int32 i = 0; i < subTargets.Num(); i++)
+	{
+		if (subTargets[i] && subTargets[i]->currentCrowd)
+		{
+			subTargets[i]->currentCrowd->SetIsListening(false);
+		}
+	}
+	UE_LOG(LogDialogue, Display, TEXT("[듣기 상태] 모든 Crowd Listening 상태 초기화"));
+}
+
 void ACrowdTargetPoint::RestartDialogueAfterDelay()
 {
 	UE_LOG(LogDialogue, Display, TEXT("[타이머] 3초 대기 완료! 대화 다시 시작"));
@@ -239,6 +274,9 @@ void ACrowdTargetPoint::StartDialogue()
 	if (subTargets.IsValidIndex(0) && subTargets[0] && subTargets[0]->currentCrowd)
 	{
 		ACrowd* Merchant = subTargets[0]->currentCrowd;
+
+		// 0번 화자가 말할 때, 나머지는 듣는 상태로 설정
+		SetListeningStateForOthers(0);
 
 		// 델리게이트 바인딩
 		if (Merchant->AudioComp)
@@ -326,6 +364,9 @@ void ACrowdTargetPoint::OnVoiceEnd()
 		DialogueRound = -1;  // 대기 중 상태
 		UE_LOG(LogDialogue, Display, TEXT("[대화 흐름] 상인 답변 끝 → 한 사이클 완료! 3초 후 재시작"));
 
+		// 모든 Crowd의 듣는 상태 초기화 (대기 중)
+		ResetAllListeningState();
+
 		// 3초 타이머 시작
 		GetWorld()->GetTimerManager().SetTimer(
 			DialogueRestartTimerHandle,
@@ -356,6 +397,9 @@ void ACrowdTargetPoint::OnVoiceEnd()
 		ACrowd* NextCrowd = subTargets[NextSpeakerIndex]->currentCrowd;
 		if (NextCrowd)
 		{
+			// 다음 화자가 말할 때, 나머지는 듣는 상태로 설정
+			SetListeningStateForOthers(NextSpeakerIndex);
+
 			// 다음 화자의 델리게이트 바인딩 (중복 방지를 위해 먼저 언바인딩)
 			if (NextCrowd->AudioComp)
 			{

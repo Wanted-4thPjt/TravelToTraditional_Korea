@@ -64,6 +64,10 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Animation")
+	bool bIsTalking=false;;
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Animation")
+	bool bIsListening=false;;
 	class ACrowdTargetPoint* GetTargetPoint(FString Destination);
 	class ACrowdTargetPoint* GetTargetByEnum();
 	bool GetIsMoving(){return bIsMoving;}
@@ -74,6 +78,8 @@ public:
 	void PlayCheck();
 	bool CheckGoHomeTime();
 	bool CheckGoWorkTime();
+	void SetIsTalking(bool talking){bIsTalking = talking;};
+	void SetIsListening(bool listening){bIsListening = listening;};
 	void SetGoHomeTargetPoint(class ACrowdTargetPoint* TargetPoint){GoHomeTargetPoint = TargetPoint;};
 	void SetGoWorkTargetPoint(class ACrowdTargetPoint* TargetPoint){GoWorkTargetPoint = TargetPoint;};
 	void SetCurrentTargetLocation(FVector loc){currentTargetLocation = loc;};
@@ -106,7 +112,13 @@ public:
 	void Talk(int32 index);
 	void OnTalkStarted(ACrowd* lastTalker);
 	FTalkStartDelegates OnTalkStartedDelegate;
+
+	// 오디오 종료 콜백
+	UFUNCTION()
+	void OnAudioFinishedCallback();
 	
+public:
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 };
 
