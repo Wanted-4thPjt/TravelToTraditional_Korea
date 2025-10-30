@@ -8,7 +8,8 @@
 
 class UTextBlock;
 class USlider;
-class UComboBoxString;
+class UComboBoxKey;
+class UCheckBox;
 
 USTRUCT()
 struct UE_TTTK_API FGraphicSettingProperties
@@ -28,6 +29,29 @@ class UE_TTTK_API UGraphicSettingWidget : public UUserWidget
 	friend class USettingWidget;
 
 protected:
+	virtual void NativeConstruct() override;
+
+private:
+	UFUNCTION()
+	void OnBrightnessValueChanged(float inChangeValue);
+	UFUNCTION()
+	void OnToggleShowFPSCheckBox(bool bIsChecked);
+	UFUNCTION()
+	void OnAntiAliasingSelectionChanged(FName selectedItem, ESelectInfo::Type selectionType);
+
+protected:
+	UPROPERTY()
+	USettingWidget* settingWidget;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	bool bEditable = false;
+
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<USlider> gammaSlider;
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UTextBlock> brightnessValue;
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UComboBoxKey> antiAliasingDropdown;
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UCheckBox> fpsShowingCheckBox;
 };

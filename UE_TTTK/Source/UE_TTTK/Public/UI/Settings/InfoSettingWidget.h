@@ -26,6 +26,12 @@ class UE_TTTK_API UInfoSettingWidget : public UUserWidget
 	friend class USettingWidget;
 
 protected:
+	virtual void NativeConstruct() override;
+
+protected:
+	UPROPERTY()
+	USettingWidget* settingWidget;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	bool bEditable = false;
 };

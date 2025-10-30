@@ -8,6 +8,7 @@
 
 class USizeBox;
 class UChatWidget;
+class UTextBlock;
 /**
  * 
  */
@@ -16,10 +17,24 @@ class UE_TTTK_API UPlayerWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
+	
 protected:
 	virtual void NativeConstruct() override;
+
+public:
+	FORCEINLINE void EnableShowFPS(const bool& enableShowFPS) {bShowFPS = enableShowFPS;}
+
+protected:
+	UFUNCTION()
+	float GetCurrentFPS();
 	
 public:
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UChatWidget> chatWidget;
+
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UTextBlock> fpsText;
+
+private:
+	bool bShowFPS = false;
 };

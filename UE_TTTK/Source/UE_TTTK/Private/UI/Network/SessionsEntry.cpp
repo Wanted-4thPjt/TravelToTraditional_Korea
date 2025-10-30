@@ -1,14 +1,14 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "UI/SessionsEntry.h"
+#include "UI/Network/SessionsEntry.h"
 
 #include "Components/ListView.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
-#include "UI/SessionNodeData.h"
+#include "UI/Network/SessionNodeData.h"
 #include "Network/SteamSessionSubsystem.h"
-#include "UI/MainMenuSteam.h"
+#include "UI/Network/MainMenuSteam.h"
 
 void USessionsEntry::NativeOnInitialized()
 {

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "Engine/StreamableManager.h"
 #include "SteamSessionSubsystem.generated.h"
 
 class USteamSessionSettings;
@@ -56,4 +57,5 @@ protected:
 	TPair<FName, FString> displayNamePair = {"DP_NAME", ""};
 	TPair<FName, FString> mapNamePair = {"MAP_NAME", ""};
 
+	//TSharedPtr<IStreamableProgressManager> loadingManager;
 };

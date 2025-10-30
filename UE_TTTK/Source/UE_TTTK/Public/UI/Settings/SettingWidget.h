@@ -7,7 +7,7 @@
 #include "SettingWidget.generated.h"
 
 
-
+class UTTTKUserSettings;
 class UWidgetSwitcher;
 class UButton;
 
@@ -44,10 +44,26 @@ public:
 	void SwitchToNetwork();
 	UFUNCTION()
 	void SwitchToInfo();
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE UTTTKUserSettings* GetUserSettings() {return userSettings;}
+	void ExecuteCommand(const FString& command);
+
+private:
+	void SetActivateButton(UButton* newActivatedButton);
 	
 protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<UTTTKUserSettings> userSettings;
+	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UWidgetSwitcher> settingsSwitcher;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UButton* currentButton = nullptr;
+
+	UPROPERTY()
+	UTexture2D* currentTexture = nullptr;
 
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> graphicButton;
@@ -75,4 +91,7 @@ protected:
 	TObjectPtr<UButton> saveButton;
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> initializeButton;
+
+	const FLinearColor activeColor = FLinearColor(0.384266f,0.358768f,0.031742f,0.7f);
+	const FLinearColor inactiveColor = FLinearColor(0.661458f,0.661458f,0.661458f,0.600000f);
 };

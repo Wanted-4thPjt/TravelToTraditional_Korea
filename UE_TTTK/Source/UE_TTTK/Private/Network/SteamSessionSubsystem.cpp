@@ -10,6 +10,7 @@
 #include "OnlineSubsystemUtils.h"
 #include "Data/MapInfo.h"
 #include "Data/PDA_MapList.h"
+#include "Engine/AssetManager.h"
 #include "Online/OnlineSessionNames.h"
 #include "Interfaces/OnlineSessionInterface.h"
 
@@ -32,6 +33,9 @@ void USteamSessionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	}
 
 	hostNamePair.Value = GetSteamNickName();
+
+	FStreamableManager& LoadingManager = UAssetManager::Get().GetStreamableManager();
+	
 }
 
 void USteamSessionSubsystem::Deinitialize()

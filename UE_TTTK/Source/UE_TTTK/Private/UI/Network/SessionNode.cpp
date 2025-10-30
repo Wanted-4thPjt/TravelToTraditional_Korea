@@ -1,13 +1,13 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "UI/SessionNode.h"
+#include "UI/Network/SessionNode.h"
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
 #include "Data/MapInfo.h"
 #include "Data/PDA_MapList.h"
 #include "Network/SteamSessionSettings.h"
-#include "UI/SessionNodeData.h"
+#include "UI/Network/SessionNodeData.h"
 
 
 void USessionNode::NativeOnListItemObjectSet(UObject* ListItemObject)
