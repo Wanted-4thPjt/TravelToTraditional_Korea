@@ -45,6 +45,9 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Time")
 	bool bShouldGoHome = false;
 
+	UPROPERTY(BlueprintReadOnly, Category = "Time")
+	bool bHasGoneHome = false;
+
 private:
 	bool bIsMoving;
 	bool bIsOuchAnimCompleted; // Ouch 애니메이션 완료 플래그 (AnimNotify에서 설정)

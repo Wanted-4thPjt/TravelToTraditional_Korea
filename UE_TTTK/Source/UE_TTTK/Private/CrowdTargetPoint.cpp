@@ -259,8 +259,50 @@ void ACrowdTargetPoint::ResetAllListeningState()
 
 void ACrowdTargetPoint::RestartDialogueAfterDelay()
 {
-	UE_LOG(LogDialogue, Display, TEXT("[타이머] 3초 대기 완료! 대화 다시 시작"));
-	StartDialogue();  // 직접 대화 시작
+	UE_LOG(LogDialogue, Display, TEXT("[타이머] 3초 대기 완료!"));
+
+	// 집에 가는 시간 체크
+	bool bShouldGoHome = false;
+
+	for (int32 i = 0; i < subTargets.Num(); i++)
+	{
+		if (subTargets[i] && subTargets[i]->currentCrowd)
+		{
+			ACrowd* CurrentCrowd = subTargets[i]->currentCrowd;
+
+			// 집에 간 적이 없으면서 집에 가는 시간이 됐는지 체크
+			if (!CurrentCrowd->bHasGoneHome && CurrentCrowd->CheckGoHomeTime())
+			{
+				bShouldGoHome = true;
+				UE_LOG(LogDialogue, Display, TEXT("[시간 체크] 집에 가는 시간! Crowd Index: %d"), i);
+
+				// bHasGoneHome 플래그 설정
+				CurrentCrowd->bHasGoneHome = true;
+
+				// GoHome 이벤트 전송
+				ACrowdAiController* CrowdController = Cast<ACrowdAiController>(CurrentCrowd->GetController());
+				if (CrowdController && CrowdController->StateTreeComp)
+				{
+					FStateTreeEvent GoHomeEvent;
+					GoHomeEvent.Tag = FGameplayTag::RequestGameplayTag("Crowd.Event.GoHome");
+					CrowdController->StateTreeComp->SendStateTreeEvent(GoHomeEvent.Tag);
+
+					UE_LOG(LogDialogue, Display, TEXT("[이벤트 전송] GoHome 이벤트 전송 완료 - Index %d"), i);
+				}
+			}
+		}
+	}
+
+	// 집에 가는 시간이 아니면 대화 재시작
+	if (!bShouldGoHome)
+	{
+		UE_LOG(LogDialogue, Display, TEXT("[대화 재시작] 집에 가는 시간이 아님. 대화 계속 진행"));
+		StartDialogue();  // 직접 대화 시작
+	}
+	else
+	{
+		UE_LOG(LogDialogue, Display, TEXT("[대화 종료] 집에 가는 시간이므로 대화 시스템 종료"));
+	}
 }
 
 void ACrowdTargetPoint::StartDialogue()

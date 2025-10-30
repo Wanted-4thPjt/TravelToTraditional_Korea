@@ -31,6 +31,10 @@ EStateTreeRunStatus UNormalCrowdWalkTask::EnterState(FStateTreeExecutionContext&
 
 	UE_LOG(LogTemp,Error,TEXT("====OwnerCrowd OK"));
 
+	// bHasGoneHome 플래그 리셋 (일하러 나가는 상태이므로)
+	OwnerCrowd->bHasGoneHome = false;
+	UE_LOG(LogTemp,Error,TEXT("====bHasGoneHome 리셋 완료"));
+
 	TargetLocation = AiController->FindRandomDestination();
 	UE_LOG(LogTemp,Error,TEXT("====찾은 랜덤 위치: %s"), *TargetLocation.ToString());
 

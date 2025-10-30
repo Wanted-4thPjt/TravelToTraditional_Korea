@@ -183,7 +183,16 @@ bool ACrowd::CheckGoHomeTime()
 		int32 currentHour;
 		int32 currentMinute;
 		TimeState->GetCurrentTime(currentHour,currentMinute);
-		if (currentHour == CrowdData->GetGoHomeTime().X && currentMinute == CrowdData->GetGoHomeTime().Y)
+
+		int32 goHomeHour = CrowdData->GetGoHomeTime().X;
+		int32 goHomeMinute = CrowdData->GetGoHomeTime().Y;
+
+		// 시간을 분 단위로 변환하여 비교
+		int32 currentTimeInMinutes = currentHour * 60 + currentMinute;
+		int32 goHomeTimeInMinutes = goHomeHour * 60 + goHomeMinute;
+
+		// 현재 시간이 집갈 시간보다 크거나 같으면 true
+		if (currentTimeInMinutes >= goHomeTimeInMinutes)
 		{
 			return true;
 		}
