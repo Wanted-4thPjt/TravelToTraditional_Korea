@@ -18,9 +18,14 @@ public :
 	UPROPERTY(EditAnywhere)
 	class APatrolPath* armyPath;
 	int32 idx =0; //current 인덱스
+
+	UPROPERTY(Replicated)
 	bool bIsNight = false;
 	bool bIsForward = true;
+	UPROPERTY(Replicated)
 	bool bIsHangingFireAnimCompleted = false; // HangingFire 애니메이션 완료 플래그
+	UPROPERTY(Replicated)
+	bool bIsHangingFire = false;
 	UPROPERTY(EditAnywhere)
 	UAnimMontage* HangingFireMontage;
 	
@@ -34,7 +39,7 @@ public :
 	void UpdateIndex();
 	void SetIndex(int32 index);
 	bool isFinalPatrolPoint();
-	UPROPERTY()
+	UPROPERTY(Replicated)
 	class AActor* handFire;
 	UPROPERTY(EditAnywhere,Category= "Torch")
 	TSubclassOf<AActor> FireActorClass;
@@ -46,8 +51,11 @@ public :
 
 public:
 	void PlayHaningMontage();
-	UFUNCTION(BlueprintCallable)
+
+	UFUNCTION(NetMulticast,Reliable)
 	void EqiqueFire();
 	virtual void BeginPlay() override;
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	
 	
 };
