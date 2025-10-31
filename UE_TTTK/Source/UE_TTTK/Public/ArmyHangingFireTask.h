@@ -24,4 +24,5 @@ protected:
 	virtual void StateCompleted(FStateTreeExecutionContext& Context, const EStateTreeRunStatus CompletionStatus,
 		const FStateTreeActiveStates& CompletedActiveStates) override;
 	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, const float DeltaTime) override;
+	void NotifyToPlayer();
 };

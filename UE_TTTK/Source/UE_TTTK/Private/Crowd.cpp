@@ -6,11 +6,14 @@
 #include "CrowdAiController.h"
 #include "CrowdTargetPoint.h"
 #include "TTTK_GameState.h"
+#include "AssetTypeActions/AssetDefinition_SoundBase.h"
+#include "Components/AudioComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/StateTreeAIComponent.h"
 #include "Components/StateTreeComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 ACrowd::ACrowd()
@@ -18,6 +21,16 @@ ACrowd::ACrowd()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+
+	// AudioComponent 생성 및 RootComponent에 부착
+	AudioComp = CreateDefaultSubobject<UAudioComponent>(TEXT("AudioComponent"));
+	if (AudioComp)
+	{
+		AudioComp->SetupAttachment(RootComponent);
+		AudioComp->bAutoActivate = false;// 자동 재생 비활성화
+		AudioComp->bAllowSpatialization = true; //시장 아줌마 거리에 따라서 다르게 들리도록 
+		
+	}
 
 	// 플래그 초기화
 	bIsOuchAnimCompleted = false;
@@ -156,7 +169,7 @@ void ACrowd::PlayGreeting()
 void ACrowd::PlayOuch()
 {
 	UE_LOG(LogTemp,Warning,TEXT("Ouch재생"));
-	bIsOuchAnimCompleted = false; // 플래그 리셋
+	bIsOuchAnimCompleted = false; 
 	PlayAnimMontage(OuchAnimMontage);
 }
 void ACrowd::PlayCheck()
@@ -172,7 +185,16 @@ bool ACrowd::CheckGoHomeTime()
 		int32 currentHour;
 		int32 currentMinute;
 		TimeState->GetCurrentTime(currentHour,currentMinute);
-		if (currentHour == CrowdData->GetGoHomeTime().X && currentMinute == CrowdData->GetGoHomeTime().Y)
+
+		int32 goHomeHour = CrowdData->GetGoHomeTime().X;
+		int32 goHomeMinute = CrowdData->GetGoHomeTime().Y;
+
+		
+		int32 currentTimeInMinutes = currentHour * 60 + currentMinute;
+		int32 goHomeTimeInMinutes = goHomeHour * 60 + goHomeMinute;
+
+		
+		if (currentTimeInMinutes >= goHomeTimeInMinutes)
 		{
 			return true;
 		}
@@ -241,6 +263,75 @@ void ACrowd::SetCrowdCurrentState(FName NewState)
 {
 	currentState = NewState;
 }
+
+
+
+void ACrowd::MulitCast_Talk_Implementation(int32 index)
+{
+	if (!AudioComp)
+	{
+		UE_LOG(LogDialogue, Error, TEXT("[Crowd::Talk] AudioComp가 nullptr!"));
+		return;
+	}
+
+	if (!talkSounds.IsValidIndex(index))
+	{
+		UE_LOG(LogDialogue, Error, TEXT("[Crowd::Talk] 유효하지 않은 사운드 인덱스: %d"), index);
+		return;
+	}
+
+	
+	if (AudioComp->IsPlaying())
+	{
+		AudioComp->Stop();
+	}
+
+	
+	bIsTalking = true;
+	bIsListening = false;
+	UE_LOG(LogDialogue, Display, TEXT("[Crowd::Talk] 상태 변경 - bIsTalking: true, bIsListening: false"));
+
+	
+	AudioComp->OnAudioFinished.RemoveDynamic(this, &ACrowd::OnAudioFinishedCallback);
+	AudioComp->OnAudioFinished.AddDynamic(this, &ACrowd::OnAudioFinishedCallback);
+
+	
+	AudioComp->SetSound(talkSounds[index]);
+	AudioComp->Play();
+
+	UE_LOG(LogDialogue, Display, TEXT("[Crowd::Talk] 사운드 재생 시작 - Index: %d, Actor: %s"), index, *GetName());
+
+	
+	if (HasAuthority())
+	{
+		OnTalkStarted(this);
+	}
+}
+
+void ACrowd::OnTalkStarted(ACrowd* lastTalker)
+{
+	if (CrowdData->GetCrowdType() == ECrowdType::Marketeer)
+	{
+		GoWorkTargetPoint -> SetCurrentTalkerCrowd(lastTalker);
+	}
+}
+
+void ACrowd::OnAudioFinishedCallback()
+{
+	
+	bIsTalking = false;
+	UE_LOG(LogDialogue, Display, TEXT("[Crowd::OnAudioFinishedCallback] 음성 종료 - bIsTalking: false, Actor: %s"), *GetName());
+}
+
+void ACrowd::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ACrowd, bIsTalking);
+	DOREPLIFETIME(ACrowd, bIsListening);
+
+}
+
+
 
 
 

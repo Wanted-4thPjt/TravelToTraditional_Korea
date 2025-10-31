@@ -4,6 +4,7 @@
 #include "CrowdAiController.h"
 
 #include "Crowd.h"
+#include "CrowdTargetPoint.h"
 #include "NavigationSystem.h"
 #include "PatrolArmy.h"
 #include "PatrolPath.h"
@@ -111,6 +112,15 @@ void ACrowdAiController::GoHome()
 
 void ACrowdAiController::Greeting()
 {
+	UE_LOG(LogDialogue, Display, TEXT("[Greeting] 인사 애니메이션 재생"));
+
+	if (!OwnerCrowd)
+	{
+		UE_LOG(LogDialogue, Error, TEXT("[오류] OwnerCrowd가 nullptr!"));
+		return;
+	}
+
+	// 인사 애니메이션만 재생 (대화는 모두 도착 후 자동 시작)
 	OwnerCrowd->PlayGreeting();
 }
 
