@@ -47,12 +47,8 @@ protected:
 	void OnInteractableStateChanged(APlayerController* PlayerController, EInteractableState NewState);
 
 	// 서버에서 발견 처리
-	UFUNCTION(Server, Reliable)
-	void Server_ProcessDiscovery(APlayerController* PlayerController, const FString& HeritageID);
-
-	// 클라이언트에서 UI 표시
-	UFUNCTION(Client, Reliable)
-	void Client_ShowHeritageUI(APlayerController* PlayerController, const FString& HeritageID, const FHeritageObjectData& HeritageData, bool bIsFirstDiscovery);
+	UFUNCTION()
+	void ProcessDiscovery(APawn* Player, const FString& HeritageID);
 
 	// UI 닫기 이벤트 수신
 	UFUNCTION()

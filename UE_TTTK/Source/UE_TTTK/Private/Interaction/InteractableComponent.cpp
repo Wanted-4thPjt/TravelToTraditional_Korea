@@ -229,11 +229,7 @@ void UInteractableComponent::Multicast_TryInteract_Implementation(APawn* player)
 	if (OnMultiInteraction.IsBound())
 	{
 		OnMultiInteraction.Broadcast(player);
-		PlayEffects(true);
-		if (APlayerController* pc = player->GetController<APlayerController>())
-		{
-			FinishInteracting(pc, true);
-		}
+		if (feedbackSettings.bInteractionEffectsInNetwork) {PlayEffects(true);}
 	}
 	
 }

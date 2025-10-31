@@ -132,7 +132,8 @@ void UInteractionComponent::Server_Interact_Implementation(UInteractableComponen
 {
 	if (!IsValid(interactable) || !IsValid(GetOwner<AMainPlayer>())) {return;}
 	interactable->Multicast_TryInteract(GetOwner<AMainPlayer>());
-	if (possessingInteractedTarget = interactable->GetOwner()->FindComponentByTag<UContentEntryComponent>("Entry"))
+	possessingInteractedTarget = interactable->GetOwner()->FindComponentByTag<UContentEntryComponent>("Entry");
+	if (possessingInteractedTarget)
 	{
 		possessingInteractedTarget->RequestEntry(GetOwner<AMainPlayer>());
 	}
