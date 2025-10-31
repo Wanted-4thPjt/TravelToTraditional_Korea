@@ -45,8 +45,8 @@ void AMainPlayer::BeginPlay()
 			handFire->AttachToComponent(GetMesh(),
 				 FAttachmentTransformRules::SnapToTargetIncludingScale,
 				 TEXT("hand_r"));
-			handFire->SetActorRelativeLocation(FVector((X=-12.600000,Y=-0.000000,Z=0.000000)));
-			handFire->SetActorRelativeRotation(FRotator(0,30,90));
+			handFire->SetActorRelativeLocation(FVector(-11.800000,0.300000,-13.333340));
+			handFire->SetActorRelativeRotation(FRotator(0,0,0));
 				
 			handFire->SetActorHiddenInGame(true);
 
@@ -352,6 +352,14 @@ UBaseContentComponent* AMainPlayer::GetOrCreateContentInput(TSubclassOf<UBaseCon
 	       *componentClass->GetName());
 
 	return NewComponent;
+}
+
+void AMainPlayer::Swing()
+{
+	if (bIsHandfire && !bIsSwing)
+	{
+		PlayAnimMontage(SwingMontage);
+	}
 }
 
 

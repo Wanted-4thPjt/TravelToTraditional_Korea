@@ -50,6 +50,7 @@ public:
 
 	UPROPERTY(Replicated)
 	AActor* handFire;
+	UInputAction* ia_Swing;
 	// Boarding System
 	void HandleFKeyPress();
 	ACarriageVehicle* FindNearbyCarriage();
@@ -109,7 +110,9 @@ protected:
 private:
 	/** Content Input Component Lazy Initialization */
 	UBaseContentComponent* GetOrCreateContentInput(TSubclassOf<UBaseContentComponent> componentClass);
-
+	void Swing();
+	bool bIsSwing = false;
+	UAnimMontage* SwingMontage;
 #pragma region VaVamVa
 public:
 	UFUNCTION(BlueprintCallable)
