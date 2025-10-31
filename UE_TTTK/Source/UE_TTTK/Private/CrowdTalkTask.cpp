@@ -54,7 +54,8 @@ EStateTreeRunStatus UCrowdTalkTask::EnterState(FStateTreeExecutionContext& Conte
 		{
 			if (OwnerCrowd->talkSounds.Num() > 1)
 			{
-				SoundIndex = FMath::RandRange(1, OwnerCrowd->talkSounds.Num() - 1);
+				//SoundIndex = FMath::RandRange(1, OwnerCrowd->talkSounds.Num() - 1); 랜덤 재생인경우
+				SoundIndex = MyIndex; // 자기 자신에게 맞는 사운드를 재생 
 			}
 			else
 			{

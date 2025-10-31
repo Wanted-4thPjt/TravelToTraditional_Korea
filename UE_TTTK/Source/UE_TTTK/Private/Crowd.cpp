@@ -27,7 +27,9 @@ ACrowd::ACrowd()
 	if (AudioComp)
 	{
 		AudioComp->SetupAttachment(RootComponent);
-		AudioComp->bAutoActivate = false; // 자동 재생 비활성화
+		AudioComp->bAutoActivate = false;// 자동 재생 비활성화
+		AudioComp->bAllowSpatialization = true; //시장 아줌마 거리에 따라서 다르게 들리도록 
+		
 	}
 
 	// 플래그 초기화
@@ -316,7 +318,7 @@ void ACrowd::OnTalkStarted(ACrowd* lastTalker)
 
 void ACrowd::OnAudioFinishedCallback()
 {
-	// 말하기 종료
+	
 	bIsTalking = false;
 	UE_LOG(LogDialogue, Display, TEXT("[Crowd::OnAudioFinishedCallback] 음성 종료 - bIsTalking: false, Actor: %s"), *GetName());
 }

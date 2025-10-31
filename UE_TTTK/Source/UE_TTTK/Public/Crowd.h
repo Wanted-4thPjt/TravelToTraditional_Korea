@@ -87,6 +87,8 @@ public:
 	void SetGoWorkTargetPoint(class ACrowdTargetPoint* TargetPoint){GoWorkTargetPoint = TargetPoint;};
 	void SetCurrentTargetLocation(FVector loc){currentTargetLocation = loc;};
 	void SetCurrentCrowdTargetPoint(class ACrowdTargetPoint* TargetPoint){CurrentCrowdTargetPoint = TargetPoint;};
+
+	UPROPERTY(EditDefaultsOnly)
 	UAudioComponent* AudioComp;
 	ACrowdTargetPoint* GetGoHomeTargetPoint(){return GoHomeTargetPoint;};
 	ACrowdTargetPoint* GetGoWorkTargetPoint(){return GoWorkTargetPoint;};
@@ -117,7 +119,7 @@ public:
 	void OnTalkStarted(ACrowd* lastTalker);
 	FTalkStartDelegates OnTalkStartedDelegate;
 
-	// 오디오 종료 콜백
+
 	UFUNCTION()
 	void OnAudioFinishedCallback();
 	
