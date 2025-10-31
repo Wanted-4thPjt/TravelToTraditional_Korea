@@ -35,6 +35,23 @@ void AMainPlayer::BeginPlay()
 		viewComponent->OnViewSthByLineTrace.AddDynamic(this, &AMainPlayer::OnViewInteractableActor);
 		viewComponent->EnableTrace(true);
 	}
+	if (HandFireClass)
+	{
+		FActorSpawnParameters spawnParams;
+		spawnParams.Owner = this;
+		handFire = GetWorld() -> SpawnActor<AActor>(HandFireClass,FVector::ZeroVector,FRotator::ZeroRotator,spawnParams);
+		if (handFire)
+		{
+			handFire->AttachToComponent(GetMesh(),
+				 FAttachmentTransformRules::SnapToTargetIncludingScale,
+				 TEXT("hand_r"));
+			handFire->SetActorRelativeLocation(FVector((X=-12.600000,Y=-0.000000,Z=0.000000)));
+			handFire->SetActorRelativeRotation(FRotator(0,30,90));
+				
+			handFire->SetActorHiddenInGame(true);
+
+		}
+	}
 }
 
 void AMainPlayer::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
@@ -212,6 +229,17 @@ void AMainPlayer::SwitchToThirdPersonCamera()
 		UE_LOG(LogTemp, Log, TEXT("3인칭 카메라로 복귀"));
 	}
 }
+
+void AMainPlayer::EqiqueHandFire_Implementation()
+{
+	if (!bIsHandfire)
+	{
+		handFire->SetActorHiddenInGame(false);
+		bIsHandfire = true;
+	}
+}
+
+
 
 AActor* AMainPlayer::GetFocusedActor() const
 {

@@ -4,6 +4,7 @@
 #include "ArmyHangingFireTask.h"
 
 #include "CrowdAiController.h"
+#include "MainPlayer.h"
 #include "PatrolArmy.h"
 #include "StateTreeExecutionContext.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -20,6 +21,7 @@ EStateTreeRunStatus UArmyHangingFireTask::EnterState(FStateTreeExecutionContext&
 		OwnerArmy->PlayHaningMontage();
 		UE_LOG(LogTemp, Warning, TEXT("HangingFireTask: 횃불 장착 애니메이션 시작"));
 	}
+	
 
 	return EStateTreeRunStatus::Running;
 }
@@ -28,6 +30,10 @@ void UArmyHangingFireTask::ExitState(FStateTreeExecutionContext& Context, const 
 {
 
 	UE_LOG(LogTemp,Warning,TEXT("불들엇따```` ExitState"));
+	if (OwnerArmy->HasAuthority())
+	{
+		NotifyToPlayer();
+	}
 	Super::ExitState(Context, Transition);
 }
 
@@ -52,4 +58,24 @@ EStateTreeRunStatus UArmyHangingFireTask::Tick(FStateTreeExecutionContext& Conte
 	}
 
 	return EStateTreeRunStatus::Running;
+}
+
+void UArmyHangingFireTask::NotifyToPlayer()
+{
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		for (FConstPlayerControllerIterator iter = World->GetPlayerControllerIterator(); iter; ++iter)
+		{
+			APlayerController* pc = iter->Get();
+			if (pc)
+			{
+				AMainPlayer* mainPlayer = Cast<AMainPlayer>(pc->GetCharacter());
+				if (mainPlayer && !mainPlayer->bIsHandfire)
+				{
+					mainPlayer->EqiqueHandFire();
+				}
+			}
+		}
+	}
 }
