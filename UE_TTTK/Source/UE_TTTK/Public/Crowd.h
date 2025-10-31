@@ -9,6 +9,7 @@
 #include "Crowd.generated.h"
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FCheckTimeDelegate,ACrowd*,bool);
+DECLARE_DELEGATE_TwoParams(FTalkStartDelegates,ACrowd*, int32 )
 UCLASS()
 class UE_TTTK_API ACrowd : public ACharacter
 {
@@ -33,6 +34,8 @@ public:
 	UPROPERTY()
 	class ACrowdTargetPoint* GoWorkTargetPoint;
 	UPROPERTY()
+	class ACrowdTargetPoint* CurrentCrowdTargetPoint;
+	UPROPERTY()
 	FVector currentTargetLocation = FVector::ZeroVector;
 	
 
@@ -41,6 +44,9 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Time")
 	bool bShouldGoHome = false;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Time")
+	bool bHasGoneHome = false;
 
 private:
 	bool bIsMoving;
@@ -61,6 +67,10 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Animation")
+	bool bIsTalking=false;;
+	UPROPERTY(BlueprintReadOnly, Replicated, Category = "Animation")
+	bool bIsListening=false;;
 	class ACrowdTargetPoint* GetTargetPoint(FString Destination);
 	class ACrowdTargetPoint* GetTargetByEnum();
 	bool GetIsMoving(){return bIsMoving;}
@@ -71,12 +81,18 @@ public:
 	void PlayCheck();
 	bool CheckGoHomeTime();
 	bool CheckGoWorkTime();
+	void SetIsTalking(bool talking){bIsTalking = talking;};
+	void SetIsListening(bool listening){bIsListening = listening;};
 	void SetGoHomeTargetPoint(class ACrowdTargetPoint* TargetPoint){GoHomeTargetPoint = TargetPoint;};
 	void SetGoWorkTargetPoint(class ACrowdTargetPoint* TargetPoint){GoWorkTargetPoint = TargetPoint;};
 	void SetCurrentTargetLocation(FVector loc){currentTargetLocation = loc;};
+	void SetCurrentCrowdTargetPoint(class ACrowdTargetPoint* TargetPoint){CurrentCrowdTargetPoint = TargetPoint;};
 
+	UPROPERTY(EditDefaultsOnly)
+	UAudioComponent* AudioComp;
 	ACrowdTargetPoint* GetGoHomeTargetPoint(){return GoHomeTargetPoint;};
 	ACrowdTargetPoint* GetGoWorkTargetPoint(){return GoWorkTargetPoint;};
+	ACrowdTargetPoint* GetCurrentCrowdTargetPoint(){return CurrentCrowdTargetPoint;};
 	FVector GetCurrentTargetLocation(){return currentTargetLocation;};
 	
 	UFUNCTION()
@@ -84,20 +100,31 @@ public:
 	UFUNCTION()
 	void SetCrowdCurrentState(FName NewState);
 
-	
+	bool bIsMarketeer = false;
 	
 	FName GetCrowdCurrentState(){return currentState;};
 
-	// Ouch 애니메이션 완료 플래그 관리
+	
 	bool GetOuchAnimCompleted() const { return bIsOuchAnimCompleted; }
 	void SetOuchAnimCompleted(bool bCompleted) { bIsOuchAnimCompleted = bCompleted; }
 
 	UFUNCTION(BlueprintCallable, Category = "Time")
 	void ResetTimeFlags() { bShouldGoWork = false; bShouldGoHome = false; }
+
+	UPROPERTY(EditAnywhere, Category="TalkSound")
+	TArray<USoundBase*> talkSounds;
+	 
+	UFUNCTION(NetMulticast,Reliable,BlueprintCallable)
+	void MulitCast_Talk(int32 index);
+	void OnTalkStarted(ACrowd* lastTalker);
+	FTalkStartDelegates OnTalkStartedDelegate;
+
+
+	UFUNCTION()
+	void OnAudioFinishedCallback();
 	
-	
-	
-	
+public:
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 };
 

@@ -16,11 +16,13 @@ void UPatrolArmyHangingFireNotifyState::NotifyBegin(USkeletalMeshComponent* Mesh
 
 	
 	APatrolArmy* OwnerArmy = Cast<APatrolArmy>(MeshComp->GetOwner());
-	if (OwnerArmy)
+	
+	if (OwnerArmy && OwnerArmy->HasAuthority() && !OwnerArmy->bIsHangingFire)
 	{
 		// 횃불 장착 (bIsNight = true로 설정)
 		OwnerArmy->bIsNight = true;
 		OwnerArmy->EqiqueFire();
+		
 		UE_LOG(LogTemp, Warning, TEXT("HangingFireNotifyState: 횃불 장착 시작 (bIsNight = true)"));
 	}
 }

@@ -35,6 +35,23 @@ void AMainPlayer::BeginPlay()
 		viewComponent->OnViewSthByLineTrace.AddDynamic(this, &AMainPlayer::OnViewInteractableActor);
 		viewComponent->EnableTrace(true);
 	}
+	if (HandFireClass)
+	{
+		FActorSpawnParameters spawnParams;
+		spawnParams.Owner = this;
+		handFire = GetWorld() -> SpawnActor<AActor>(HandFireClass,FVector::ZeroVector,FRotator::ZeroRotator,spawnParams);
+		if (handFire)
+		{
+			handFire->AttachToComponent(GetMesh(),
+				 FAttachmentTransformRules::SnapToTargetIncludingScale,
+				 TEXT("hand_r"));
+			handFire->SetActorRelativeLocation(FVector(-11.800000,0.300000,-13.333340));
+			handFire->SetActorRelativeRotation(FRotator(0,0,0));
+				
+			handFire->SetActorHiddenInGame(true);
+
+		}
+	}
 }
 
 void AMainPlayer::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
@@ -213,6 +230,17 @@ void AMainPlayer::SwitchToThirdPersonCamera()
 	}
 }
 
+void AMainPlayer::EqiqueHandFire_Implementation()
+{
+	if (!bIsHandfire)
+	{
+		handFire->SetActorHiddenInGame(false);
+		bIsHandfire = true;
+	}
+}
+
+
+
 AActor* AMainPlayer::GetFocusedActor() const
 {
 	if (!IsValid(interactionComponent)) {return nullptr;}
@@ -324,6 +352,14 @@ UBaseContentComponent* AMainPlayer::GetOrCreateContentInput(TSubclassOf<UBaseCon
 	       *componentClass->GetName());
 
 	return NewComponent;
+}
+
+void AMainPlayer::Swing()
+{
+	if (bIsHandfire && !bIsSwing)
+	{
+		PlayAnimMontage(SwingMontage);
+	}
 }
 
 

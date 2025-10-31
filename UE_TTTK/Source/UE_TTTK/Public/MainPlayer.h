@@ -27,6 +27,7 @@ public:
 	// Boarding State
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Boarding")
 	bool bIsRidingCarriage = false;
+	bool bIsHandfire = false;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Boarding")
 	class ACarriageVehicle* CurrentCarriage = nullptr;
@@ -42,6 +43,14 @@ protected:
 	void RequestChangeInputMapping(EMappingMode mode);
 	EMappingMode currentMode = EMappingMode::Content1; // 현재 모드
 
+public:
+	
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<AActor> HandFireClass;
+
+	UPROPERTY(Replicated)
+	AActor* handFire;
+	UInputAction* ia_Swing;
 	// Boarding System
 	void HandleFKeyPress();
 	ACarriageVehicle* FindNearbyCarriage();
@@ -70,6 +79,9 @@ public:
 	void SwitchToFirstPersonCamera();
 	void SwitchToThirdPersonCamera();
 
+	UFUNCTION(NetMulticast, Reliable)
+	void EqiqueHandFire();
+
 	// ========== Content Input 관리 ==========
 
 	/** Content가 활성화될 때 호출 (Lazy Initialization) */
@@ -79,6 +91,8 @@ public:
 	/** Content가 비활성화될 때 호출 */
 	UFUNCTION(BlueprintCallable, Category="ContentInput")
 	void DeactivateContentInput();
+
+	
 
 	/** 현재 활성화된 Content Input Component */
 	UFUNCTION(BlueprintPure, Category="ContentInput")
@@ -96,7 +110,9 @@ protected:
 private:
 	/** Content Input Component Lazy Initialization */
 	UBaseContentComponent* GetOrCreateContentInput(TSubclassOf<UBaseContentComponent> componentClass);
-
+	void Swing();
+	bool bIsSwing = false;
+	UAnimMontage* SwingMontage;
 #pragma region VaVamVa
 public:
 	UFUNCTION(BlueprintCallable)

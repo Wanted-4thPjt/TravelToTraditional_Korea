@@ -37,7 +37,7 @@ EStateTreeRunStatus UArmyWaitFire::Tick(FStateTreeExecutionContext& Context, con
 	UE_LOG(LogTemp,Warning,TEXT("불기다리기 틱 시작"));
 	if (OwnerArmy)
 	{
-		if (OwnerArmy->CheckGoHomeTime())
+		if (OwnerArmy->CheckGoHomeTime() && !OwnerArmy -> bIsHangingFire)
 		{
 			
 			FStateTreeEvent HangingFireEvent;

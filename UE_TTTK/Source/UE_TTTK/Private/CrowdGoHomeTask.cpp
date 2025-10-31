@@ -19,8 +19,8 @@ EStateTreeRunStatus UCrowdGoHomeTask::EnterState(FStateTreeExecutionContext& Con
 	//2.타겟지점 가져오기
 	TargetPoint = OwnerCrowd -> GetGoHomeTargetPoint();
 	AIController->WalkToLocation(TargetPoint->GetActorLocation());
-	
-	UE_LOG(LogTemp,Warning,TEXT("집가기 시작"));
+	OwnerCrowd->SetCrowdCurrentState("Crowd.Event.GoHome");
+	UE_LOG(LogTemp,Warning,TEXT("Owner Crowd : %s 집가기 시작"),*OwnerCrowd->GetName());
 	return EStateTreeRunStatus::Running;
 	
 }
@@ -40,11 +40,11 @@ EStateTreeRunStatus UCrowdGoHomeTask::Tick(FStateTreeExecutionContext& Context, 
 {
 	
 	float dist = FVector::Dist(OwnerCrowd->GetActorLocation(),TargetPoint->GetActorLocation());
-	if (OwnerCrowd->GetVelocity().Length() <= 0.f && dist<0.2f)
+	if (OwnerCrowd->GetVelocity().Length() <= 0.1f && dist<0.2f)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("=== 집 도착! ==="));
 		
-		AIController->StopMovement();
+		//AIController->StopMovement();
 		//otator TargetRotation = UKismetMathLibrary::FindLookAtRotation(OwnerCrowd->GetActorLocation(), TargetPoint->GetActorLocation());
 		//TargetRotation = FRotator(0,TargetRotation.Yaw,0);
 		//OwnerCrowd->SetActorRotation(TargetRotation);

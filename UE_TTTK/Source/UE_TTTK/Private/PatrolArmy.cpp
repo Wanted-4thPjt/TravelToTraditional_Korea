@@ -4,6 +4,7 @@
 #include "PatrolArmy.h"
 
 #include "PatrolPath.h"
+#include "Net/UnrealNetwork.h"
 
 class APatrolPath* APatrolArmy::GetPatrolPath()
 {
@@ -75,14 +76,19 @@ void APatrolArmy::PlayHaningMontage()
 	bIsNight = true;
 }
 
-void APatrolArmy::EqiqueFire()
+void APatrolArmy::EqiqueFire_Implementation()
 {
 	if (handFire)
 	{
 		handFire->SetActorHiddenInGame(false);
+		bIsHangingFire = true;
+		
 	}
-
+	
+	
 }
+
+
 
 void APatrolArmy::BeginPlay()
 {
@@ -104,6 +110,15 @@ void APatrolArmy::BeginPlay()
 
 		}
 	}
+}
+
+void APatrolArmy::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(APatrolArmy, bIsNight);
+	DOREPLIFETIME(APatrolArmy, handFire);
+	DOREPLIFETIME(APatrolArmy, bIsHangingFire);
+	
 }
 
 FPatrolPoint* APatrolArmy::GetcurrentPatrolPoint()

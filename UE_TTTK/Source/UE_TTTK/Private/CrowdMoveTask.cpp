@@ -76,7 +76,9 @@ EStateTreeRunStatus UCrowdMoveTask::EnterState(FStateTreeExecutionContext& Conte
 	AIController->WalkToLocation(TargetLocation);
 	UE_LOG(LogTemp, Warning, TEXT("WalkToLocation 호출 완료"));
 
+	// 자리 예약 (다른 NPC가 같은 자리로 가지 못하게)
 	TargetPoint->ProcessSubTargetIn(OwnerCrowd, TargetLocation);
+
 	PathFollowingComponent = AIController->GetPathFollowingComponent();
 	OwnerCrowd->SetCrowdCurrentState("Crowd.Event.GoWork");
 	UE_LOG(LogTemp, Warning, TEXT("움직여야지 - EnterState 성공! Running 반환"));
@@ -121,14 +123,16 @@ EStateTreeRunStatus UCrowdMoveTask::Tick(FStateTreeExecutionContext& Context, co
 		{
 			UE_LOG(LogTemp, Warning, TEXT("=== 목적지 도착! ==="));
 
+			// 도착 처리 (isArrived = true 설정 + 모두 도착 시 StartDialogue 자동 호출)
+			TargetPoint->SetSubTargetArrived(OwnerCrowd);
+
 			AIController->StopMovement();
 			FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(OwnerCrowd->GetActorLocation(), TargetPoint->GetActorLocation());
 			TargetRotation = FRotator(0,TargetRotation.Yaw,0);
 			OwnerCrowd->SetActorRotation(TargetRotation);
-
 			UE_LOG(LogTemp, Warning, TEXT("FinishTask 호출 - 상태 전환"));
+
 			FinishTask(true);
-			
 			return EStateTreeRunStatus::Succeeded;
 		}
 	}
