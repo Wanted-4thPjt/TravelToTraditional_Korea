@@ -83,6 +83,8 @@ void UHeritageObjectComponent::BindToInteractableComponent()
 				this, &UHeritageObjectComponent::OnMultiInteraction);
 			CachedInteractableComponent->OnStateChanged.AddDynamic(
 				this, &UHeritageObjectComponent::OnInteractableStateChanged);
+			CachedInteractableComponent->feedbackSettings.EnableNetwork(true);
+			CachedInteractableComponent->feedbackSettings.EnableOutline(true);
 		}
 		else
 		{
