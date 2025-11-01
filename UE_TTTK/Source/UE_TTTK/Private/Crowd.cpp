@@ -5,6 +5,7 @@
 
 #include "CrowdAiController.h"
 #include "CrowdTargetPoint.h"
+#include "MainPlayer.h"
 #include "TTTK_GameState.h"
 #include "AssetTypeActions/AssetDefinition_SoundBase.h"
 #include "Components/AudioComponent.h"
@@ -62,9 +63,10 @@ void ACrowd::OnCapsuleHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 		return;
 	}
 	UE_LOG(LogTemp, Warning, TEXT("===플레이어랑 부딫혓다===="));
+	ACrowdAiController* AIController = Cast<ACrowdAiController>(GetController());
 	if (OtherActor->ActorHasTag("Player"))
 	{
-		ACrowdAiController* AIController = Cast<ACrowdAiController>(GetController());
+		
 		if (AIController!=nullptr)
 		{
 			GetCharacterMovement()->StopMovementImmediately();
@@ -75,6 +77,21 @@ void ACrowd::OnCapsuleHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 		}
 		
 		UE_LOG(LogTemp,Warning,TEXT("PlayerBeginOverlap"));
+	}
+	if (OtherActor-ActorHasTag("Weapon"))
+	{
+		AMainPlayer* hitplayer = Cast<AMainPlayer>(OtherActor);
+		if (hitplayer!=nullptr)
+		{
+			if (hitplayer->bIsSwing)
+			{
+
+				UE_LOG(LogTemp,Warning,TEXT("방맹이"));
+				FStateTreeEvent OuchEvent;
+				OuchEvent.Tag = FGameplayTag::RequestGameplayTag("Crowd.Event.Ouch");
+				AIController->StateTreeComp->SendStateTreeEvent(OuchEvent);
+			}
+		}
 	}
 }
 

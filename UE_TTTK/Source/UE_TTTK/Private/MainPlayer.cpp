@@ -49,6 +49,7 @@ void AMainPlayer::BeginPlay()
 			handFire->SetActorRelativeRotation(FRotator(0,0,0));
 				
 			handFire->SetActorHiddenInGame(true);
+			
 
 		}
 	}
@@ -58,6 +59,11 @@ void AMainPlayer::SetupPlayerInputComponent(class UInputComponent* PlayerInputCo
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	myInputComponent = PlayerInputComponent;
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
+		
+		EnhancedInputComponent->BindAction(ia_Swing, ETriggerEvent::Started, this, &AMainPlayer::Swing);
+		
+	}
 }
 
 

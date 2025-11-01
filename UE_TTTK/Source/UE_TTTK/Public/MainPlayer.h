@@ -50,6 +50,7 @@ public:
 
 	UPROPERTY(Replicated)
 	AActor* handFire;
+	UPROPERTY(EditDefaultsOnly)
 	UInputAction* ia_Swing;
 	// Boarding System
 	void HandleFKeyPress();
@@ -111,7 +112,11 @@ private:
 	/** Content Input Component Lazy Initialization */
 	UBaseContentComponent* GetOrCreateContentInput(TSubclassOf<UBaseContentComponent> componentClass);
 	void Swing();
+
+public :
+	UPROPERTY(BlueprintReadWrite)
 	bool bIsSwing = false;
+	UPROPERTY(EditDefaultsOnly)
 	UAnimMontage* SwingMontage;
 #pragma region VaVamVa
 public:
