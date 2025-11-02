@@ -39,7 +39,7 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
+	virtual void Tick(float DeltaSeconds) override;
 	void RequestChangeInputMapping(EMappingMode mode);
 	EMappingMode currentMode = EMappingMode::Content1; // 현재 모드
 

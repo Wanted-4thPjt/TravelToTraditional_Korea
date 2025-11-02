@@ -19,7 +19,7 @@
 
 AMainPlayer::AMainPlayer()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
 	
 	viewComponent = CreateDefaultSubobject<UViewComponent>(TEXT("View"));
@@ -34,6 +34,8 @@ void AMainPlayer::BeginPlay()
 	{
 		viewComponent->OnViewSthByLineTrace.AddDynamic(this, &AMainPlayer::OnViewInteractableActor);
 		viewComponent->EnableTrace(true);
+		
+		
 	}
 	if (HandFireClass)
 	{
@@ -94,6 +96,21 @@ void AMainPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AMainPlayer, bIsRidingCarriage);
+}
+
+void AMainPlayer::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (PC)
+	{
+		if (PC->WasInputKeyJustPressed(EKeys::F))
+		{
+			HandleFKeyPress();
+				
+		}
+	}
+	
 }
 
 // ========================================
@@ -213,7 +230,10 @@ void AMainPlayer::SwitchToFirstPersonCamera()
 	if (Camera && SpringArm)
 	{
 		// SpringArm 길이를 0으로 (1인칭 효과)
-		SpringArm->TargetArmLength = 0.0f;
+		
+		
+		SpringArm->TargetArmLength = 100.0f;
+		SpringArm->SocketOffset = FVector(0.0f, 0.0f, 80.0f);
 		SpringArm->bUsePawnControlRotation = true;
 
 		UE_LOG(LogTemp, Log, TEXT("1인칭 카메라로 전환"));
@@ -229,7 +249,8 @@ void AMainPlayer::SwitchToThirdPersonCamera()
 	if (Camera && SpringArm)
 	{
 		
-		SpringArm->TargetArmLength = 400.0f;  
+		SpringArm->TargetArmLength = 400.0f;
+		SpringArm->SocketOffset = FVector(0.0f, 0.0f, 0.f);
 		SpringArm->bUsePawnControlRotation = true;
 
 		UE_LOG(LogTemp, Log, TEXT("3인칭 카메라로 복귀"));
