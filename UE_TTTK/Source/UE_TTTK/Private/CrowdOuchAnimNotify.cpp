@@ -19,6 +19,5 @@ void UCrowdOuchAnimNotify::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenc
 	{
 		// Ouch 애니메이션 완료 플래그 설정
 		OwnerCrowd->SetOuchAnimCompleted(true);
-		UE_LOG(LogTemp, Warning, TEXT("CrowdOuchAnimNotify: Ouch 애니메이션 완료 알림"));
 	}
 }

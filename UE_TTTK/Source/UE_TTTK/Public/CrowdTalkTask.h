@@ -26,4 +26,6 @@ public:
 
 	UPROPERTY()
 	class ACrowdAiController* AIController;
+
+	UCrowdTalkTask(const FObjectInitializer& ObjectInitializer);
 };

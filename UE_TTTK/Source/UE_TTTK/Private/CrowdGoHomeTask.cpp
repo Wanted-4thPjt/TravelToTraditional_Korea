@@ -20,7 +20,6 @@ EStateTreeRunStatus UCrowdGoHomeTask::EnterState(FStateTreeExecutionContext& Con
 	TargetPoint = OwnerCrowd -> GetGoHomeTargetPoint();
 	AIController->WalkToLocation(TargetPoint->GetActorLocation());
 	OwnerCrowd->SetCrowdCurrentState("Crowd.Event.GoHome");
-	UE_LOG(LogTemp,Warning,TEXT("Owner Crowd : %s 집가기 시작"),*OwnerCrowd->GetName());
 	return EStateTreeRunStatus::Running;
 	
 }
@@ -42,14 +41,12 @@ EStateTreeRunStatus UCrowdGoHomeTask::Tick(FStateTreeExecutionContext& Context, 
 	float dist = FVector::Dist(OwnerCrowd->GetActorLocation(),TargetPoint->GetActorLocation());
 	if (OwnerCrowd->GetVelocity().Length() <= 0.1f && dist<0.2f)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("=== 집 도착! ==="));
 		
 		//AIController->StopMovement();
 		//otator TargetRotation = UKismetMathLibrary::FindLookAtRotation(OwnerCrowd->GetActorLocation(), TargetPoint->GetActorLocation());
 		//TargetRotation = FRotator(0,TargetRotation.Yaw,0);
 		//OwnerCrowd->SetActorRotation(TargetRotation);
 
-		UE_LOG(LogTemp, Warning, TEXT("FinishTask 호출 - 상태 전환"));
 		FinishTask(true);
 		
 		return EStateTreeRunStatus::Succeeded;

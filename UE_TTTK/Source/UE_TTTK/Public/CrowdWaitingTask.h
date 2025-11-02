@@ -26,7 +26,9 @@ protected:
 		const FStateTreeActiveStates& CompletedActiveStates) override;
 	virtual EStateTreeRunStatus Tick(FStateTreeExecutionContext& Context, const float DeltaTime) override;
 	FTimerHandle TimeWaitingHandle;
+	FTimerHandle TimeCheckHandle;  // 시간 체크용 타이머
 	void WaitForTimeWaiting();
+	void CheckTimeOnTimer();  // 타이머로 시간 체크
 public:
 	class ACrowd* OwnerCrowd;
 	class ACrowdAiController* OwnerAiController;

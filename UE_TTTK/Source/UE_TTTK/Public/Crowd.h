@@ -37,6 +37,9 @@ public:
 	class ACrowdTargetPoint* CurrentCrowdTargetPoint;
 	UPROPERTY()
 	FVector currentTargetLocation = FVector::ZeroVector;
+
+	// 성능 최적화: TargetPoint에서의 인덱스 캐싱
+	int32 MyTargetPointIndex = -1;
 	
 
 	UPROPERTY(BlueprintReadOnly, Category = "Time")
@@ -47,6 +50,9 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Time")
 	bool bHasGoneHome = false;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Time")
+	bool bHasGoneWork = false;
 
 private:
 	bool bIsMoving;
@@ -111,7 +117,7 @@ public:
 	void SetOuchAnimCompleted(bool bCompleted) { bIsOuchAnimCompleted = bCompleted; }
 
 	UFUNCTION(BlueprintCallable, Category = "Time")
-	void ResetTimeFlags() { bShouldGoWork = false; bShouldGoHome = false; }
+	void ResetTimeFlags() { bShouldGoWork = false; bShouldGoHome = false; bHasGoneWork = false; bHasGoneHome = false; }
 
 	// 레그돌 관련 함수
 	UFUNCTION(BlueprintCallable, Category = "Ragdoll")

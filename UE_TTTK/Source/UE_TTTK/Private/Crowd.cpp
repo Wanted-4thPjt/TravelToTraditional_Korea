@@ -19,19 +19,9 @@
 // Sets default values
 ACrowd::ACrowd()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+ 	// 성능 최적화: Tick 비활성화 (필요 없음)
+	PrimaryActorTick.bCanEverTick = false;
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
-
-	// AudioComponent 생성 및 RootComponent에 부착
-	AudioComp = CreateDefaultSubobject<UAudioComponent>(TEXT("AudioComponent"));
-	if (AudioComp)
-	{
-		AudioComp->SetupAttachment(RootComponent);
-		AudioComp->bAutoActivate = false;// 자동 재생 비활성화
-		AudioComp->bAllowSpatialization = true; //시장 아줌마 거리에 따라서 다르게 들리도록 
-		
-	}
 
 	// 플래그 초기화
 	bIsOuchAnimCompleted = false;
@@ -41,23 +31,81 @@ ACrowd::ACrowd()
 void ACrowd::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// ========== 스켈레탈 메시 최적화 (핵심!) ==========
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (MeshComp)
+	{
+		// 클로스 완전 비활성화
+		MeshComp->ClothMaxDistanceScale = 0.0f;
+		MeshComp->bDisableClothSimulation = true;
+
+		
+		MeshComp->bEnableUpdateRateOptimizations = true;
+		MeshComp->AnimUpdateRateParams = new FAnimUpdateRateParameters();
+		MeshComp->AnimUpdateRateParams->ShiftBucket = EUpdateRateShiftBucket::ShiftBucket2;
+		MeshComp->AnimUpdateRateParams->bInterpolateSkippedFrames = true;
+		MeshComp->AnimUpdateRateParams->UpdateRate = 2; 
+		MeshComp->AnimUpdateRateParams->EvaluationRate = 2;
+
+		// LOD 설정 (자동)
+		MeshComp->SetForcedLOD(0);
+
+		// 불필요한 기능 비활성화
+		MeshComp->bPropagateCurvesToFollowers = false;
+	}
+
+	// Marketeer 타입일 때만 AudioComponent 생성 (성능 최적화)
+	if (CrowdData && CrowdData->GetCrowdType() == ECrowdType::Marketeer)
+	{
+		AudioComp = NewObject<UAudioComponent>(this, TEXT("AudioComponent"));
+		if (AudioComp)
+		{
+			AudioComp->RegisterComponent();
+			AudioComp->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+			AudioComp->bAutoActivate = false;
+			AudioComp->bAllowSpatialization = true;
+		}
+	}
+
+	// ========== CharacterMovement 최적화 ==========
+	UCharacterMovementComponent* Movement = GetCharacterMovement();
+	if (Movement)
+	{
+		Movement->MaxWalkSpeed = CrowdData->GetWalkSpeed();
+
+		// 이동 방향으로 회전 설정
+		Movement->bOrientRotationToMovement = true;  // 이동 방향으로 자동 회전
+		Movement->RotationRate = FRotator(0.0f, 540.0f, 0.0f);  // 회전 속도
+
+		// 불필요한 물리 연산 비활성화
+		Movement->bEnablePhysicsInteraction = false;  // 물리 객체와 상호작용 안함
+		Movement->bUseFlatBaseForFloorChecks = true;  // 바닥 체크 간소화
+
+	}
+
+	// 컨트롤러 회전 사용 안함 (이동 방향으로만 회전)
+	bUseControllerRotationYaw = false;
+
+	// ========== CapsuleComponent 최적화 ==========
 	UCapsuleComponent* Capsule = GetCapsuleComponent();
 	if (Capsule!=nullptr)
 	{
 		Capsule->OnComponentHit.AddDynamic(this,&ACrowd::OnCapsuleHit);
+
+		// 콜리전 최적화
+		Capsule->bMultiBodyOverlap = false;
+		// Capsule Tick은 콜리전에 필요하므로 유지
 	}
+
 	CollectingTargetPoints();
 	ATTTK_GameState* GameState = Cast<ATTTK_GameState>(GetWorld()->GetGameState());
-	GetCharacterMovement()->MaxWalkSpeed = CrowdData->GetWalkSpeed();
-	
-	
-	
 }
 
 void ACrowd::OnCapsuleHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	FVector NormalImpulse, const FHitResult& Hit)
 {
-	// 이미 레그돌 상태인 경우 아무 것도 하지 않음
+	
 	if (bIsRagdolled)
 	{
 		return;
@@ -82,7 +130,6 @@ void ACrowd::OnCapsuleHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 		if (HitPlayer && HitPlayer->bIsSwing && HitPlayer->bIsHandfire)
 		{
 			// 횃불을 휘두르고 있는 상태에서만 레그돌 활성화
-			UE_LOG(LogTemp, Warning, TEXT("[%s] 횃불에 맞아 레그돌 활성화!"), *GetName());
 			bHitBySwingingTorch = true; // 횃불에 맞았음을 표시
 			GetCharacterMovement()->StopMovementImmediately();
 			FStateTreeEvent OuchEvent;
@@ -92,7 +139,6 @@ void ACrowd::OnCapsuleHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 		else
 		{
 			// 횃불을 휘두르지 않은 상태에서는 일반 Ouch만
-			UE_LOG(LogTemp, Warning, TEXT("[%s] 플레이어와 부딪힘 (횃불 휘두르기 아님)"), *GetName());
 			bHitBySwingingTorch = false; // 횃불에 맞지 않았음을 표시
 			GetCharacterMovement()->StopMovementImmediately();
 			FStateTreeEvent OuchEvent;
@@ -132,12 +178,10 @@ class ACrowdTargetPoint* ACrowd::GetTargetByEnum()
 {
 	if (!CrowdData)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[%s] CrowdData가 nullptr!"), *GetName());
 		return nullptr;
 	}
 
 	ECrowdType Type = CrowdData->GetCrowdType();
-	UE_LOG(LogTemp, Warning, TEXT("[%s] CrowdType: %d"), *GetName(), (int32)Type);
 
 	FString TargetName;
 	switch (Type)
@@ -155,12 +199,10 @@ class ACrowdTargetPoint* ACrowd::GetTargetByEnum()
 		break;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[%s] 찾는 타겟 이름: %s"), *GetName(), *TargetName);
 
 	ACrowdTargetPoint* Target = GetTargetPoint(TargetName);
 	if (!Target)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[%s] '%s' 타겟을 찾을 수 없음!"), *GetName(), *TargetName);
 	}
 
 	return Target;
@@ -171,7 +213,6 @@ void ACrowd::CollectingTargetPoints()
 	TArray<class AActor*> crowdTargetPoints;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(),ACrowdTargetPoint::StaticClass(),crowdTargetPoints);
 
-	UE_LOG(LogTemp, Warning, TEXT("[%s] TargetPoint 총 개수: %d"), *GetName(), crowdTargetPoints.Num());
 
 	for (AActor* crowdTarget : crowdTargetPoints)
 	{
@@ -179,7 +220,6 @@ void ACrowd::CollectingTargetPoints()
 		if (CrowdTargetPoint!=nullptr)
 		{
 			TargetPoints.Add(CrowdTargetPoint->targetName,CrowdTargetPoint);
-			UE_LOG(LogTemp, Warning, TEXT("[%s] 추가: %s"), *GetName(), *CrowdTargetPoint->targetName);
 		}
 	}
 
@@ -192,7 +232,6 @@ void ACrowd::PlayGreeting()
 
 void ACrowd::PlayOuch()
 {
-	UE_LOG(LogTemp,Warning,TEXT("Ouch재생"));
 	bIsOuchAnimCompleted = false; 
 	PlayAnimMontage(OuchAnimMontage);
 }
@@ -238,9 +277,16 @@ bool ACrowd::CheckGoWorkTime()
 		int32 currentHour;
 		int32 currentMinute;
 		TimeState->GetCurrentTime(currentHour,currentMinute);
-		if (currentHour == CrowdData->GetGoWorkTime().X && currentMinute == CrowdData->GetGoWorkTime().Y)
+
+		int32 goWorkHour = CrowdData->GetGoWorkTime().X;
+		int32 goWorkMinute = CrowdData->GetGoWorkTime().Y;
+
+		int32 currentTimeInMinutes = currentHour * 60 + currentMinute;
+		int32 goWorkTimeInMinutes = goWorkHour * 60 + goWorkMinute;
+
+		// >= 비교로 변경 (1초마다 체크해도 놓치지 않음)
+		if (currentTimeInMinutes >= goWorkTimeInMinutes)
 		{
-			UE_LOG(LogTemp,Warning,TEXT("%d 시 %d 분"),currentHour,currentMinute);
 			return true;
 		}
 		else
@@ -252,30 +298,25 @@ bool ACrowd::CheckGoWorkTime()
 }
 void ACrowd::CheckTime(FTimeOfDayData TimeData)
 {
-	UE_LOG(LogTemp,Warning,TEXT("시간 체크 호출"));
 
 	ACrowdAiController* AiController = Cast<ACrowdAiController>(GetController());
 	if (AiController == nullptr || AiController->StateTreeComp == nullptr)
 	{
-		UE_LOG(LogTemp,Warning,TEXT("AIController 또는 StateTreeComp가 없음"));
 		return;
 	}
 
 	// StateTree가 시작되었는지 확인
 	if (!AiController->StateTreeComp->IsRunning())
 	{
-		UE_LOG(LogTemp,Warning,TEXT("StateTree가 아직 시작되지 않음"));
 		return;
 	}
 
 	if (CheckGoWorkTime())
 	{
-		UE_LOG(LogTemp,Warning,TEXT("일하러 갈 시간"));
 		FStateTreeEvent GoWorkEvent;
 		GoWorkEvent.Tag = FGameplayTag::RequestGameplayTag("Crowd.Event.GoWork");
 		AiController->StateTreeComp->SendStateTreeEvent(GoWorkEvent);
 		ATTTK_GameState* GameState = Cast<ATTTK_GameState>(GetWorld()->GetGameState());
-		UE_LOG(LogTemp,Warning,TEXT("일하러 가는 이벤트 추가"));
 		
 		return;
 	}
@@ -294,13 +335,11 @@ void ACrowd::MulitCast_Talk_Implementation(int32 index)
 {
 	if (!AudioComp)
 	{
-		UE_LOG(LogDialogue, Error, TEXT("[Crowd::Talk] AudioComp가 nullptr!"));
 		return;
 	}
 
 	if (!talkSounds.IsValidIndex(index))
 	{
-		UE_LOG(LogDialogue, Error, TEXT("[Crowd::Talk] 유효하지 않은 사운드 인덱스: %d"), index);
 		return;
 	}
 
@@ -313,7 +352,6 @@ void ACrowd::MulitCast_Talk_Implementation(int32 index)
 	
 	bIsTalking = true;
 	bIsListening = false;
-	UE_LOG(LogDialogue, Display, TEXT("[Crowd::Talk] 상태 변경 - bIsTalking: true, bIsListening: false"));
 
 	
 	AudioComp->OnAudioFinished.RemoveDynamic(this, &ACrowd::OnAudioFinishedCallback);
@@ -323,7 +361,6 @@ void ACrowd::MulitCast_Talk_Implementation(int32 index)
 	AudioComp->SetSound(talkSounds[index]);
 	AudioComp->Play();
 
-	UE_LOG(LogDialogue, Display, TEXT("[Crowd::Talk] 사운드 재생 시작 - Index: %d, Actor: %s"), index, *GetName());
 
 	
 	if (HasAuthority())
@@ -344,7 +381,6 @@ void ACrowd::OnAudioFinishedCallback()
 {
 	
 	bIsTalking = false;
-	UE_LOG(LogDialogue, Display, TEXT("[Crowd::OnAudioFinishedCallback] 음성 종료 - bIsTalking: false, Actor: %s"), *GetName());
 }
 
 void ACrowd::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -359,7 +395,6 @@ void ACrowd::EnableRagdoll()
 	USkeletalMeshComponent* MeshComp = GetMesh();
 	if (!MeshComp)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[Crowd::EnableRagdoll] Mesh가 nullptr!"));
 		return;
 	}
 
@@ -385,7 +420,6 @@ void ACrowd::EnableRagdoll()
 	MeshComp->SetSimulatePhysics(true);
 	MeshComp->SetAllBodiesSimulatePhysics(true);
 
-	UE_LOG(LogTemp, Warning, TEXT("[Crowd::EnableRagdoll] 레그돌 활성화: %s"), *GetName());
 }
 
 void ACrowd::DisableRagdoll()
@@ -393,7 +427,6 @@ void ACrowd::DisableRagdoll()
 	USkeletalMeshComponent* MeshComp = GetMesh();
 	if (!MeshComp)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[Crowd::DisableRagdoll] Mesh가 nullptr!"));
 		return;
 	}
 
@@ -420,7 +453,6 @@ void ACrowd::DisableRagdoll()
 		MovementComp->SetComponentTickEnabled(true);
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[Crowd::DisableRagdoll] 레그돌 비활성화: %s"), *GetName());
 }
 
 

@@ -58,8 +58,17 @@ public:
 	bool bisHome = false;
 	UPROPERTY()
 	FCrowdHome Homevar;
-	
+
+	// 디버그 드로우 활성화 여부 (성능 최적화를 위해 기본값 false)
+	UPROPERTY(EditAnywhere, Category = "Debug")
+	bool bEnableDebugDraw = false;
+
 	int32 ArrivedCount =0;
+
+	// 성능 최적화: 모든 인원 도착 여부 캐시
+	bool bAllArrived = false;
+	bool bDialogueStarted = false; // 대화 시작 여부 플래그 (중복 시작 방지)
+
 	bool IsAllArrived();
 		
 	UFUNCTION()
