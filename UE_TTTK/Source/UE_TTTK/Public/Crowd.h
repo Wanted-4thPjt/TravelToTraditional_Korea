@@ -51,6 +51,8 @@ public:
 private:
 	bool bIsMoving;
 	bool bIsOuchAnimCompleted; // Ouch 애니메이션 완료 플래그 (AnimNotify에서 설정)
+	bool bIsRagdolled = false; // 레그돌 상태 플래그 (한번 레그돌이 되면 영구 유지)
+	bool bHitBySwingingTorch = false; // 횃불 휘두르기에 맞았는지 체크
 	FName currentState;
 protected:
 	// Called when the game starts or when spawned
@@ -110,6 +112,20 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Time")
 	void ResetTimeFlags() { bShouldGoWork = false; bShouldGoHome = false; }
+
+	// 레그돌 관련 함수
+	UFUNCTION(BlueprintCallable, Category = "Ragdoll")
+	void EnableRagdoll();
+
+	UFUNCTION(BlueprintCallable, Category = "Ragdoll")
+	void DisableRagdoll();
+
+	// 레그돌 상태 확인
+	bool IsRagdolled() const { return bIsRagdolled; }
+
+	// 횃불에 맞았는지 확인 및 설정
+	bool WasHitBySwingingTorch() const { return bHitBySwingingTorch; }
+	void SetHitBySwingingTorch(bool bHit) { bHitBySwingingTorch = bHit; }
 
 	UPROPERTY(EditAnywhere, Category="TalkSound")
 	TArray<USoundBase*> talkSounds;

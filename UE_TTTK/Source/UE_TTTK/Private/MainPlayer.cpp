@@ -364,7 +364,25 @@ void AMainPlayer::Swing()
 {
 	if (bIsHandfire && !bIsSwing)
 	{
-		PlayAnimMontage(SwingMontage);
+		bIsSwing = true;
+
+		// 몽타주 재생
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance && SwingMontage)
+		{
+			float MontageDuration = AnimInstance->Montage_Play(SwingMontage);
+
+			// 몽타주 종료 콜백 등록
+			FOnMontageEnded MontageEndedDelegate;
+			MontageEndedDelegate.BindLambda([this](UAnimMontage* Montage, bool bInterrupted)
+			{
+				bIsSwing = false;
+				UE_LOG(LogTemp, Warning, TEXT("[MainPlayer] 횃불 휘두르기 종료"));
+			});
+			AnimInstance->Montage_SetEndDelegate(MontageEndedDelegate, SwingMontage);
+
+			UE_LOG(LogTemp, Warning, TEXT("[MainPlayer] 횃불 휘두르기 시작"));
+		}
 	}
 }
 

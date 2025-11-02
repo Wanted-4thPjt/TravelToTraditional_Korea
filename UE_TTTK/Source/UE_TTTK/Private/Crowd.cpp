@@ -57,40 +57,47 @@ void ACrowd::BeginPlay()
 void ACrowd::OnCapsuleHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	FVector NormalImpulse, const FHitResult& Hit)
 {
+	// 이미 레그돌 상태인 경우 아무 것도 하지 않음
+	if (bIsRagdolled)
+	{
+		return;
+	}
+
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance && AnimInstance->IsAnyMontagePlaying())
 	{
 		return;
 	}
-	UE_LOG(LogTemp, Warning, TEXT("===플레이어랑 부딫혓다===="));
+
 	ACrowdAiController* AIController = Cast<ACrowdAiController>(GetController());
-	if (OtherActor->ActorHasTag("Player"))
+	if (!AIController || !AIController->StateTreeComp)
 	{
-		
-		if (AIController!=nullptr)
+		return;
+	}
+
+	// 플레이어와 부딪힌 경우
+	if (OtherActor && OtherActor->ActorHasTag("Player"))
+	{
+		AMainPlayer* HitPlayer = Cast<AMainPlayer>(OtherActor);
+		if (HitPlayer && HitPlayer->bIsSwing && HitPlayer->bIsHandfire)
 		{
+			// 횃불을 휘두르고 있는 상태에서만 레그돌 활성화
+			UE_LOG(LogTemp, Warning, TEXT("[%s] 횃불에 맞아 레그돌 활성화!"), *GetName());
+			bHitBySwingingTorch = true; // 횃불에 맞았음을 표시
 			GetCharacterMovement()->StopMovementImmediately();
 			FStateTreeEvent OuchEvent;
 			OuchEvent.Tag = FGameplayTag::RequestGameplayTag("Crowd.Event.Ouch");
 			AIController->StateTreeComp->SendStateTreeEvent(OuchEvent.Tag);
-			UE_LOG(LogTemp, Warning, TEXT("===event전송===="));
 		}
-		
-		UE_LOG(LogTemp,Warning,TEXT("PlayerBeginOverlap"));
-	}
-	if (OtherActor-ActorHasTag("Weapon"))
-	{
-		AMainPlayer* hitplayer = Cast<AMainPlayer>(OtherActor);
-		if (hitplayer!=nullptr)
+		else
 		{
-			if (hitplayer->bIsSwing)
-			{
-
-				UE_LOG(LogTemp,Warning,TEXT("방맹이"));
-				FStateTreeEvent OuchEvent;
-				OuchEvent.Tag = FGameplayTag::RequestGameplayTag("Crowd.Event.Ouch");
-				AIController->StateTreeComp->SendStateTreeEvent(OuchEvent);
-			}
+			// 횃불을 휘두르지 않은 상태에서는 일반 Ouch만
+			UE_LOG(LogTemp, Warning, TEXT("[%s] 플레이어와 부딪힘 (횃불 휘두르기 아님)"), *GetName());
+			bHitBySwingingTorch = false; // 횃불에 맞지 않았음을 표시
+			GetCharacterMovement()->StopMovementImmediately();
+			FStateTreeEvent OuchEvent;
+			OuchEvent.Tag = FGameplayTag::RequestGameplayTag("Crowd.Event.Ouch");
+			AIController->StateTreeComp->SendStateTreeEvent(OuchEvent.Tag);
 		}
 	}
 }
@@ -345,7 +352,75 @@ void ACrowd::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLife
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(ACrowd, bIsTalking);
 	DOREPLIFETIME(ACrowd, bIsListening);
+}
 
+void ACrowd::EnableRagdoll()
+{
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (!MeshComp)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[Crowd::EnableRagdoll] Mesh가 nullptr!"));
+		return;
+	}
+
+	// 레그돌 상태 플래그 설정 (영구적으로 유지)
+	bIsRagdolled = true;
+
+	// 캐릭터 이동 비활성화
+	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
+	{
+		MovementComp->DisableMovement();
+		MovementComp->SetComponentTickEnabled(false);
+	}
+
+	// 캡슐 콜라이더 비활성화
+	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
+	{
+		Capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+
+	// 레그돌 활성화
+	MeshComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	MeshComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+	MeshComp->SetSimulatePhysics(true);
+	MeshComp->SetAllBodiesSimulatePhysics(true);
+
+	UE_LOG(LogTemp, Warning, TEXT("[Crowd::EnableRagdoll] 레그돌 활성화: %s"), *GetName());
+}
+
+void ACrowd::DisableRagdoll()
+{
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (!MeshComp)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[Crowd::DisableRagdoll] Mesh가 nullptr!"));
+		return;
+	}
+
+	// 레그돌 비활성화
+	MeshComp->SetSimulatePhysics(false);
+	MeshComp->SetAllBodiesSimulatePhysics(false);
+	MeshComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+
+	// 캡슐 콜라이더 재활성화
+	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
+	{
+		Capsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	}
+
+	// 위치 및 회전 초기화
+	MeshComp->SetRelativeLocation(FVector(0.f, 0.f, -90.f)); // 기본 위치로 (필요에 따라 조정)
+	MeshComp->SetRelativeRotation(FRotator(0.f, -90.f, 0.f)); // 기본 회전으로 (필요에 따라 조정)
+	MeshComp->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+
+	// 캐릭터 이동 재활성화
+	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
+	{
+		MovementComp->SetMovementMode(MOVE_Walking);
+		MovementComp->SetComponentTickEnabled(true);
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[Crowd::DisableRagdoll] 레그돌 비활성화: %s"), *GetName());
 }
 
 

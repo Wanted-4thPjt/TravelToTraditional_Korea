@@ -11,27 +11,48 @@ EStateTreeRunStatus UCrowdOuchTask::EnterState(FStateTreeExecutionContext& Conte
                                                const FStateTreeTransitionResult& Transition)
 {
 	UE_LOG(LogTemp, Error, TEXT("=== Crowd OuchState진입"));
-	
+
 	OwnerAiController = Cast<ACrowdAiController>(Context.GetOwner());
 	OwnerCrowd = Cast<ACrowd>(OwnerAiController->GetPawn());
-	OwnerAiController->Ouch();
+
+	if (OwnerCrowd)
+	{
+		// 횃불에 맞았을 때만 레그돌 활성화
+		if (OwnerCrowd->WasHitBySwingingTorch())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[CrowdOuchTask] 횃불에 맞아 레그돌 활성화"));
+			OwnerCrowd->EnableRagdoll();
+		}
+		else
+		{
+			// 횃불에 맞지 않았으면 일반 Ouch 애니메이션만 재생
+			UE_LOG(LogTemp, Warning, TEXT("[CrowdOuchTask] 일반 부딪힘 - 애니메이션만 재생"));
+			OwnerAiController->Ouch();
+		}
+	}
+
 	UE_LOG(LogTemp,Error,TEXT("====%s에서 Ouch Enter진입"),*(OwnerCrowd->GetCrowdCurrentState().ToString()))
 	return EStateTreeRunStatus::Running;
 }
 
 void UCrowdOuchTask::ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition)
 {
-	
-	//Super::ExitState(Context, Transition);
 	UE_LOG(LogTemp,Error,TEXT("===EXIT Ouch스테이트"));
-	if (Transition.SourceState.IsValid() && !OwnerCrowd->GetMesh()->GetAnimInstance()->IsAnyMontagePlaying()) // 이전 스텡이트 정보 가져오기
+
+	// 레그돌 상태인 경우 ExitState를 무시 (레그돌 상태 영구 유지)
+	if (OwnerCrowd && OwnerCrowd->IsRagdolled())
 	{
-		
+		UE_LOG(LogTemp, Warning, TEXT("[CrowdOuchTask] 레그돌 상태 - Exit 무시"));
+		return;
+	}
+
+	// 레그돌이 아닌 경우에만 이전 상태로 복귀
+	if (Transition.SourceState.IsValid() && OwnerCrowd && !OwnerCrowd->GetMesh()->GetAnimInstance()->IsAnyMontagePlaying())
+	{
 		FGameplayTag PrevieousTag = FGameplayTag::RequestGameplayTag(OwnerCrowd->GetCrowdCurrentState());
 		Context.SendEvent(PrevieousTag);
 		UE_LOG(LogTemp,Warning,TEXT("이전 스테이트 %s 행하는 사람 : %s"),*OwnerCrowd->GetCrowdCurrentState().ToString(),*OwnerCrowd->GetName());
 		FinishTask(true);
-		
 	}
 }
 
@@ -43,7 +64,13 @@ void UCrowdOuchTask::StateCompleted(FStateTreeExecutionContext& Context, const E
 
 EStateTreeRunStatus UCrowdOuchTask::Tick(FStateTreeExecutionContext& Context, const float DeltaTime)
 {
-	// AnimNotify가 발생하여 플래그가 true로 설정되었는지 확인
+	// 레그돌 상태인 경우 계속 Running 유지 (다른 상태로 전환 안됨)
+	if (OwnerCrowd && OwnerCrowd->IsRagdolled())
+	{
+		return EStateTreeRunStatus::Running;
+	}
+
+	// 레그돌이 아닌 경우 애니메이션 완료 확인
 	if (OwnerCrowd && !OwnerCrowd->GetMesh()->GetAnimInstance()->IsAnyMontagePlaying())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("CrowdOuchTask: Ouch 애니메이션 완료 감지, 상태 전환"));
