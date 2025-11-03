@@ -81,7 +81,7 @@ void UPlayerWidgetComponent::BindInputMappingContext()
 		if (UEnhancedInputComponent* eic = Cast<UEnhancedInputComponent>(ownerPlayerController->InputComponent))
 		{
 			eic->BindAction(IA_Chat, ETriggerEvent::Triggered, this, &UPlayerWidgetComponent::OnInputChatKey);
-			eic->BindAction(IA_Settings, ETriggerEvent::Triggered, this, &UPlayerWidgetComponent::OnInputSettingKey);
+			eic->BindAction(IA_Settings, ETriggerEvent::Started, this, &UPlayerWidgetComponent::OnInputSettingKey);
 			eic->BindAction(IA_Leaderboard, ETriggerEvent::Triggered, this, &UPlayerWidgetComponent::OnInputLeaderboardKey);
 				
 		}
