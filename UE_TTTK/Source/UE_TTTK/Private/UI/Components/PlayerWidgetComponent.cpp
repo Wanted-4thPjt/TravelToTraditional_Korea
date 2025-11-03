@@ -35,7 +35,7 @@ UPlayerWidgetComponent::UPlayerWidgetComponent()
 	{
 		chatLineWidgetFactory = tempChatLineWidget.Class;
 	}
-	if (ConstructorHelpers::FClassFinder<UChatLineWidget> tempMenuWidget(TEXT("/Game/UI/InContent/WBP_Menu.WBP_Menu_C"));
+	if (ConstructorHelpers::FClassFinder<UInContentMenuWidget> tempMenuWidget(TEXT("/Game/UI/InContent/WBP_Menu.WBP_Menu_C"));
 		tempMenuWidget.Succeeded()
 	)
 	{
