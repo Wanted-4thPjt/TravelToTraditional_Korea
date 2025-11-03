@@ -42,7 +42,13 @@ void USettingWidget::CloseSettingWindow()
 
 void USettingWidget::SaveCurrentSettings()
 {
+	OnSaveSettings.Broadcast();
+	
 	// TODO : 하위 Setting Widget들에서 정보 다 가져와서 저장.
+	graphicSettingWidget;	
+	controllerSettingWidget;
+	networkSettingWidget;
+	infoSettingWidget;	
 }
 
 void USettingWidget::InitializeSettings()

@@ -4,16 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+
 #include "InfoSettingWidget.generated.h"
 
 class UTextBlock;
 
-USTRUCT()
-struct UE_TTTK_API FInfoSettingProperties
-{
-	GENERATED_BODY()
-	
-};
+
 
 /**
  * 

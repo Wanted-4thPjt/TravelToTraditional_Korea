@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Data/SettingsData.h"
 #include "SettingWidget.generated.h"
 
 
@@ -15,6 +16,8 @@ class UGraphicSettingWidget;
 class UControllerSettingWidget;
 class UNetworkSettingWidget;
 class UInfoSettingWidget;
+
+DECLARE_MULTICAST_DELEGATE(FOnSaveSettings);
 
 /**
  * 
@@ -31,6 +34,7 @@ public:
 	UFUNCTION()
 	void CloseSettingWindow();
 
+	FOnSaveSettings OnSaveSettings;
 	UFUNCTION()
 	void SaveCurrentSettings();
 	UFUNCTION()
@@ -70,20 +74,24 @@ protected:
 	UPROPERTY(meta=(BindWidget))  //-> 현재 클래스의 OnConstruct에서 저장된 정보 불러오기.
 	TObjectPtr<UGraphicSettingWidget> graphicSettingWidget;
 	
+	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> controllerButton;
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UControllerSettingWidget> controllerSettingWidget;
+	
 	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> networkButton;
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UNetworkSettingWidget> networkSettingWidget;
 	
+	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> infoButton;
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UInfoSettingWidget> infoSettingWidget;
+	
 	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> closeButton;

@@ -19,8 +19,12 @@ class UE_TTTK_API USessionNode : public UUserWidget, public IUserObjectListEntry
 {
 	GENERATED_BODY()
 
+public:
+	void RefreshSessionParticipantsCount(const int32 newCount);
+
 protected:
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
+	void InitializeItem(UObject* ListItemObject) const;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
@@ -35,7 +39,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
 	UTextBlock* mapName;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
-	UTextBlock* playerCounter;
+	UTextBlock* currentPlayerCounter;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
+	UTextBlock* maxPlayerCounter;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
 	UTextBlock* hostPing;
 

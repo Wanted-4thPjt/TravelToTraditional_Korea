@@ -24,7 +24,8 @@ public:
 	virtual void NativeOnInitialized() override;
 
 	void PopulateSessionsList(const TArray<FOnlineSessionSearchResult>& SearchResults);
-
+	void ResetSessionsList();
+	
 private:
 	UFUNCTION()
 	void OnJoinButtonClicked();
@@ -34,6 +35,8 @@ private:
 	void OnSearchSessionsCompleted(const TArray<FOnlineSessionSearchResult>& results);
 	/*UFUNCTION()
 	void OnSessionNodeClicked(UObject* Item);*/
+	UFUNCTION()
+	void RefreshList();
 
 protected:	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
@@ -45,4 +48,7 @@ protected:
 	UButton* joinButton;
 	UPROPERTY(meta=(BindWidget))
 	UTextBlock* sessionFindText;
+
+private:
+	FTimerHandle refreshListTimer;
 };

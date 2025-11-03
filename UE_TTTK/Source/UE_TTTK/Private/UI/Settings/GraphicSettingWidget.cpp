@@ -7,7 +7,6 @@
 #include "Components/ComboBoxKey.h"
 #include "Components/Slider.h"
 #include "Components/TextBlock.h"
-#include "Data/TTTKUserSettings.h"
 #include "UI/Settings/SettingWidget.h"
 
 void UGraphicSettingWidget::NativeConstruct()
@@ -28,7 +27,7 @@ void UGraphicSettingWidget::NativeConstruct()
 	checkBoxWidgetStyle.UncheckedPressedImage.ImageSize = FVector2f(40.f, 40.f);
 	fpsShowingCheckBox->SetWidgetStyle(checkBoxWidgetStyle);
 	fpsShowingCheckBox->OnCheckStateChanged.AddDynamic(this, &UGraphicSettingWidget::OnToggleShowFPSCheckBox);
-
+	
 	antiAliasingDropdown->AddOption(FName("None"));
 	antiAliasingDropdown->AddOption(FName("FXAA"));
 	antiAliasingDropdown->AddOption(FName("TAA"));
@@ -44,11 +43,7 @@ void UGraphicSettingWidget::OnBrightnessValueChanged(float inChangeValue)
 
 void UGraphicSettingWidget::OnToggleShowFPSCheckBox(bool bIsChecked)
 {
-	if (!settingWidget) {return;}
-	if (bIsChecked)
-	{
-		
-	}
+	graphicSettings.bShowFPS = bIsChecked;
 }
 
 void UGraphicSettingWidget::OnAntiAliasingSelectionChanged(FName selectedItem, ESelectInfo::Type selectionType)
@@ -58,7 +53,6 @@ void UGraphicSettingWidget::OnAntiAliasingSelectionChanged(FName selectedItem, E
 	
 	FString command = "r.AntiAliasingMethod ";
 	
-	
 	if (selectedItem == FName("None"))
 	{
 		command += FString::FromInt(EAntiAliasingMethod::AAM_None);
@@ -67,13 +61,13 @@ void UGraphicSettingWidget::OnAntiAliasingSelectionChanged(FName selectedItem, E
 	{
 		command += FString::FromInt(EAntiAliasingMethod::AAM_FXAA);
 	}
-	if (selectedItem == FName("TAA"))
+	else if (selectedItem == FName("TAA"))
 	{
-		command += '2';
+		command += FString::FromInt(EAntiAliasingMethod::AAM_TemporalAA);
 	}
 	else if (selectedItem == FName("TSR"))
 	{
-		command += '4';
+		command += FString::FromInt(EAntiAliasingMethod::AAM_TSR);
 	}
 
 	settingWidget->ExecuteCommand(command);

@@ -10,4 +10,5 @@ void UInfoSettingWidget::NativeConstruct()
 	Super::NativeConstruct();
 
 	settingWidget = Cast<USettingWidget>(GetOuter());
+	
 }

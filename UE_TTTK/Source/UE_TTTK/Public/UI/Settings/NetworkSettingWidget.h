@@ -4,17 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Data/SettingsData.h"
 #include "NetworkSettingWidget.generated.h"
 
 class UTextBlock;
 class UEditableTextBox;
 
-USTRUCT()
-struct UE_TTTK_API FNetworkSettingProperties
-{
-	GENERATED_BODY()
-	
-};
+
+
 
 /**
  * 

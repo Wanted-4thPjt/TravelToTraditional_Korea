@@ -4,17 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Data/SettingsData.h"
 #include "ControllerSettingWidget.generated.h"
 
 class UTextBlock;
 class USlider;
 
-USTRUCT()
-struct UE_TTTK_API FControllerSettingProperties
-{
-	GENERATED_BODY()
-	
-};
 
 /**
  * 

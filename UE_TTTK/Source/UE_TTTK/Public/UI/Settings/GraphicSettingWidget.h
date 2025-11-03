@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Data/SettingsData.h"
 #include "GraphicSettingWidget.generated.h"
 
 class UTextBlock;
@@ -11,12 +12,7 @@ class USlider;
 class UComboBoxKey;
 class UCheckBox;
 
-USTRUCT()
-struct UE_TTTK_API FGraphicSettingProperties
-{
-	GENERATED_BODY()
-	
-};
+
 
 /**
  * 
@@ -54,4 +50,6 @@ protected:
 	TObjectPtr<UComboBoxKey> antiAliasingDropdown;
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UCheckBox> fpsShowingCheckBox;
+
+	FGraphicSettingProperties graphicSettings;
 };

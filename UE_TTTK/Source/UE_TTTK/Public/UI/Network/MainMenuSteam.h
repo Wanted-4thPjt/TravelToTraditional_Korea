@@ -7,6 +7,7 @@
 #include "OnlineSessionSettings.h"
 #include "MainMenuSteam.generated.h"
 
+class UImage;
 class UWidgetSwitcher;
 class USessionsEntry;
 class UCreatingSession;
@@ -50,6 +51,8 @@ protected:
 	UButton* goFindButton;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget), Category=MainWidget)
 	UButton* exitButton;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget), Category=MainWidget)
+	UImage* backgroundImage;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget), Category=HostWidget)
 	TObjectPtr<UCreatingSession> creatingSession;

@@ -4,21 +4,19 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "TTTKGameMode.generated.h"
+#include "MainMenuGameMode.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class UE_TTTK_API ATTTKGameMode : public AGameModeBase
+class UE_TTTK_API AMainMenuGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
-	
-public:
-	ATTTKGameMode();
-	virtual void OnPostLogin(AController* inPlayer) override;
-	virtual void Logout(AController* outPlayer) override;
 
+public:
+	AMainMenuGameMode();
+	
 protected:
 	virtual void BeginPlay() override;
 };
