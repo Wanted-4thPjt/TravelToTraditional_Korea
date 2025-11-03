@@ -8,34 +8,79 @@
 #include "OnlineSubsystemSteam.h"
 #include "OnlineSessionSettings.h"
 #include "OnlineSubsystemUtils.h"
+#include "UI/Network/LoadingWidget.h"
 #include "Data/MapInfo.h"
 #include "Data/PDA_MapList.h"
+#include "Data/TTTKUserSettings.h"
+#include "Engine/AssetManager.h"
 #include "Online/OnlineSessionNames.h"
 #include "Interfaces/OnlineSessionInterface.h"
+#include "Kismet/GameplayStatics.h"
+#include "Engine/StreamableManager.h"
+
+USteamSessionSubsystem::USteamSessionSubsystem()
+{
+	ConstructorHelpers::FClassFinder<ULoadingWidget> loadingWidgetFinder(TEXT("/Game/UI/MainMenu/WBP_Loading.WBP_Loading_C"));
+	if (loadingWidgetFinder.Succeeded())
+	{
+		loadingWidgetFactory = loadingWidgetFinder.Class;
+	}
+}
 
 void USteamSessionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 	steamMapSettings = USteamSessionSettings::Get();
 	IOnlineSubsystem* subsys = Online::GetSubsystem(GetWorld());
-	if (subsys)
-	{
-		sessionInterface = subsys->GetSessionInterface();
-		sessionInterface->OnCreateSessionCompleteDelegates.AddUObject(
-			this, &USteamSessionSubsystem::OnCompleteCreateSession);
-		sessionInterface->OnFindSessionsCompleteDelegates.AddUObject(
-			this, &USteamSessionSubsystem::OnCompleteFindSession);
-		sessionInterface->OnJoinSessionCompleteDelegates.AddUObject(
-			this, &USteamSessionSubsystem::OnCompleteJoinSession);
-		sessionInterface->OnDestroySessionCompleteDelegates.AddUObject(
-			this, &USteamSessionSubsystem::OnCompleteDestroySession);
-	}
+	if (!subsys) {return;}
+
+	sessionInterface = subsys->GetSessionInterface();
+	sessionInterface->OnCreateSessionCompleteDelegates.AddUObject(
+		this, &USteamSessionSubsystem::OnCompleteCreateSession);
+	sessionInterface->OnFindSessionsCompleteDelegates.AddUObject(
+		this, &USteamSessionSubsystem::OnCompleteFindSession);
+	sessionInterface->OnJoinSessionCompleteDelegates.AddUObject(
+		this, &USteamSessionSubsystem::OnCompleteJoinSession);
+	sessionInterface->OnDestroySessionCompleteDelegates.AddUObject(
+		this, &USteamSessionSubsystem::OnCompleteDestroySession);
+	sessionInterface->OnUpdateSessionCompleteDelegates.AddUObject(
+		this, &USteamSessionSubsystem::OnCompleteUpdateSession);
 
 	hostNamePair.Value = GetSteamNickName();
+
+	
+	//FStreamableManager& LoadingManager = UAssetManager::Get().GetStreamableManager();
+
+	BindCloudDelegates(subsys);
+	loadingWidget = CreateWidget<ULoadingWidget>(GetOuterUGameInstance(), loadingWidgetFactory);
 }
 
 void USteamSessionSubsystem::Deinitialize()
 {
+	IOnlineSubsystem* onlineSub = Online::GetSubsystem(GetWorld());
+	if (onlineSub)
+	{
+		IOnlineUserCloudPtr userCloud = onlineSub->GetUserCloudInterface();
+		if (userCloud.IsValid())
+		{
+			if (userCloud->OnReadUserFileCompleteDelegates.IsBoundToObject(this))
+			{
+				userCloud->OnReadUserFileCompleteDelegates.Clear();
+			}
+			if (userCloud->OnWriteUserFileCompleteDelegates.IsBoundToObject(this))
+			{
+				userCloud->OnWriteUserFileCompleteDelegates.Clear();
+			}
+		}
+	}
+	
+	UGameUserSettings* settings = UGameUserSettings::GetGameUserSettings();
+	if (settings)
+	{
+		settings->OnUpdateCloudDataFromGameUserSettings.Unbind();
+		settings->OnUpdateGameUserSettingsFileFromCloud.Unbind();
+	}
+	
 	Super::Deinitialize();
 }
 
@@ -61,11 +106,19 @@ void USteamSessionSubsystem::CreateSession(const FString& mapName, const FString
 					maxPlayerCount = mapInfo.maxPlayers;
 				}
 			}
+			if (loadingWidget)
+			{
+				loadingWidget->AddToViewport();
+				GetOuterUGameInstance()->GetTimerManager().SetTimer(loadingWidgetTimer,
+					[&]()->void
+					{
+						loadingWidget->RemoveFromParent();
+					}, mapInfo.desiredLoadingTime, false);
+			}
 		}
 		
-		FOnlineSessionSettings sessionSettings;
 		sessionSettings.bIsLANMatch = subsysName.IsEqual(FName(TEXT("NULL")));
-		sessionSettings.NumPublicConnections =10;// maxPlayerCount;
+		sessionSettings.NumPublicConnections = maxPlayerCount;
 		sessionSettings.bShouldAdvertise = true;  // open in Steam friend list
 		sessionSettings.bAllowJoinInProgress = true;  // allow participate in progress server
 		sessionSettings.bUsesPresence = true;  // for finding friends
@@ -74,8 +127,10 @@ void USteamSessionSubsystem::CreateSession(const FString& mapName, const FString
 		sessionSettings.Set<FString>(hostNamePair.Key, hostNamePair.Value, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 		sessionSettings.Set<FString>(displayNamePair.Key, displayNamePair.Value, EOnlineDataAdvertisementType::ViaOnlineService);
 		sessionSettings.Set<FString>(mapNamePair.Key, mapNamePair.Value, EOnlineDataAdvertisementType::ViaOnlineService);
+		sessionSettings.Set<int32>(participantsCountPair.Key, participantsCountPair.Value, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
 		FUniqueNetIdPtr netId = GetWorld()->GetFirstLocalPlayerFromController()->GetUniqueNetIdForPlatformUser().GetUniqueNetId();
+		
 		sessionInterface->CreateSession(*netId, FName(displayName), sessionSettings);
 	}
 }
@@ -109,9 +164,60 @@ void USteamSessionSubsystem::JoinSession(int32 sessionIndex)
 	results[sessionIndex].Session.SessionSettings.bUsesPresence = true;
 
 	FString displayName;
-	results[sessionIndex].Session.SessionSettings.Get(FName("DP_NAME"), displayName);
-
+	results[sessionIndex].Session.SessionSettings.Get(displayNamePair.Key, displayName);
+	results[sessionIndex].Session.SessionSettings.Get(mapNamePair.Key, mapNamePair.Value);
+	if (loadingWidget)
+	{
+		loadingWidget->AddToViewport();
+		
+		if (steamMapSettings->mapListAsset)
+		{
+			FMapInfo mapInfo;
+			steamMapSettings->mapListAsset->GetMapInfoByName(mapNamePair.Value, mapInfo);
+			
+			GetOuterUGameInstance()->GetTimerManager().SetTimer(loadingWidgetTimer,
+				[&]()->void
+				{
+					loadingWidget->RemoveFromParent();
+				}, mapInfo.desiredLoadingTime, false
+			);
+		}
+	}
 	sessionInterface->JoinSession(0, FName(displayName), results[sessionIndex]);
+}
+
+void USteamSessionSubsystem::OpenSessionEntry()
+{
+	if (!sessionInterface.IsValid()) {return;}
+	if (displayNamePair.Value.Len() == 0) {return;}
+	
+	sessionSettings.bShouldAdvertise = true;
+	sessionSettings.bAllowJoinInProgress = true;
+	sessionSettings.bUsesPresence = true;
+	
+	sessionInterface->UpdateSession(FName(displayNamePair.Value), sessionSettings);
+}
+
+void USteamSessionSubsystem::CloseSessionEntry()
+{
+	if (!sessionInterface.IsValid()) {return;}
+	if (displayNamePair.Value.Len() == 0) {return;}
+	
+	sessionSettings.bShouldAdvertise = false;
+	sessionSettings.bAllowJoinInProgress = false;
+	sessionSettings.bUsesPresence = false;
+	
+	sessionInterface->UpdateSession(FName(displayNamePair.Value), sessionSettings);
+}
+
+void USteamSessionSubsystem::RefreshSessionInfo(const int32& changedParticipantsCount)
+{
+	if (!sessionInterface.IsValid()) {return;}
+	if (displayNamePair.Value.Len() == 0) {return;}
+	
+	sessionSettings.Get(participantsCountPair.Key, participantsCountPair.Value);
+	sessionSettings.Set(participantsCountPair.Key, participantsCountPair.Value + changedParticipantsCount);
+	sessionInterface->UpdateSession(FName(displayNamePair.Value), sessionSettings);
 }
 
 bool USteamSessionSubsystem::DestroySession()
@@ -141,8 +247,12 @@ FString USteamSessionSubsystem::GetSteamNickName() const
 
 	IOnlineIdentityPtr Identity = OnlineSub->GetIdentityInterface();
 	if (!Identity.IsValid()) return TEXT("Unknown");
-
+	
 	FString Nickname = Identity->GetPlayerNickname(0);
+	if (!OnlineSub->GetSubsystemName().IsEqual("STEAM"))
+	{
+		Nickname = TEXT("Local_") + Nickname.Left(5);
+	}
 	return Nickname.IsEmpty() ? TEXT("Unknown") : Nickname;
 }
 
@@ -157,6 +267,7 @@ void USteamSessionSubsystem::OnCompleteCreateSession(FName inSessionName, bool b
 	}
 	else
 	{
+		if (loadingWidget) {loadingWidget->RemoveFromParent();}
 		UE_LOG(LogTemp, Warning, TEXT("[%s] 세션 생성 실패"), *inSessionName.ToString());
 	}
 }
@@ -195,8 +306,16 @@ void USteamSessionSubsystem::OnCompleteJoinSession(FName SessionName, EOnJoinSes
 		UE_LOG(LogTemp, Warning, TEXT("URL : %s"), *url);
 		APlayerController* pc = GetWorld()->GetFirstPlayerController();
 		pc->ClientTravel(url, TRAVEL_Absolute);
+		return;
 	}
-	
+
+	if (loadingWidget) {loadingWidget->RemoveFromParent();}
+	mapNamePair.Value.Empty();
+}
+
+void USteamSessionSubsystem::OnCompleteUpdateSession(FName SessionName, bool bWasSuccess)
+{
+	if (!bWasSuccess) {return;}
 }
 
 void USteamSessionSubsystem::OnCompleteDestroySession(FName SessionName, bool bWasSuccess)
@@ -217,4 +336,93 @@ void USteamSessionSubsystem::OnCompleteDestroySession(FName SessionName, bool bW
 	// TODO: MainMenu로 나가기 || 프로그램 종료로 나누기
 	FGenericPlatformMisc::RequestExit(false);
 	
+}
+
+void USteamSessionSubsystem::BindCloudDelegates(IOnlineSubsystem* onlineSubsys)
+{
+	IOnlineUserCloudPtr userCloud = onlineSubsys->GetUserCloudInterface();
+	if (!userCloud.IsValid()) {return;}
+
+	UTTTKUserSettings* settings = UTTTKUserSettings::Get();
+	if (!IsValid(settings)) {return;}
+
+	settings->OnUpdateGameUserSettingsFileFromCloud.BindUObject(
+		this, &USteamSessionSubsystem::LoadUserSettingsFromCloud);
+	settings->OnUpdateCloudDataFromGameUserSettings.BindUObject(
+		this, &USteamSessionSubsystem::SaveUserSettingsToCloud);
+	userCloud->OnReadUserFileCompleteDelegates.AddUObject(this, &USteamSessionSubsystem::OnCompleteReadUserCloudData);
+}
+
+void USteamSessionSubsystem::OnCompleteReadUserCloudData(bool bWasSuccess, const FUniqueNetId& netId,
+                                                         const FString& FileName)
+{
+	UGameUserSettings* settings = UGameUserSettings::GetGameUserSettings();
+	if (!IsValid(settings)) {return;}
+
+	if (bWasSuccess)
+	{
+		IOnlineSubsystem* subsys = Online::GetSubsystem(GetWorld());
+		if (!subsys) return;
+		IOnlineUserCloudPtr userCloud = subsys->GetUserCloudInterface();
+		if (!userCloud.IsValid()) {return;}
+		TArray<uint8> fileData;
+		if (userCloud->GetFileContents(netId, FileName, fileData))
+		{
+			FString filePath = FPaths::GeneratedConfigDir() + UGameplayStatics::GetPlatformName() + "/" +  GGameUserSettingsIni + ".ini";
+			if (!FPaths::DirectoryExists(FPaths::GetPath(filePath)))
+			{
+				IFileManager::Get().MakeDirectory(*FPaths::GetPath(filePath), true);
+			}
+			if (!FFileHelper::SaveArrayToFile(fileData, *filePath))
+			{
+				settings->LoadSettings(false);
+				settings->ApplySettings(false);
+				return;
+			}
+		}
+	}
+	
+	settings->LoadSettings(bWasSuccess);
+	settings->ApplySettings(bWasSuccess);
+	
+	
+}
+
+bool USteamSessionSubsystem::LoadUserSettingsFromCloud(const FString& FilePath)
+{
+	IOnlineSubsystem* subsys = Online::GetSubsystem(GetWorld());
+	if (!subsys || subsys->GetSubsystemName() != FName(TEXT("STEAM"))) {return false;}
+
+	IOnlineUserCloudPtr userCloud = subsys->GetUserCloudInterface();
+	if (!userCloud.IsValid()) {return false;}
+
+	IOnlineIdentityPtr identity =  subsys->GetIdentityInterface();
+	if (!identity.IsValid()) {return false;}
+
+	FUniqueNetIdPtr netId = identity->GetUniquePlayerId(0);
+	if (!netId.IsValid()) {return false;}
+
+	if (!userCloud->ReadUserFile(*netId.Get(), *GGameUserSettingsIni)) {return false;}
+
+	return true;
+}
+
+bool USteamSessionSubsystem::SaveUserSettingsToCloud(const FString& FilePath)
+{	
+	IOnlineSubsystem* subsys = Online::GetSubsystem(GetWorld());
+	if (!subsys) {return false;}
+
+	IOnlineUserCloudPtr userCloud = subsys->GetUserCloudInterface();
+	if (!userCloud.IsValid()) {return false;}
+
+	IOnlineIdentityPtr identity =  subsys->GetIdentityInterface();
+	if (!identity.IsValid()) {return false;}
+
+	FUniqueNetIdPtr netId = identity->GetUniquePlayerId(0);
+	if (!netId.IsValid()) {return false;}
+	
+	TArray<uint8> fileData;
+	if (!FFileHelper::LoadFileToArray(fileData, *FilePath)) {return false;}
+
+	return userCloud->WriteUserFile(*netId.Get(), *GGameUserSettingsIni, fileData);
 }

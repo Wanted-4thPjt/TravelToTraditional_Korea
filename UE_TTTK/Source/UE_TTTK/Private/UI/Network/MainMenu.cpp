@@ -1,14 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Public/UI/MainMenu.h"
+#include "UI/Network/MainMenu.h"
 
-#include "SocketSubsystem.h"
-#include "Components/VerticalBox.h"
 #include "Components/Button.h"
 #include "Components/CanvasPanel.h"
 #include "Components/EditableTextBox.h"
-#include "Kismet/GameplayStatics.h"
 
 
 void UMainMenu::NativeConstruct()

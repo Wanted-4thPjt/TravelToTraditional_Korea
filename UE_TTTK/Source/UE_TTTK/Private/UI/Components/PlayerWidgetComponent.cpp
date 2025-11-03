@@ -11,6 +11,7 @@
 #include "UI/ChatLineWidget.h"
 #include "UI/PlayerWidget.h"
 #include "UI/ChatWidget.h"
+#include "UI/InContentMenuWidget.h"
 
 
 // Sets default values for this component's properties
@@ -34,6 +35,12 @@ UPlayerWidgetComponent::UPlayerWidgetComponent()
 	{
 		chatLineWidgetFactory = tempChatLineWidget.Class;
 	}
+	if (ConstructorHelpers::FClassFinder<UChatLineWidget> tempMenuWidget(TEXT("/Game/UI/InContent/WBP_Menu.WBP_Menu_C"));
+		tempMenuWidget.Succeeded()
+	)
+	{
+		menuWidgetFactory = tempMenuWidget.Class;
+	}
 }
 
 
@@ -56,6 +63,8 @@ void UPlayerWidgetComponent::InitPlayerControllerWidget()
 	if (!IsValid(ownerPlayerController)) {return;}
 	playerWidget = CreateWidget<UPlayerWidget>(ownerPlayerController, playerWidgetFactory);
 	playerWidget->AddToViewport();
+
+	menuWidget = CreateWidget<UInContentMenuWidget>(ownerPlayerController, menuWidgetFactory);
 }
 
 void UPlayerWidgetComponent::BindInputMappingContext()
@@ -117,7 +126,18 @@ void UPlayerWidgetComponent::OnInputSettingKey(const FInputActionValue& inputAct
 {
 	if (!IsValid(ownerPlayerController)) {return;}
 
-	//uiInputMode.SetWidgetToFocus();
+	if (menuWidget->IsInViewport())
+	{
+		menuWidget->RemoveFromParent();
+		ownerPlayerController->SetShowMouseCursor(false);
+		ownerPlayerController->SetInputMode(FInputModeGameOnly());
+		return;
+	}
+
+	menuWidget->AddToViewport();
+	uiInputMode.SetWidgetToFocus(menuWidget->TakeWidget());
+	ownerPlayerController->SetInputMode(uiInputMode);
+	ownerPlayerController->SetShowMouseCursor(true);
 	
 }
 

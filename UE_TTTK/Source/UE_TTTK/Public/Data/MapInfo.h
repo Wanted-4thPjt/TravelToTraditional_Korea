@@ -17,6 +17,9 @@ struct UE_TTTK_API FMapInfo
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "MapInfo", meta=(AllowedClasses="/Script/Engine.World"))
 	TSoftObjectPtr<UWorld> mapAsset;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "MapInfo")
+	float desiredLoadingTime = 0.f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "MapInfo")
 	TSoftObjectPtr<UTexture2D> mapIcon;

@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "PlayerWidgetComponent.generated.h"
 
+class UInContentMenuWidget;
 struct FInputActionValue;
 class UInputAction;
 class UChatLineWidget;
@@ -58,8 +59,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Widget")
 	TSubclassOf<UChatLineWidget> chatLineWidgetFactory;
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Widget")
+	TSubclassOf<UInContentMenuWidget> menuWidgetFactory;
+	
 	UPROPERTY(EditDefaultsOnly, Category="Widget")
 	TObjectPtr<UPlayerWidget> playerWidget;
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UInContentMenuWidget> menuWidget;
 
 private:
 	UPROPERTY()

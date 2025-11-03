@@ -1,14 +1,16 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "UI/MainMenuSteam.h"
+#include "UI/Network/MainMenuSteam.h"
 
-#include "OnlineSessionSettings.h"
 #include "Components/Button.h"
 #include "Components/WidgetSwitcher.h"
+
+#include "Kismet/KismetSystemLibrary.h"
 #include "Network/SteamSessionSubsystem.h"
-#include "UI/CreatingSession.h"
-#include "UI/SessionsEntry.h"
+
+#include "UI/Network/CreatingSession.h"
+#include "UI/Network/SessionsEntry.h"
 
 void UMainMenuSteam::NativeConstruct()
 {
@@ -20,9 +22,6 @@ void UMainMenuSteam::NativeConstruct()
 void UMainMenuSteam::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
-	
-	UE_LOG(LogTemp, Warning, TEXT("MainMenuSteam::NativeOnInitialized 호출됨"));
-
 	
 	if (IsValid(goLobbyButton))
 	{
@@ -42,8 +41,7 @@ void UMainMenuSteam::NativeOnInitialized()
 	{
 		exitButton->OnClicked.AddDynamic(this, &UMainMenuSteam::ClickExit);
 	}
-
-
+	
 }
 
 void UMainMenuSteam::ClickLobbyButton()
@@ -51,6 +49,7 @@ void UMainMenuSteam::ClickLobbyButton()
 	lobbySwitcher->SetActiveWidgetIndex(0);
 	goLobbyButton->SetVisibility(ESlateVisibility::Hidden);
 	goLobbyButton->SetIsEnabled(false);
+	sessionsEntry->ResetSessionsList();
 }
 
 void UMainMenuSteam::ClickHostButton()
@@ -58,6 +57,7 @@ void UMainMenuSteam::ClickHostButton()
 	lobbySwitcher->SetActiveWidgetIndex(1);
 	goLobbyButton->SetVisibility(ESlateVisibility::Visible);
 	goLobbyButton->SetIsEnabled(true);
+	
 }
 
 void UMainMenuSteam::ClickFindButton()
@@ -65,12 +65,12 @@ void UMainMenuSteam::ClickFindButton()
 	lobbySwitcher->SetActiveWidgetIndex(2);
 	goLobbyButton->SetVisibility(ESlateVisibility::Visible);
 	goLobbyButton->SetIsEnabled(true);
+	
 }
 
 
 void UMainMenuSteam::ClickExit()
 {
-	UE_LOG(LogTemp, Warning, TEXT("ClickExit 호출됨!"));
 	USteamSessionSubsystem* sss = GetGameInstance()->GetSubsystem<USteamSessionSubsystem>();
 	if (!(sss && sss->DestroySession()))
 	{
@@ -78,6 +78,8 @@ void UMainMenuSteam::ClickExit()
 		{
 			GetWorld()->GetNetDriver()->Shutdown();
 		}
-		FGenericPlatformMisc::RequestExit(false);
+		UWorld* world = GetWorld();
+		if (!IsValid(world)) {return;}
+		UKismetSystemLibrary::QuitGame(world, world->GetFirstPlayerController(), EQuitPreference::Quit, false);
 	}
 }

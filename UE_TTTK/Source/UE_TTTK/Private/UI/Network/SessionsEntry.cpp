@@ -1,18 +1,20 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "UI/SessionsEntry.h"
+#include "UI/Network/SessionsEntry.h"
 
 #include "Components/ListView.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
-#include "UI/SessionNodeData.h"
 #include "Network/SteamSessionSubsystem.h"
-#include "UI/MainMenuSteam.h"
+#include "UI/Network/SessionNodeData.h"
+#include "UI/Network/MainMenuSteam.h"
 
 void USessionsEntry::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
+
+	sessionsListContainer->SetSelectionMode(ESelectionMode::Type::Single);
 
 	if (IsValid(joinButton))
 	{
@@ -42,9 +44,15 @@ void USessionsEntry::PopulateSessionsList(const TArray<FOnlineSessionSearchResul
 
 	sessionsListContainer->ClearListItems();
 	USteamSessionSubsystem* sss = GetGameInstance()->GetSubsystem<USteamSessionSubsystem>();
+	TArray<UObject*> sessions;
 	for (int32 i = 0; i < SearchResults.Num(); ++i)
 	{
 		const FOnlineSessionSearchResult& Result = SearchResults[i];
+
+		if (Result.Session.SessionSettings.bShouldAdvertise == false)
+		{
+			continue;
+		}
 
 		USessionNodeData* NodeData = NewObject<USessionNodeData>();
 		
@@ -60,7 +68,21 @@ void USessionsEntry::PopulateSessionsList(const TArray<FOnlineSessionSearchResul
 		NodeData->sessionName = tempValue;
 		Result.Session.SessionSettings.Get(sss->GetMapNameKey(), tempValue);
 		NodeData->mapName = tempValue;
-		sessionsListContainer->AddItem(NodeData);
+		sessions.Add(NodeData);
+	}
+	sessionsListContainer->SetListItems(sessions);
+	sessionsListContainer->RequestRefresh();
+	GetWorld()->GetTimerManager().SetTimer(
+		refreshListTimer, this, &USessionsEntry::RefreshList,
+		5.f, true);
+}
+
+void USessionsEntry::ResetSessionsList()
+{
+	sessionsListContainer->ClearListItems();
+	if (refreshListTimer.IsValid())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(refreshListTimer);
 	}
 }
 
@@ -104,6 +126,11 @@ void USessionsEntry::OnSearchSessionsCompleted(const TArray<FOnlineSessionSearch
 	PopulateSessionsList(results);
 	sessionFindText->SetText(FText::FromString("Search"));
 	searchButton->SetIsEnabled(true);
+}
+
+void USessionsEntry::RefreshList()
+{
+	sessionsListContainer->RequestRefresh();
 }
 
 /*

@@ -16,6 +16,8 @@ class UE_TTTK_API ATTTKGameMode : public AGameModeBase
 	
 public:
 	ATTTKGameMode();
+	virtual void OnPostLogin(AController* inPlayer) override;
+	virtual void Logout(AController* outPlayer) override;
 
 protected:
 	virtual void BeginPlay() override;
