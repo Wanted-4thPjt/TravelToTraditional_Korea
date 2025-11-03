@@ -135,7 +135,6 @@ void UPlayerWidgetComponent::OnInputSettingKey(const FInputActionValue& inputAct
 	}
 
 	menuWidget->AddToViewport();
-	uiInputMode.SetWidgetToFocus(menuWidget->TakeWidget());
 	ownerPlayerController->SetInputMode(uiInputMode);
 	ownerPlayerController->SetShowMouseCursor(true);
 	
