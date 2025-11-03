@@ -92,7 +92,7 @@ void UViewComponent::ShootLineTrace()
 	//DrawDebugLine(GetWorld(), startPos, endPos, FColor::Magenta, false, 1, 0, 1);
 	if (GetWorld()->LineTraceSingleByChannel(hitResult, startPos, endPos, ECC_Visibility, queryParams, responseParams))
 	{
-		DrawDebugSphere(GetWorld(), hitResult.ImpactPoint, 10.f, 12, FColor::Red, false, 1.0f);
+		//DrawDebugSphere(GetWorld(), hitResult.ImpactPoint, 10.f, 12, FColor::Red, false, 1.0f);
 	}
 	OnViewSthByLineTrace.Broadcast(hitResult);
 }

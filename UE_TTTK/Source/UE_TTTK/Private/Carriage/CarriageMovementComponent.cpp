@@ -229,53 +229,53 @@ void UCarriageMovementComponent::TraceGround(const FVector& BaseLocation, const 
 		RearHit, RearTraceStart, RearTraceEnd, ECC_Visibility, QueryParams
 	);
 
-	// 디버그 드로우
-	DrawDebugLine(
-		GetWorld(),
-		FrontTraceStart,
-		FrontTraceEnd,
-		bFrontHit ? FColor::Green : FColor::Red,
-		false,
-		-1.0f,
-		0,
-		2.0f
-	);
-
-	DrawDebugLine(
-		GetWorld(),
-		RearTraceStart,
-		RearTraceEnd,
-		bRearHit ? FColor::Green : FColor::Red,
-		false,
-		-1.0f,
-		0,
-		2.0f
-	);
+	// // 디버그 드로우
+	// DrawDebugLine(
+	// 	GetWorld(),
+	// 	FrontTraceStart,
+	// 	FrontTraceEnd,
+	// 	bFrontHit ? FColor::Green : FColor::Red,
+	// 	false,
+	// 	-1.0f,
+	// 	0,
+	// 	2.0f
+	// );
+	//
+	// DrawDebugLine(
+	// 	GetWorld(),
+	// 	RearTraceStart,
+	// 	RearTraceEnd,
+	// 	bRearHit ? FColor::Green : FColor::Red,
+	// 	false,
+	// 	-1.0f,
+	// 	0,
+	// 	2.0f
+	// );
 
 	if (bFrontHit)
 	{
-		DrawDebugSphere(
-			GetWorld(),
-			FrontHit.Location,
-			15.0f,
-			12,
-			FColor::Cyan,
-			false,
-			-1.0f
-		);
+		// DrawDebugSphere(
+		// 	GetWorld(),
+		// 	FrontHit.Location,
+		// 	15.0f,
+		// 	12,
+		// 	FColor::Cyan,
+		// 	false,
+		// 	-1.0f
+		// );
 	}
 
 	if (bRearHit)
 	{
-		DrawDebugSphere(
-			GetWorld(),
-			RearHit.Location,
-			15.0f,
-			12,
-			FColor::Cyan,
-			false,
-			-1.0f
-		);
+		// DrawDebugSphere(
+		// 	GetWorld(),
+		// 	RearHit.Location,
+		// 	15.0f,
+		// 	12,
+		// 	FColor::Cyan,
+		// 	false,
+		// 	-1.0f
+		// );
 	}
 
 	// 지면 높이 계산
