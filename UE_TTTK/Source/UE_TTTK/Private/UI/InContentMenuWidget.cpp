@@ -12,6 +12,7 @@ void UInContentMenuWidget::NativeConstruct()
 	
 	continueButton->OnClicked.AddDynamic(this, &UInContentMenuWidget::OnClickedContinue);
 	exitButton->OnClicked.AddDynamic(this, &UInContentMenuWidget::OnClickedExit);
+	settingButton->OnClicked.AddDynamic(this, &UInContentMenuWidget::OnClickedSetting);
 }
 
 void UInContentMenuWidget::OnClickedContinue()
@@ -24,4 +25,8 @@ void UInContentMenuWidget::OnClickedContinue()
 void UInContentMenuWidget::OnClickedExit()
 {
 	UKismetSystemLibrary::QuitGame(GetWorld(), GetOwningPlayer(), EQuitPreference::Quit, false);
+}
+
+void UInContentMenuWidget::OnClickedSetting()
+{
 }

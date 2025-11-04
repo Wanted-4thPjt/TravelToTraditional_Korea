@@ -9,7 +9,7 @@ void UInputMappingsSettings::PostInitProperties()
 	prevMappings = inputMappings;
 }
 
-void UInputMappingsSettings::PostEditChangeChainProperty(struct FPropertyChangedChainEvent& PropertyChangedEvent)
+void UInputMappingsSettings::PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeChainProperty(PropertyChangedEvent);
 

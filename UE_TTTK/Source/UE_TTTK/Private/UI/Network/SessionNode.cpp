@@ -10,6 +10,7 @@
 #include "Data/PDA_MapList.h"
 #include "Network/SteamSessionSettings.h"
 #include "UI/Network/SessionNodeData.h"
+#include "Utility/Base64Converter.h"
 
 
 void USessionNode::RefreshSessionParticipantsCount(const int32 newCount)
@@ -38,14 +39,14 @@ void USessionNode::InitializeItem(UObject* ListItemObject) const
 		mapSettings->mapListAsset->GetMapInfoByName(data->mapName, mapInfo);
 	}
 	
-	sessionName->SetText(FText::FromString(data->sessionName));
+	sessionName->SetText(FText::FromString(UBase64Converter::StringConvertFromBase64(data->sessionName)));
 	mapName->SetText(mapInfo.displayName);
-	hostName->SetText(FText::FromString(data->hostName));
+	hostName->SetText(FText::FromString(UBase64Converter::StringConvertFromBase64(data->hostName)));
 	mapIcon->SetBrushFromTexture(mapInfo.mapIcon.Get());
 	FString counterText = FString::Printf(
-			TEXT(" / %d "),
+			TEXT(" /  %d "),
 			data->maxPlayerCount
-		);
+	);
 	maxPlayerCounter->SetText(FText::FromString(counterText));
 	currentPlayerCounter->SetText(FText::AsNumber(data->currentPlayerCount));
 	hostPing->SetText(FText::AsNumber(data->ping));

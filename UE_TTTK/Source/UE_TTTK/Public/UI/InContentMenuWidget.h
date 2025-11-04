@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "InContentMenuWidget.generated.h"
 
+class USettingWidget;
 class UButton;
 class UWidgetSwitcher;
 /**
@@ -24,13 +25,17 @@ protected:
 	void OnClickedContinue();
 	UFUNCTION()
 	void OnClickedExit();
+	UFUNCTION()
+	void OnClickedSetting();
 
 public:
 	UPROPERTY(meta=(BindWidget))
-	UWidgetSwitcher* settingsWidgetSwitcher;
-
-	UPROPERTY(meta=(BindWidget))
 	UButton* continueButton;
 	UPROPERTY(meta=(BindWidget))
+	UButton* settingButton;
+	UPROPERTY(meta=(BindWidget))
 	UButton* exitButton;
+
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<USettingWidget> settingsWidget;
 };

@@ -13,9 +13,11 @@ UInteractionComponent::UInteractionComponent()
 
 	SetIsReplicatedByDefault(true);
 	
-	FInputMappingData data = UInputMappingsSettings::Get()->inputMappings["IMC_Interaction"];
-	IMC_Interaction = data.inputMappingContext;
-	IA_Interaction = data.inputActions["IA_Interaction"];
+	if (const FInputMappingData* data = UInputMappingsSettings::Get()->inputMappings.Find("IMC_Interaction"))
+	{
+		IMC_Interaction = data->inputMappingContext;
+		IA_Interaction = data->inputActions["IA_Interaction"];
+	}
 	
 
 	ComponentTags.Add("Interaction");

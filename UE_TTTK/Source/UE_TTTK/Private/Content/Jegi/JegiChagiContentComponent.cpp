@@ -14,13 +14,14 @@ UJegiChagiContentComponent::UJegiChagiContentComponent()
 	PrimaryComponentTick.bStartWithTickEnabled = false;  // 활성화 시에만 Tick
 
 	// InputMappingsSettings에서 로드
-	const FInputMappingData* data = UInputMappingsSettings::Get()->inputMappings.Find("IMC_JegiChagi");
-	if (!data) {return;}
-	inputMappingContext = data->inputMappingContext;
-	IA_Kick_L = data->inputActions["IA_Kick_L"];
-	IA_Kick_R = data->inputActions["IA_Kick_R"];
-	IA_MoveLeft = data->inputActions["IA_MoveLeft"];
-	IA_MoveRight = data->inputActions["IA_MoveRight"];
+	if (const FInputMappingData* data = UInputMappingsSettings::Get()->inputMappings.Find("IMC_JegiChagi"))
+	{
+		inputMappingContext = data->inputMappingContext;
+		IA_Kick_L = data->inputActions["IA_Kick_L"];
+		IA_Kick_R = data->inputActions["IA_Kick_R"];
+		IA_MoveLeft = data->inputActions["IA_MoveLeft"];
+		IA_MoveRight = data->inputActions["IA_MoveRight"];
+	}
 }
 
 void UJegiChagiContentComponent::TickComponent(float DeltaTime, ELevelTick TickType,

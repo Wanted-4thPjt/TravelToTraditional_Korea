@@ -4,13 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
-#include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
+#include "EnhancedInputComponent.h"
 #include "InputMappingsSettings.generated.h"
-
-class UInputAction;
-class UInputMappingContext;
 
 USTRUCT(BlueprintType)
 struct UE_TTTK_API FInputMappingData
@@ -27,7 +24,7 @@ struct UE_TTTK_API FInputMappingData
 /**
  * 
  */
-UCLASS(Config=TTTK, meta=(DisplayName="CachedInputContexts"))
+UCLASS(Config=Game, meta=(DisplayName="CachedInputContexts"))
 class UE_TTTK_API UInputMappingsSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
@@ -40,6 +37,8 @@ public:
 	TMap<FName, FInputMappingData> inputMappings;
 
 	TMap<FName, FInputMappingData> prevMappings;
+
+	
 
 	virtual void PostEditChangeChainProperty(struct FPropertyChangedChainEvent& PropertyChangedEvent) override;
 

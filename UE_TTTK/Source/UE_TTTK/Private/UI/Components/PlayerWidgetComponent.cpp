@@ -18,11 +18,13 @@
 UPlayerWidgetComponent::UPlayerWidgetComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
-	FInputMappingData data = UInputMappingsSettings::Get()->inputMappings["IMC_UI"];
-	IMC_UI = data.inputMappingContext;
-	IA_Chat = data.inputActions["IA_Chat"];
-	IA_Settings = data.inputActions["IA_Settings"];
-	IA_Leaderboard = data.inputActions["IA_Leaderboard"];
+	if (const FInputMappingData* data = UInputMappingsSettings::Get()->inputMappings.Find("IMC_UI"))
+	{
+		IMC_UI = data->inputMappingContext;
+		IA_Chat = data->inputActions["IA_Chat"];
+		IA_Settings = data->inputActions["IA_Settings"];
+		IA_Leaderboard = data->inputActions["IA_Leaderboard"];
+	}
 	if (ConstructorHelpers::FClassFinder<UPlayerWidget> tempPlayerWidget(TEXT("/Game/UI/InContent/WBP_Player.WBP_Player_C"));
 		tempPlayerWidget.Succeeded()
 	)

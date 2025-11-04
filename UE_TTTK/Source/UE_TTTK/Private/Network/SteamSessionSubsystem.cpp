@@ -17,6 +17,7 @@
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/StreamableManager.h"
+#include "Utility/Base64Converter.h"
 
 USteamSessionSubsystem::USteamSessionSubsystem()
 {
@@ -124,14 +125,13 @@ void USteamSessionSubsystem::CreateSession(const FString& mapName, const FString
 		sessionSettings.bUsesPresence = true;  // for finding friends
 		sessionSettings.bAllowJoinViaPresence = true;  // allow friends able to  participate directly
 		sessionSettings.bUseLobbiesIfAvailable = true;
-		sessionSettings.Set<FString>(hostNamePair.Key, hostNamePair.Value, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
-		sessionSettings.Set<FString>(displayNamePair.Key, displayNamePair.Value, EOnlineDataAdvertisementType::ViaOnlineService);
-		sessionSettings.Set<FString>(mapNamePair.Key, mapNamePair.Value, EOnlineDataAdvertisementType::ViaOnlineService);
+		sessionSettings.Set<FString>(hostNamePair.Key, UBase64Converter::StringConvertToBase64(hostNamePair.Value), EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+		sessionSettings.Set<FString>(displayNamePair.Key, UBase64Converter::StringConvertToBase64(displayNamePair.Value), EOnlineDataAdvertisementType::ViaOnlineService);
+		sessionSettings.Set<FString>(mapNamePair.Key, UBase64Converter::StringConvertToBase64(mapNamePair.Value), EOnlineDataAdvertisementType::ViaOnlineService);
 		sessionSettings.Set<int32>(participantsCountPair.Key, participantsCountPair.Value, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
 		FUniqueNetIdPtr netId = GetWorld()->GetFirstLocalPlayerFromController()->GetUniqueNetIdForPlatformUser().GetUniqueNetId();
-		
-		sessionInterface->CreateSession(*netId, FName(displayName), sessionSettings);
+		sessionInterface->CreateSession(*netId, FName(displayNamePair.Value), sessionSettings);
 	}
 }
 
@@ -279,7 +279,7 @@ void USteamSessionSubsystem::OnCompleteFindSession(bool bWasSuccess)
 	{
 		// 검색된 세션 결과들
 		auto results = sessionSearch->SearchResults;
-		for (int32 i = 0; i < results.Num(); i++)
+		/*for (int32 i = 0; i < results.Num(); i++)
 		{
 			// 방 제목 이름 담을 변수
 			FString displayName;
@@ -287,8 +287,8 @@ void USteamSessionSubsystem::OnCompleteFindSession(bool bWasSuccess)
 			UE_LOG(LogTemp, Warning, TEXT("세션 - %i, 이름 : %s"), i, *displayName);
 			
 			/*displayName.RemoveFromStart(displayNamePrefix);
-			UE_LOG(LogTemp, Warning, TEXT("DisplayName만 남긴 이름 : %s"), *displayName);*/
-		}
+			UE_LOG(LogTemp, Warning, TEXT("DisplayName만 남긴 이름 : %s"), *displayName);#1#
+		}*/
 		OnFindSessions.ExecuteIfBound(results);
 	}
 	else
